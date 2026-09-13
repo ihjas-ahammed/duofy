@@ -203,8 +203,45 @@ class _HomeScreenState extends State<HomeScreen> {
         loadingProcessName = "Reading local courses...";
       });
     }
-    // 1. Fetch Local Cache immediately
-    final fetched = await _db.fetchBooks(forceRefresh: false);
+    final fetched = List<Book>.from(await _db.fetchBooks(forceRefresh: false));
+    if (!fetched.any((b) => b.title.toLowerCase().contains('solid state'))) {
+      fetched.add(Book(
+        id: 'doc_solid_state_1',
+        title: 'Solid State Physics',
+        description: 'Bravais lattices, Miller indices, packing fractions & Bragg XRD',
+        icon: 'Atom',
+        modules: [
+          Module(
+            id: 'ss_mod_1',
+            title: 'Module I: Crystals & X-Rays',
+            description: 'Crystal Structure and Symmetry',
+            sections: [],
+            practiceQuestions: const [],
+          ),
+        ],
+        lessonFormats: LessonFormat.defaultFormats,
+        defaultFormatId: 'default',
+      ));
+    }
+    if (!fetched.any((b) => b.title.toLowerCase().contains('latex'))) {
+      fetched.add(Book(
+        id: 'doc_latex_1',
+        title: 'LaTeX & Document Typesetting',
+        description: 'Math, Matrices, Floats, TikZ & Beamer',
+        icon: 'Book',
+        modules: [
+          Module(
+            id: 'lx_mod_1',
+            title: 'Module 1: Document Structure',
+            description: 'Structure and Math',
+            sections: [],
+            practiceQuestions: const [],
+          ),
+        ],
+        lessonFormats: LessonFormat.defaultFormats,
+        defaultFormatId: 'default',
+      ));
+    }
 
     if (mounted && isLoading) {
       setState(() {
@@ -1020,10 +1057,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         book: book,
                         progress: progressMap[book.id] ?? 0.0,
                         onTap: () {
+                          final useDropdown = GlobalState.dropdownReaderFlowNotifier.value;
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => ModuleSelectionScreen(book: book),
+                              builder: (_) => useDropdown
+                                  ? MainLayoutScreen(book: book)
+                                  : ModuleSelectionScreen(book: book),
                             ),
                           ).then((_) => _loadAllData(force: false));
                         },
@@ -1324,11 +1364,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               '/${book.id}',
                             ).then((_) => _loadAllData(force: false));
                           } else {
+                            final useDropdown = GlobalState.dropdownReaderFlowNotifier.value;
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) =>
-                                    ModuleSelectionScreen(book: book),
+                                builder: (_) => useDropdown
+                                    ? MainLayoutScreen(book: book)
+                                    : ModuleSelectionScreen(book: book),
                               ),
                             ).then((_) => _loadAllData(force: false));
                           }
@@ -2379,13 +2421,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                       book: book,
                                       progress: progressMap[book.id] ?? 0.0,
                                       onTap: () {
+                                        final useDropdown = GlobalState.dropdownReaderFlowNotifier.value;
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (_) =>
-                                                ModuleSelectionScreen(
-                                                  book: book,
-                                                ),
+                                            builder: (_) => useDropdown
+                                                ? MainLayoutScreen(book: book)
+                                                : ModuleSelectionScreen(
+                                                    book: book,
+                                                  ),
                                           ),
                                         ).then(
                                           (_) => _loadAllData(force: false),

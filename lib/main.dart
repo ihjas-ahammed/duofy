@@ -460,6 +460,13 @@ void main() async {
         );
       });
 
+      GlobalState.dropdownReaderFlowNotifier.value = prefs.getBool('experimental_dropdown_reader_flow') ?? true;
+      GlobalState.dropdownReaderFlowNotifier.addListener(() {
+        SharedPreferences.getInstance().then(
+          (p) => p.setBool('experimental_dropdown_reader_flow', GlobalState.dropdownReaderFlowNotifier.value),
+        );
+      });
+
       GlobalState.themeModeNotifier.value = ThemeMode.values.asNameMap()[
               prefs.getString('theme_mode')] ??
           ThemeMode.dark;

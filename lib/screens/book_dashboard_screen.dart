@@ -1,5 +1,3 @@
-import 'package:flow/services/ai_service.dart';
-
 import '../platform/io_shim.dart';
 import 'dart:ui';
 import 'dart:async';
@@ -31,6 +29,8 @@ import '../widgets/coach_mark.dart';
 import '../widgets/quick_review_sheet.dart';
 import 'main_layout_screen.dart';
 import '../services/deadline_service.dart';
+import '../models/tree_reader_models.dart';
+import 'tree_reader/tree_reader_screen.dart';
 
 class BookDashboardScreen extends StatefulWidget {
   final Book book;
@@ -1698,6 +1698,55 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                     ),
                                   );
                                 },
+                              ),
+                              const SizedBox(width: 6),
+                              Tooltip(
+                                message: 'Hierarchical Drop-down Reader',
+                                child: InkWell(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => TreeReaderScreen(
+                                          course: TreeCourse.fromBook(_currentBook),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          LucideIcons.layers,
+                                          size: 14,
+                                          color: Color(0xFF10B981),
+                                        ),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'Tree',
+                                          style: TextStyle(
+                                            color: Color(0xFF10B981),
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ),
                             ],
                           ),

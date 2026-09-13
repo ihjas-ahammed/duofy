@@ -1,0 +1,1268 @@
+/* ══════════════════════════════════════════════════════════════════
+   Solid State · Modules I–II — content model
+   Scope = the DELTA past +2. Every section opens with what you carry
+   over from school and what is genuinely new. No storytelling drama.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ---- tiny builders ---- */
+function carry(from,to){
+  return `<div class="carry">
+    <div class="from"><div class="lab">◂ you already own (from +2)</div><ul>${from.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+    <div class="to"><div class="lab">new ground ▸</div><ul>${to.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+  </div>`;
+}
+function lad(title,rungs){
+  const body=rungs.map((r,i)=>`<div class="rung${i? ' hidden':''}">
+    <span class="peek">tap to reveal ▸</span>
+    ${r.why?`<div class="why">${r.why}</div>`:''}
+    <div class="math">${r.m}</div></div>`).join('');
+  return `<div class="ladder"><div class="lh">${title}<span class="li">derivation</span></div>
+    ${body}
+    <div class="lfoot"><button class="btn primary reveal-next">Reveal next step</button>
+      <button class="btn reveal-all">Show all</button>
+      <span class="mini dim">Predict each line before you reveal it — generation beats re-reading.</span></div></div>`;
+}
+function fig(name,cap,leg){
+  return `<figure class="fig"><div class="cvwrap"><canvas data-fig="${name}"></canvas></div>
+    ${leg?`<div class="leg">${leg}</div>`:''}
+    <figcaption>${cap}</figcaption></figure>`;
+}
+let _ck=0;
+function chk(q,a){_ck++;const id='ck'+_ck;
+  return `<div class="check" id="${id}"><div class="ch">◈ retrieval checkpoint</div>
+    <div class="qz">${q}</div>
+    <div class="conf"><button data-c="0">Guessing</button><button data-c="1">Shaky</button>
+      <button data-c="2">Fairly sure</button><button data-c="3">Solid</button></div>
+    <button class="reveal">Rate first, then check ▸</button>
+    <div class="ans">${a}</div></div>`;
+}
+function prob(n,title,parts){
+  return `<details class="prob"><summary><span class="pn">${n}</span><span class="pt">${title}</span><span class="chev">›</span></summary>
+    <div class="pbody">${parts}</div></details>`;
+}
+function pth(html){return `<h4 class="theory">theory you need</h4>${html}`;}
+function psol(html){return `<h4 class="sol">worked solution</h4>${html}`;}
+function prac(html){return `<div class="practice"><div class="pl">your turn · no peeking at an answer</div>${html}</div>`;}
+/* topic marker — becomes a tickable, collapsible sub-card inside a section */
+function tp(title){return `<div class="topic" data-tp><h3>${title}</h3></div>`;}
+/* interactive 3-D figure — drag to rotate, pinch/scroll to zoom, double-tap to reset */
+function fig3d(name,cap,leg){
+  return `<figure class="fig is3d"><div class="cvwrap"><canvas data-v3d="${name}"></canvas></div>
+    ${leg?`<div class="leg">${leg}</div>`:''}
+    <figcaption><b>Interactive 3-D.</b> ${cap}</figcaption></figure>`;
+}
+
+const STATIONS=[
+
+/* ═══════════════════ 0 · ORIENTATION ═══════════════════ */
+{id:'start',hero:true,title:'Solid State Physics',short:'Start here',est:'~10 min',
+ body:`
+ <p class="lead">Modules I &amp; II — <strong>crystal structure and X-ray diffraction</strong>, then the
+ <strong>free-electron and band theories</strong> of solids. Open a module, work one topic, tick it off.
+ Your progress rides along on every device you sync.</p>
+
+ ${tp('Your day, built on the research <span class="tag">sleep · memory</span>')}
+ <p>You told me: two hours at night, two hours in the morning. That split is a gift — use it the way the memory literature says to, not as four generic hours.</p>
+ <div class="plan">
+   <div class="slot"><span class="when">NIGHT · 2h</span><div class="what"><b>Encode new ground</b>
+     <span>Learn one or two fresh topics. New, effortful material learned <em>before sleep</em> is what slow-wave sleep consolidates — the hippocampus replays it overnight and hands it to cortex. Finish with a 5-minute free recall on paper, lights off soon after. Don't cram past the point of focus.</span></div></div>
+   <div class="slot"><span class="when">SLEEP</span><div class="what"><b>Consolidation happens here</b>
+     <span>You are not idle — deep sleep is doing the filing. Protect it. A short review right before bed and again right after waking brackets the memory with sleep on both sides (the strongest retention pattern known).</span></div></div>
+   <div class="slot"><span class="when">MORNING · 2h</span><div class="what"><b>Retrieve, then interleave</b>
+     <span>Start by recalling last night's topics <em>cold</em> (checkpoints, closed book) — a rested brain retrieves best. Then mix problems from different topics. Interleaving feels harder and is exactly why it works: it trains you to pick the right method, which is what an exam actually tests.</span></div></div>
+   <div class="slot"><span class="when">SPACING</span><div class="what"><b>Return on a widening schedule</b>
+     <span>Touch each topic again after ~1 day, ~3 days, ~1 week. Every retrieval that felt a little hard strengthens the trace more than a fluent re-read ever will.</span></div></div>
+ </div>
+
+ ${tp('How each topic is wired to make it stick')}
+ <p><strong>Retrieval over re-reading</strong> — checkpoints force you to pull the answer <em>before</em> seeing it. <strong>Generation before revelation</strong> — derivation ladders stay blurred until you commit to a prediction. <strong>Calibration</strong> — you rate your confidence first, so you notice where fluent-feeling ≠ actually-knowing. <strong>Dual coding</strong> — every diagram here is <em>computed from the real formula</em> (the Brillouin zones are genuinely constructed from bisectors; the Kronig–Penney corridor is the actual function), so picture and algebra encode together. <strong>Spacing &amp; interleaving</strong> — the plan above, baked into the order.</p>
+
+ ${tp('The scope rule')}
+ <div class="note key"><div class="nh">what this does and does not re-teach</div>You have already met unit cells, packing fraction, the density formula $\\rho=nM/N_Aa^3$, and the qualitative picture of conduction/valence bands at +2. None of that is re-taught. Each section names what you carry over, then spends its effort only on what is new: reciprocal space, Brillouin zones, Fermi statistics, Bloch's theorem, and effective mass.</div>
+
+ <p class="dim" style="margin-top:1.2rem">Tap <b>☁</b> to pick a sync code (same word on phone and laptop). <b>◐</b> switches light / dark / auto. <b>⇕</b> expands or collapses everything at once.</p>
+`},
+
+/* ═══════════════════ MODULE I ═══════════════════ */
+{id:'ss1-classify',mod:'Module I',modName:'Crystal Structure &amp; Diffraction',modClass:'m1',
+ title:'Solids &amp; the space lattice',short:'Solids &amp; space lattice',est:'~14 min',
+ body:`
+ ${carry(
+   ['Solids are crystalline or amorphous',
+    'Atoms sit in a regular repeating pattern in a crystal',
+    'Vectors add; integer multiples of a vector'],
+   ['<em>Long-range</em> vs short-range order as the defining line',
+    'The space lattice as a set of points, defined by translational invariance',
+    'Primitive vs non-primitive translation vectors'])}
+
+ ${tp('Crystalline, polycrystalline, amorphous')}
+ <ul>
+   <li><strong>Crystalline:</strong> regular, periodic <em>long-range</em> order. Ordering releases more energy, so the crystalline state is the thermodynamically preferred minimum-energy state.
+     <ul><li><em>Single crystal</em> — periodicity is unbroken through the whole volume (diamond, quartz, mica).</li>
+     <li><em>Polycrystalline</em> — many randomly oriented crystallites (<em>grains</em>) meeting at <em>grain boundaries</em>, where crystallographic continuity breaks.</li></ul></li>
+   <li><strong>Amorphous:</strong> no long-range translational order; only short-range order over a few atomic diameters (glass, polymers). Formed when rapid cooling or kinetic constraints stop atoms reaching periodic sites.</li>
+ </ul>
+
+ ${tp('The space lattice &amp; translational invariance')}
+ <p>A <strong>space lattice</strong> is an infinite periodic array of geometrical points in which <em>every point has identical surroundings</em>. That last clause is the whole definition — it is what makes a lattice a lattice.</p>
+ <p>Two lattice points are related by a translation operation $\\mathbf{T}$:</p>
+ $$\\mathbf{r}\'=\\mathbf{r}+\\mathbf{T},\\qquad \\mathbf{T}=n_1\\mathbf{a}+n_2\\mathbf{b}+n_3\\mathbf{c}$$
+ <p>with $n_1,n_2,n_3$ integers and $\\mathbf{a},\\mathbf{b},\\mathbf{c}$ the fundamental translation vectors.</p>
+ <ul>
+   <li><strong>Primitive</strong> translation vectors: <em>every</em> lattice point is reached with integer $(n_1,n_2,n_3)$.</li>
+   <li><strong>Non-primitive:</strong> some points need fractional coefficients.</li>
+ </ul>
+
+ ${fig('lattice',
+   '<b>A 2-D lattice, drawn from its own vectors.</b> Copper dots are lattice points generated by $\\mathbf{T}=n_1\\mathbf{a}+n_2\\mathbf{b}$; the shaded parallelogram is the primitive cell those two vectors span. The indigo arrow is one particular translation $\\mathbf{T}=2\\mathbf{a}+\\mathbf{b}$ — it lands exactly on another lattice point, which is the test any valid $\\mathbf{T}$ must pass.',
+   '<span><i class="fill" style="background:var(--pos)"></i>primitive cell</span><span><i style="border-color:var(--prob)"></i>a translation T</span>')}
+
+ ${tp('Lattice + basis = crystal structure')}
+ <p>A lattice is pure mathematics — dimensionless points. The physics enters as the <strong>basis</strong>: the group of atoms placed identically at every lattice point.</p>
+ $$\\text{space lattice}+\\text{basis}\\;\\longrightarrow\\;\\text{crystal structure}$$
+ <p>A monatomic basis is one atom (pure Cu); a basis can also run to thousands of atoms (protein crystals).</p>
+
+ ${chk(
+   'A friend says “the lattice of copper is FCC, so a lattice point <em>is</em> a copper atom.” What is wrong with that sentence?',
+   '<p>It conflates two different objects. The <strong>lattice</strong> is a set of geometrical points with identical surroundings — it contains no matter. The <strong>basis</strong> is the atom (or group of atoms) hung on each of those points, and lattice + basis gives the crystal structure. For copper the basis happens to be a single atom, so the distinction looks harmless — but for diamond the lattice is still FCC while the basis is <em>two</em> carbon atoms at $(0,0,0)$ and $(\\tfrac14,\\tfrac14,\\tfrac14)$, and for NaCl the basis is an ion pair. Getting this right is what lets you say “diamond is FCC” without contradiction.</p>')}
+`},
+
+{id:'ss1-cells',mod:'Module I',modName:'Crystal Structure &amp; Diffraction',modClass:'m1',
+ title:'Unit cells &amp; Wigner–Seitz',short:'Unit cells',est:'~14 min',
+ body:`
+ ${carry(
+   ['Unit cell as the repeating box of a crystal',
+    'Counting atoms per cell by sharing corners/faces',
+    'Volume of a box; scalar triple product'],
+   ['Primitive cell = minimum volume, exactly one lattice point',
+    'Why we often prefer a bigger, non-primitive conventional cell',
+    'The Wigner–Seitz cell: primitive <em>and</em> fully symmetric'])}
+
+ ${tp('Primitive vs non-primitive cells')}
+ <p>A <strong>unit cell</strong> is the block that reproduces the whole lattice under translation.</p>
+ <ul>
+   <li><strong>Primitive cell:</strong> minimum possible volume; lattice points only at its vertices; effective content exactly $N=1$ lattice point. Its volume is the scalar triple product
+     $$V=|\\mathbf{a}\\cdot(\\mathbf{b}\\times\\mathbf{c})|$$</li>
+   <li><strong>Non-primitive (conventional) cell:</strong> extra points at body or face centres, $N>1$. We choose it because it <em>displays the full point symmetry</em> of the lattice, which a skewed primitive cell hides.</li>
+ </ul>
+
+ ${tp('Counting lattice points per cell')}
+ <p>Weight each point by how many cells share it:</p>
+ $$N=N_i+\\frac{N_f}{2}+\\frac{N_c}{8}$$
+ <p>interior points count 1, face-centre points $\\tfrac12$, corner points $\\tfrac18$. Hence</p>
+ <ul>
+   <li>Simple cubic $P$: $N=8/8=1$</li>
+   <li>Body-centred cubic $I$: $N=1+8/8=2$</li>
+   <li>Face-centred cubic $F$: $N=6/2+8/8=4$</li>
+ </ul>
+
+ ${tp('The Wigner–Seitz cell')}
+ <p>A construction that is primitive <em>and</em> carries the full point symmetry. Recipe: pick a lattice point; draw vectors to its neighbours; erect the perpendicular bisector plane of each; the smallest region enclosed around the origin is the cell.</p>
+
+ ${fig('wigner',
+   '<b>Built, not sketched.</b> Faint lines run to neighbouring lattice points; dashed indigo lines are the true perpendicular bisectors of those vectors, and the copper polygon is the region enclosed by all of them — computed here as the intersection of half-planes, not drawn by hand. Repeat the identical construction in <em>reciprocal</em> space and you get the first Brillouin zone.',
+   '<span><i class="dash" style="border-color:var(--prob)"></i>perpendicular bisectors</span><span><i class="fill" style="background:var(--pos)"></i>Wigner–Seitz cell</span>')}
+
+ ${fig3d('ws3d',
+   'The same bisector construction, run in three dimensions on a BCC lattice. The copper solid is the Wigner&ndash;Seitz cell — a <b>truncated octahedron</b> with 8 hexagonal and 6 square faces, and it is <em>computed here as the intersection of the 14 bisector half-spaces</em>, not drawn from a template. Faint dots are the neighbouring lattice points whose bisectors cut each face; the teal dot is the origin.',
+   '<span><i class="fill" style="background:var(--pos)"></i>Wigner–Seitz cell</span><span><i class="fill" style="background:var(--neg)"></i>origin</span>')}
+
+ ${chk(
+   'Why does a conventional FCC cube get used constantly even though it contains four lattice points, when a one-point primitive cell exists?',
+   '<p>Because the primitive cell of FCC is a squashed rhombohedron built on $\\tfrac a2(\\hat i+\\hat j)$-type vectors: it is minimal in volume but its shape <em>hides the cubic symmetry</em>. The conventional cube has $N=4$ and is four times larger, yet its faces and axes display the full point symmetry of the lattice, which makes indexing planes, spotting $\\langle110\\rangle$ close-packed directions, and writing $d_{hkl}=a/\\sqrt{h^2+k^2+l^2}$ straightforward. You trade minimality for symmetry — and when you need minimality <em>with</em> symmetry, you use the Wigner–Seitz cell instead.</p>')}
+`},
+
+{id:'ss1-symmetry',mod:'Module I',modName:'Crystal Structure &amp; Diffraction',modClass:'m1',
+ title:'Symmetry &amp; the rotation rule',short:'Symmetry operations',est:'~14 min',
+ body:`
+ ${carry(
+   ['Reflection, rotation and inversion as geometric operations',
+    'Order of a rotation: turning by $360^\\circ/n$',
+    'Simple trigonometry and projections'],
+   ['Symmetry operations as things that map a crystal onto itself',
+    'Periodicity <em>forbids</em> 5-fold and 7-fold rotation',
+    'Point groups (32) and space groups (230)'])}
+
+ ${tp('The symmetry operations')}
+ <ol>
+   <li><strong>Translation</strong> by $\\mathbf{T}=n_1\\mathbf{a}+n_2\\mathbf{b}+n_3\\mathbf{c}$.</li>
+   <li><strong>Rotation</strong> by $\\theta=2\\pi/n$ about an $n$-fold axis.</li>
+   <li><strong>Reflection</strong> $m$ through a plane.</li>
+   <li><strong>Inversion</strong> $\\bar1$, mapping $\\mathbf{r}\\to-\\mathbf{r}$ about a centre.</li>
+ </ol>
+
+ ${tp('Why only 1, 2, 3, 4 and 6-fold axes survive')}
+ <p>This is the classic derivation — periodicity and rotation are not free to coexist.</p>
+
+ ${lad('The rotational-multiplicity restriction',[
+   {why:'Take collinear lattice points $B$ and $C$ one period apart, $BC=T$. Rotate about $B$ by $\\theta$ clockwise and about $C$ by $\\theta$ anticlockwise.',
+    m:'$$B\'\\text{ and }C\'\\text{ must themselves be lattice points, on a row parallel to }BC$$'},
+   {why:'Any distance between lattice points on that row is an integer multiple of the period.',
+    m:'$$B\'C\'=mT,\\qquad m\\in\\mathbb{Z}$$'},
+   {why:'Project the two rotated positions back onto the row.',
+    m:'$$B\'C\'=T+2T\\cos\\theta\\;\\Rightarrow\\;2T\\cos\\theta+T=mT$$'},
+   {why:'Solve for the cosine.',
+    m:'$$\\cos\\theta=\\frac{m-1}{2}$$'},
+   {why:'A cosine is trapped in $[-1,1]$, so only five integers $m$ are allowed.',
+    m:'$$m=-1,0,1,2,3\\;\\Rightarrow\\;n=2,3,4,6,1$$'}
+ ])}
+
+ ${fig('rotsym',
+   '<b>The whole proof on one axis.</b> Each stem is $\\cos\\theta=(m-1)/2$ for an integer $m$. Only the five values that land inside the $\\pm1$ band (copper) are physically possible, and they give exactly $n=1,2,3,4,6$. Everything outside the band — which is where a 5-fold axis would have to live — is arithmetically excluded. This is why you can tile a floor with triangles, squares and hexagons but never with regular pentagons.',
+   '<span><i class="fill" style="background:var(--pos)"></i>allowed m</span><span><i class="dash" style="border-color:var(--wall)"></i>cos θ = ±1 limit</span>')}
+
+ ${tp('Point groups and space groups')}
+ <ul>
+   <li><strong>Point group:</strong> the non-translational operations leaving at least one point fixed. <strong>10</strong> in 2-D ($1,1m,2,2mm,3,3m,4,4mm,6,6mm$); <strong>32</strong> in 3-D.</li>
+   <li><strong>Space group:</strong> point-group operations combined with translations (including screw axes and glide planes). <strong>17</strong> in 2-D; <strong>230</strong> in 3-D.</li>
+ </ul>
+
+ ${chk(
+   'Quasicrystals show sharp diffraction spots with 5-fold symmetry. Does that break the theorem you just derived?',
+   '<p>No — it escapes it. The theorem assumes <strong>translational periodicity</strong>: that the structure repeats under $\\mathbf{T}=n_1\\mathbf{a}+n_2\\mathbf{b}+n_3\\mathbf{c}$. That assumption is exactly what forces $\\cos\\theta=(m-1)/2$ and kills $n=5$. Quasicrystals are <em>ordered but not periodic</em> (quasi-periodic, Penrose-tiling-like), so they are simply outside the theorem\'s hypothesis. They still diffract sharply because sharp diffraction needs long-range <em>order</em>, not strict periodicity. The theorem stands: no <em>periodic</em> lattice can have a 5-fold axis.</p>')}
+`},
+
+{id:'ss1-bravais',mod:'Module I',modName:'Crystal Structure &amp; Diffraction',modClass:'m1',
+ title:'Crystal systems &amp; Bravais lattices',short:'Bravais lattices',est:'~12 min',
+ body:`
+ ${carry(
+   ['The seven crystal systems by name',
+    'Axial lengths $a,b,c$ and angles $\\alpha,\\beta,\\gamma$',
+    'Cubic, tetragonal, orthorhombic shapes'],
+   ['Why there are exactly 5 (2-D) and 14 (3-D) Bravais lattices',
+    'Which centrings are genuinely distinct and which are redundant',
+    'System vs lattice vs structure — three different words'])}
+
+ ${tp('Two dimensions: 4 systems, 5 lattices')}
+ <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.88rem">
+ <tr style="text-align:left"><th>System</th><th>Bravais lattice</th><th>Parameters</th></tr>
+ <tr><td>Oblique</td><td>Oblique</td><td>$a\\ne b,\\ \\gamma\\ne90^\\circ$</td></tr>
+ <tr><td>Rectangular</td><td>Primitive <em>and</em> centred</td><td>$a\\ne b,\\ \\gamma=90^\\circ$</td></tr>
+ <tr><td>Square</td><td>Square</td><td>$a=b,\\ \\gamma=90^\\circ$</td></tr>
+ <tr><td>Hexagonal</td><td>Hexagonal</td><td>$a=b,\\ \\gamma=120^\\circ$</td></tr>
+ </table></div>
+ <p>The rectangular system is the one that supports two distinct lattices, which is why 4 systems give 5 lattices.</p>
+
+ ${tp('Three dimensions: 7 systems, 14 lattices')}
+ <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.86rem">
+ <tr style="text-align:left"><th>System</th><th>Lengths</th><th>Angles</th><th>Lattices</th></tr>
+ <tr><td>Cubic</td><td>$a=b=c$</td><td>all $90^\\circ$</td><td>$P,I,F$</td></tr>
+ <tr><td>Tetragonal</td><td>$a=b\\ne c$</td><td>all $90^\\circ$</td><td>$P,I$</td></tr>
+ <tr><td>Orthorhombic</td><td>$a\\ne b\\ne c$</td><td>all $90^\\circ$</td><td>$P,I,C,F$</td></tr>
+ <tr><td>Rhombohedral</td><td>$a=b=c$</td><td>$\\alpha=\\beta=\\gamma\\ne90^\\circ$</td><td>$R$</td></tr>
+ <tr><td>Hexagonal</td><td>$a=b\\ne c$</td><td>$90^\\circ,90^\\circ,120^\\circ$</td><td>$P$</td></tr>
+ <tr><td>Monoclinic</td><td>$a\\ne b\\ne c$</td><td>$\\alpha=\\gamma=90^\\circ\\ne\\beta$</td><td>$P,C$</td></tr>
+ <tr><td>Triclinic</td><td>$a\\ne b\\ne c$</td><td>all different</td><td>$P$</td></tr>
+ </table></div>
+ <p>$3+2+4+1+1+2+1=14$.</p>
+
+ <div class="note pitfall"><div class="nh">the redundancy that trips people up</div>Why is there no <em>face-centred tetragonal</em> lattice? Because it is not new: an FCT lattice is identical to a body-centred tetragonal lattice with axes rotated $45^\\circ$ about $c$ and rescaled $a\'=a/\\sqrt2$. A centring only counts as a distinct Bravais lattice if it cannot be re-described as a smaller cell of an existing type. That test is what prunes the list to 14.</div>
+
+ ${chk(
+   '“Cubic system”, “FCC Bravais lattice”, and “NaCl structure” — put these three in order from most general to most specific, and say what each adds.',
+   '<p><strong>Cubic system</strong> (most general) fixes only the metric: $a=b=c$, all angles $90^\\circ$, and the associated point symmetry. <strong>FCC Bravais lattice</strong> narrows it to one of the three cubic centrings — a specific arrangement of lattice <em>points</em> (4 per conventional cell). <strong>NaCl structure</strong> (most specific) is that FCC lattice <em>plus a basis</em>: an Na⁺ at $(0,0,0)$ and a Cl⁻ at $(\\tfrac12,0,0)$. So: system = shape class, lattice = point arrangement, structure = lattice + basis. Diamond and NaCl share the FCC lattice yet are entirely different structures, because their bases differ.</p>')}
+`},
+
+{id:'ss1-planes',mod:'Module I',modName:'Crystal Structure &amp; Diffraction',modClass:'m1',
+ title:'Directions, planes &amp; Miller indices',short:'Directions &amp; planes',est:'~16 min',
+ body:`
+ ${carry(
+   ['Coordinates and vectors in 3-D',
+    'Reciprocals of fractions; lowest common denominators',
+    'Dot product and the angle between two vectors'],
+   ['Bracket conventions: $[uvw]$, $\\langle uvw\\rangle$, $(hkl)$, $\\{hkl\\}$',
+    'Miller indices as <em>reciprocals</em> of intercepts, and why',
+    'In cubic crystals $[hkl]\\perp(hkl)$ — a shortcut you will use constantly'])}
+
+ ${tp('Direction indices [uvw]')}
+ <p>Write the vector from the origin as $\\mathbf{R}=u\\mathbf{a}+v\\mathbf{b}+w\\mathbf{c}$ and reduce $u,v,w$ to smallest integers.</p>
+ <ul>
+   <li>$[uvw]$ — one specific direction. Negative components get an overbar: $[\\bar u vw]$.</li>
+   <li>$\\langle uvw\\rangle$ — the whole family of symmetry-equivalent directions.</li>
+ </ul>
+ <p>In a <strong>cubic</strong> lattice the angle between $[hkl]$ and $[h\'k\'l\']$ is just the vector angle:</p>
+ $$\\cos\\theta=\\frac{hh\'+kk\'+ll\'}{\\sqrt{h^2+k^2+l^2}\\,\\sqrt{h\'^2+k\'^2+l\'^2}}$$
+
+ ${tp('Miller indices (hkl) — and why reciprocals')}
+ <p>Procedure: read the intercepts in units of $a,b,c$ → take reciprocals → clear fractions to smallest coprime integers.</p>
+ <ol>
+   <li>Intercepts $(pa,qb,rc)$.</li>
+   <li>Reciprocals $(1/p,1/q,1/r)$.</li>
+   <li>Scale to coprime integers $(hkl)$.</li>
+   <li>A plane parallel to an axis has intercept $\\infty$, hence index $0$.</li>
+   <li>Negative intercepts get overbars; $\\{hkl\\}$ is the equivalent family.</li>
+ </ol>
+ <div class="note"><div class="nh">why reciprocals are the right move</div>Taking reciprocals does two jobs at once. It kills the infinity — a plane parallel to an axis gets the perfectly finite index $0$ instead of an unusable $\\infty$. And it makes the index triple transform like a <em>normal</em> rather than like a direction, which is exactly why $(hkl)$ turns out to be the reciprocal-lattice vector $\\mathbf{G}_{hkl}$ later in this module. Miller indices are reciprocal-space coordinates in disguise.</div>
+ <p>In cubic symmetry, the direction $[hkl]$ is perpendicular to the plane $(hkl)$ — the single most useful shortcut in this module.</p>
+
+ ${tp('Directions lying in a plane')}
+ <p>A direction $[uvw]$ lies in the plane $(hkl)$ exactly when it is perpendicular to the plane normal:</p>
+ $$hu+kv+lw=0$$
+ <p>This one-line test answers a whole class of exam questions (“which $\\langle111\\rangle$ directions lie in $(1\\bar10)$?”) without drawing anything.</p>
+
+ ${fig3d('miller',
+   'A Miller plane slicing the conventional cube. Tap a chip to switch between (100), (110), (111) and (210); the shaded polygon is the true intersection of the plane $hx+ky+lz=1$ with the cube, computed edge by edge. Rotate it and watch how the (111) plane cuts the corner off symmetrically while (100) is a plain face — that is the geometry behind $d_{hkl}=a/\\sqrt{h^2+k^2+l^2}$.',
+   '<span><i class="fill" style="background:var(--prob)"></i>the (hkl) plane</span><span><i style="border-color:var(--pos)"></i>lattice points</span>')}
+
+ ${chk(
+   'A plane cuts the axes at $a,\\;2b,\\;\\infty$. Find $(hkl)$. Then state, without drawing, whether $[\\bar1 2 0]$ lies in it.',
+   '<p><strong>Indices:</strong> fractional intercepts $p,q,r=1,2,\\infty$ → reciprocals $1,\\tfrac12,0$ → multiply by 2 → $(210)$.</p><p><strong>Does $[\\bar120]$ lie in it?</strong> Apply $hu+kv+lw$: $(2)(-1)+(1)(2)+(0)(0)=-2+2+0=0$. Yes — it lies in the plane. (Had the sum been non-zero, the direction would pierce the plane rather than lie in it.) Note you never needed a sketch; the dot-product test does the whole job, and in cubic crystals it works because $[hkl]$ is the plane normal.</p>')}
+`},
+
+{id:'ss1-dspacing',mod:'Module I',modName:'Crystal Structure &amp; Diffraction',modClass:'m1',
+ title:'Interplanar spacing',short:'Interplanar spacing',est:'~12 min',
+ body:`
+ ${carry(
+   ['Direction cosines of a line',
+    'The identity $\\cos^2\\alpha+\\cos^2\\beta+\\cos^2\\gamma=1$',
+    'Perpendicular distance from a point to a plane'],
+   ['$d_{hkl}$ as the spacing of a whole family of parallel planes',
+    'The general orthorhombic formula, and its cubic special case',
+    'Higher indices ⇒ closer planes — which is why $n$ can be absorbed'])}
+
+ ${tp('Deriving d(hkl)')}
+ ${lad('Interplanar spacing from direction cosines',[
+   {why:'The plane nearest the origin has fractional intercepts $a/h,\\;b/k,\\;c/l$. Let $\\hat{\\mathbf n}$ be the unit normal and $d$ the perpendicular distance.',
+    m:'$$\\hat{\\mathbf n}\\cdot\\mathbf r=d$$'},
+   {why:'Project onto each axis: the direction cosine along $x$ is $d$ divided by the $x$-intercept.',
+    m:'$$\\cos\\alpha=\\frac{d}{a/h}=\\frac{dh}{a},\\quad\\cos\\beta=\\frac{dk}{b},\\quad\\cos\\gamma=\\frac{dl}{c}$$'},
+   {why:'For orthogonal axes the direction cosines satisfy the Pythagorean identity.',
+    m:'$$\\cos^2\\alpha+\\cos^2\\beta+\\cos^2\\gamma=1$$'},
+   {why:'Substitute and factor out $d^2$.',
+    m:'$$d^2\\Big[\\frac{h^2}{a^2}+\\frac{k^2}{b^2}+\\frac{l^2}{c^2}\\Big]=1$$'},
+   {why:'Solve — the orthorhombic result.',
+    m:'$$d_{hkl}=\\frac{1}{\\sqrt{\\dfrac{h^2}{a^2}+\\dfrac{k^2}{b^2}+\\dfrac{l^2}{c^2}}}$$'},
+   {why:'Set $a=b=c$ for a cubic crystal. Memorise this one.',
+    m:'$$\\boxed{\\,d_{hkl}=\\frac{a}{\\sqrt{h^2+k^2+l^2}}\\,}$$'}
+ ])}
+
+ ${tp('Reading the spacings off')}
+
+ ${fig('dspacing',
+   '<b>Every spacing is $a/\\sqrt{h^2+k^2+l^2}$.</b> Bars are computed directly from the formula, in units of the lattice constant. Note $d_{200}=d_{100}/2$ and $d_{222}=d_{111}/2$: multiplying all indices by $n$ divides the spacing by $n$. That is precisely why an $n$-th order Bragg reflection from $(hkl)$ can be relabelled as a first-order reflection from $(nh\\,nk\\,nl)$.',
+   '<span><i class="fill" style="background:var(--pos)"></i>d(hkl) / a</span>')}
+
+ ${chk(
+   'In an FCC crystal, rank $d_{111}$, $d_{200}$ and $d_{220}$, and connect the answer to atomic packing.',
+   '<p>$d_{111}=a/\\sqrt3\\approx0.577a$, $d_{200}=a/2=0.500a$, $d_{220}=a/\\sqrt8\\approx0.354a$, so $$d_{111}>d_{200}>d_{220}.$$ (In FCC the $\\{100\\}$ and $\\{110\\}$ families acquire interleaved planes from the face-centring, which is why $d_{200}$ and $d_{220}$ — not $d_{100},d_{110}$ — are the physically observed spacings.) The ordering matches the general rule that <strong>the most close-packed planes are the most widely spaced</strong>: $\\{111\\}$ is the close-packed plane of FCC, has the highest planar density, and sits furthest from its neighbours.</p>')}
+`},
+
+{id:'ss1-packing',mod:'Module I',modName:'Crystal Structure &amp; Diffraction',modClass:'m1',
+ title:'Standard structures &amp; packing',short:'Packing &amp; structures',est:'~18 min',
+ body:`
+ ${carry(
+   ['Packing efficiency of SC, BCC, FCC from +2 chemistry',
+    'Density formula $\\rho=nM/(N_A a^3)$',
+    'Volume of a sphere, cube diagonals'],
+   ['Coordination number as a structural fingerprint',
+    'Close packing as a stacking sequence: ABAB vs ABCABC',
+    'The ideal HCP axial ratio $c/a=\\sqrt{8/3}$, derived'])}
+
+ ${tp('Definitions: CN and packing fraction')}
+ <ul>
+   <li><strong>Coordination number $CN$</strong> — the number of equidistant nearest neighbours.</li>
+   <li><strong>Packing fraction</strong> $f=\\dfrac{N_{\\text{atoms}}\\,V_{\\text{atom}}}{V_{\\text{cell}}}$ for hard spheres of radius $r$.</li>
+ </ul>
+
+ ${tp('Close-packed: FCC and HCP (f = 0.74, CN = 12)')}
+ <p>Both are close packings of identical spheres; they differ only in <em>stacking order</em>.</p>
+ <ul>
+   <li><strong>HCP</strong> — $ABABAB\\dots$. Conventional hexagonal prism: $12\\times\\tfrac16$ corners $+\\,2\\times\\tfrac12$ faces $+\\,3$ interior $=6$ atoms. Space lattice is <em>simple hexagonal</em> with a two-atom basis $(0,0,0)$ and $(\\tfrac23,\\tfrac13,\\tfrac12)$. Nearest-neighbour distance $a=2r$; ideal $c/a=\\sqrt{8/3}\\approx1.633$.</li>
+   <li><strong>FCC</strong> — $ABCABC\\dots$ stacked along $[111]$. $N=4$; close-packed direction is the face diagonal $\\langle110\\rangle$, giving $4r=\\sqrt2a$.
+     $$f=\\frac{4\\cdot\\tfrac43\\pi r^3}{(2\\sqrt2 r)^3}=\\frac{\\pi}{3\\sqrt2}\\approx0.74$$</li>
+ </ul>
+
+ ${tp('Loose-packed: BCC and SC')}
+ <ul>
+   <li><strong>BCC</strong> — $N=2$, contact along the body diagonal $\\langle111\\rangle$: $4r=\\sqrt3a$, $CN=8$,
+     $$f=\\frac{2\\cdot\\tfrac43\\pi r^3}{(4r/\\sqrt3)^3}=\\frac{\\pi\\sqrt3}{8}\\approx0.68$$</li>
+   <li><strong>SC</strong> — $N=1$, contact along the edge: $a=2r$, $CN=6$, $f=\\pi/6\\approx0.52$.</li>
+ </ul>
+
+ ${fig3d('cubic',
+   'The three cubic cells you must be able to draw. Switch between SC, BCC and FCC, then hit <b>⬤ fill</b> to inflate the atoms to their true touching radius — that is the moment the packing fraction becomes obvious. The indigo bonds mark the <em>contact direction</em>: the cube edge for SC, the body diagonal for BCC, the face diagonal for FCC.',
+   '<span><i class="fill" style="background:var(--pos)"></i>corner atoms</span><span><i class="fill" style="background:var(--neg)"></i>centred atoms</span><span><i style="border-color:var(--prob)"></i>contact direction</span>')}
+
+ ${fig3d('hcp',
+   'Hexagonal close packing, ABAB. The copper atoms are the two $A$ layers (top and bottom of the prism); the three teal atoms are the $B$ layer, sitting in alternate triangular hollows. Rotate to look straight down the $c$ axis and the $B$ atoms drop neatly into the gaps — the picture behind the $c/a=\\sqrt{8/3}$ derivation below.',
+   '<span><i class="fill" style="background:var(--pos)"></i>A layers</span><span><i class="fill" style="background:var(--neg)"></i>B layer</span>')}
+
+ ${fig('packing',
+   '<b>Four structures, four numbers — all computed.</b> FCC and HCP tie at $\\pi/3\\sqrt2$ because they are the same close packing with different stacking; BCC follows at $\\pi\\sqrt3/8$, and simple cubic is the loosest real structure at $\\pi/6$. The contact condition under each bar is what sets $a$ in terms of $r$, and it is the only thing that changes between them.',
+   '<span><i class="fill" style="background:var(--pos)"></i>FCC</span><span><i class="fill" style="background:var(--prob)"></i>HCP</span><span><i class="fill" style="background:var(--neg)"></i>BCC</span>')}
+
+ ${tp('The ideal c/a ratio, derived')}
+ ${lad('Why c/a = √(8/3) for ideal HCP',[
+   {why:'Three touching spheres of the $A$ layer form an equilateral triangle of side $a=2r$; a $B$-layer sphere sits in the hollow, directly above the centroid $G$.',
+    m:'$$\\text{triangle height}=a\\sin60^\\circ=\\frac{\\sqrt3}{2}a$$'},
+   {why:'The centroid lies two-thirds of the way along the median from a vertex.',
+    m:'$$d_G=\\frac{2}{3}\\cdot\\frac{\\sqrt3}{2}a=\\frac{a}{\\sqrt3}$$'},
+   {why:'The $B$ sphere touches the $A$ spheres, so vertex-to-centre distance is $a$; the vertical rise to the $B$ layer is $c/2$.',
+    m:'$$a^2=d_G^2+\\Big(\\frac{c}{2}\\Big)^2=\\frac{a^2}{3}+\\frac{c^2}{4}$$'},
+   {why:'Collect and solve.',
+    m:'$$\\frac{2}{3}a^2=\\frac{c^2}{4}\\;\\Rightarrow\\;\\frac{c}{a}=\\sqrt{\\frac83}\\approx1.633$$'}
+ ])}
+
+ ${chk(
+   'FCC and HCP have identical packing fraction and coordination number. What single thing distinguishes them, and what physical property does that difference control?',
+   '<p>Only the <strong>stacking sequence</strong> of the close-packed layers: HCP is $ABAB\\dots$, FCC is $ABCABC\\dots$ (stacked along $[111]$). Locally each atom sees the same 12 neighbours at the same distance, which is why $f=0.74$ and $CN=12$ for both. The difference appears in the <em>number of equivalent slip systems</em>: FCC has four independent $\\{111\\}$ close-packed planes, HCP essentially one basal plane. That is why FCC metals (Cu, Al, Au) are ductile and HCP metals (Zn, Mg) are comparatively brittle — a purely stacking-order consequence.</p>')}
+`},
+
+{id:'ss1-compounds',mod:'Module I',modName:'Crystal Structure &amp; Diffraction',modClass:'m1',
+ title:'Diamond, ZnS &amp; NaCl',short:'Compound structures',est:'~12 min',
+ body:`
+ ${carry(
+   ['NaCl as a familiar ionic solid',
+    'Tetrahedral and octahedral coordination',
+    'Counting formula units per cell'],
+   ['All three as one FCC lattice with different bases',
+    'Interpenetrating sublattices as a way to see them',
+    'Why diamond packs so loosely ($f\\approx0.34$)'])}
+
+ ${tp('Diamond cubic')}
+ <ul>
+   <li>Lattice: <strong>FCC</strong>. Basis: two identical atoms at $(0,0,0)$ and $(\\tfrac14,\\tfrac14,\\tfrac14)$.</li>
+   <li>Equivalently: two interpenetrating FCC sublattices offset by $\\tfrac{\\sqrt3}{4}a$ along the body diagonal.</li>
+   <li>$N=8$ atoms per conventional cell (4 FCC + 4 in alternate tetrahedral voids); $CN=4$.</li>
+   <li>Nearest-neighbour distance $d=\\tfrac{\\sqrt3}{4}a$; packing fraction $f=\\tfrac{\\pi\\sqrt3}{16}\\approx0.34$.</li>
+   <li>C (diamond), Si, Ge, $\\alpha$-Sn.</li>
+ </ul>
+ <div class="note"><div class="nh">why so empty?</div>Diamond fills only 34% of space — less than half of FCC\'s 74%. The reason is that its bonding is <em>directional</em>: covalent $sp^3$ bonds demand tetrahedral $CN=4$, and tetrahedral coordination simply cannot pack densely. Close packing ($CN=12$) is what you get when bonding is non-directional, as in metals. Structure follows bonding, not the other way round.</div>
+
+ ${fig3d('diamond',
+   'The diamond cubic cell. Copper spheres are the FCC sites, teal spheres the four basis atoms sitting in alternate tetrahedral voids, and every indigo bond is exactly $\\tfrac{\\sqrt3}{4}a$ long. Rotate until a teal atom faces you and its four bonds fan out tetrahedrally — that $CN=4$ is why diamond fills only 34% of space.',
+   '<span><i class="fill" style="background:var(--pos)"></i>FCC sites</span><span><i class="fill" style="background:var(--neg)"></i>basis atoms</span><span><i style="border-color:var(--prob)"></i>tetrahedral bonds</span>')}
+
+ ${tp('Zinc blende (ZnS)')}
+ <ul>
+   <li>Isostructural with diamond, but the two FCC sublattices carry <em>different</em> elements: Zn on the FCC sites, S displaced by $(\\tfrac14,\\tfrac14,\\tfrac14)$.</li>
+   <li>Coordination $4{:}4$; 4 formula units per conventional cell.</li>
+ </ul>
+
+ ${tp('Sodium chloride')}
+ <ul>
+   <li>Lattice: <strong>FCC</strong>. Basis: Na⁺ at $(0,0,0)$ and Cl⁻ at $(\\tfrac12,0,0)$ — i.e. two FCC sublattices offset by $a/2$ along a cube <em>edge</em>.</li>
+   <li>4 Na⁺ + 4 Cl⁻ per conventional cell (4 formula units); coordination $6{:}6$, octahedral.</li>
+   <li>Ions touch along the edge: $a=2(r_{+}+r_{-})$.</li>
+ </ul>
+
+ ${fig3d('nacl',
+   'Rock salt. The large teal spheres are Cl⁻ and the small copper ones Na⁺, alternating along every cube edge so each ion is octahedrally surrounded by six of the other kind ($6{:}6$). Rotate along a $\\langle100\\rangle$ direction to see the strict alternation that fixes $a=2(r_++r_-)$.',
+   '<span><i class="fill" style="background:var(--pos)"></i>Na⁺</span><span><i class="fill" style="background:var(--neg)"></i>Cl⁻</span>')}
+
+ ${chk(
+   'Diamond and NaCl are both “FCC”. Explain precisely how they differ, using the word <em>basis</em>, and give each coordination number.',
+   '<p>Both share the same FCC <strong>lattice</strong> of points; they differ entirely in the <strong>basis</strong> hung on each point. Diamond\'s basis is two <em>identical</em> atoms at $(0,0,0)$ and $(\\tfrac14,\\tfrac14,\\tfrac14)$ — an offset along the <em>body diagonal</em>, giving tetrahedral $CN=4$. NaCl\'s basis is an <em>ion pair</em>, Na⁺ at $(0,0,0)$ and Cl⁻ at $(\\tfrac12,0,0)$ — an offset along a cube <em>edge</em>, giving octahedral $6{:}6$ coordination. Same lattice, different basis (different atoms <em>and</em> a different displacement) ⇒ completely different structures, packing fractions and physics. Zinc blende is the third member: diamond\'s geometry with NaCl\'s two-element idea.</p>')}
+`},
+
+{id:'ss1-xrd',mod:'Module I',modName:'Crystal Structure &amp; Diffraction',modClass:'m1',
+ title:'X-ray diffraction: Bragg &amp; Laue',short:'X-ray diffraction',est:'~16 min',
+ body:`
+ ${carry(
+   ['Path difference and constructive interference $\\Delta=n\\lambda$',
+    'Bragg\'s law $2d\\sin\\theta=n\\lambda$ as a formula',
+    'Wave interference from two sources'],
+   ['Why $\\lambda$ must be comparable to $d$ ($\\sim1$ Å)',
+    'The Laue formulation: three simultaneous conditions',
+    'That Bragg and Laue are the <em>same</em> statement'])}
+
+ ${tp('Why X-rays, and why crystals')}
+ <p>Diffraction needs a periodic array whose spacing is comparable to the wavelength, $\\lambda\\approx d\\sim1\\,$Å — which is exactly the X-ray range. Electrons in the atoms act as secondary coherent scatterers; the scattered wavelets interfere, and in a 3-D lattice the interference is so restrictive that only sharp, discrete maxima survive.</p>
+
+ ${tp('Bragg\'s formulation')}
+ <p>Treat the planes $(hkl)$, spacing $d$, as mirrors. Two rays reflecting from consecutive planes at glancing angle $\\theta$ differ in path by $2d\\sin\\theta$, so</p>
+ $$\\boxed{\\,2d\\sin\\theta=n\\lambda\\,}$$
+ <p>Setting $n=1$ and writing $d_{nh\\,nk\\,nl}=d_{hkl}/n$ absorbs the order into the indices — an $n$-th order reflection from $(hkl)$ <em>is</em> a first-order reflection from $(nh\\,nk\\,nl)$.</p>
+
+ ${fig('bragg',
+   '<b>The path difference, laid out.</b> Copper dots are atoms on planes spaced $d$; the indigo ray reflects off the upper plane, the teal ray off the next one down and travels the extra shaded distance. Geometry makes that extra path exactly $2d\\sin\\theta$, so constructive interference demands $2d\\sin\\theta=n\\lambda$. Note the angle $\\theta$ is measured from the <em>plane</em>, not from the normal — the commonest slip in this topic.',
+   '<span><i style="border-color:var(--prob)"></i>upper-plane ray</span><span><i style="border-color:var(--neg)"></i>lower-plane ray</span><span><i class="fill" style="background:var(--wall)"></i>extra path 2d sin θ</span>')}
+
+ ${tp('Von Laue\'s formulation')}
+ <p>Take two identical scatterers separated by $\\mathbf r$, with unit vectors $\\hat{\\mathbf n}_1,\\hat{\\mathbf n}_2$ along the incident and scattered beams. The path difference is</p>
+ $$\\Delta=\\mathbf r\\cdot(\\hat{\\mathbf n}_1-\\hat{\\mathbf n}_2)=\\mathbf r\\cdot\\mathbf N,\\qquad |\\mathbf N|=2\\sin\\theta$$
+ <p>For a 3-D lattice the path difference along <em>each</em> axis must be a whole number of wavelengths — three conditions at once (<strong>Laue\'s equations</strong>):</p>
+ $$\\mathbf a\\cdot\\mathbf N=nh\\lambda,\\qquad \\mathbf b\\cdot\\mathbf N=nk\\lambda,\\qquad \\mathbf c\\cdot\\mathbf N=nl\\lambda$$
+
+ ${tp('They are the same law')}
+ ${lad('Laue ⇒ Bragg',[
+   {why:'Write each Laue equation using the direction cosines of $\\mathbf N$ and $|\\mathbf N|=2\\sin\\theta$.',
+    m:'$$\\frac{a}{h}\\cos\\alpha=\\frac{b}{k}\\cos\\beta=\\frac{c}{l}\\cos\\gamma=\\frac{n\\lambda}{2\\sin\\theta}$$'},
+   {why:'But those three equal quantities are exactly the interplanar spacing derived earlier.',
+    m:'$$d_{hkl}=\\frac{a}{h}\\cos\\alpha=\\frac{b}{k}\\cos\\beta=\\frac{c}{l}\\cos\\gamma$$'},
+   {why:'Equate the two expressions.',
+    m:'$$d_{hkl}=\\frac{n\\lambda}{2\\sin\\theta}\\;\\Rightarrow\\;2d_{hkl}\\sin\\theta=n\\lambda$$'}
+ ])}
+
+ ${tp('The atomic scattering factor')}
+ <p>Real atoms are not points: scattering comes from a spread-out electron cloud $\\rho(\\mathbf r)$, and the diffracted amplitude is its spatial Fourier transform. Waves from different parts of the same cloud interfere destructively more and more as $\\theta$ grows, so the atomic scattering power <em>falls off with scattering angle</em> — which is why high-angle reflections are systematically weaker.</p>
+
+ ${chk(
+   'Why can\'t you see a crystal lattice with visible light ($\\lambda\\approx500$ nm)?',
+   '<p>Because Bragg\'s law has no solution. It requires $\\sin\\theta=n\\lambda/2d\\le1$, i.e. $\\lambda\\le 2d$. With $d\\sim2$ Å $=0.2$ nm, visible light at $500$ nm exceeds $2d$ by more than three orders of magnitude, so $\\sin\\theta$ would have to be $\\sim10^3$ — impossible. Physically, the probe wavelength must be comparable to or smaller than the spacing you want to resolve; that is exactly why X-rays ($\\sim1$ Å), and equally neutrons or electrons of comparable de Broglie wavelength, are the tools for crystallography.</p>')}
+`},
+
+{id:'ss1-recip',mod:'Module I',modName:'Crystal Structure &amp; Diffraction',modClass:'m1',
+ title:'The reciprocal lattice',short:'Reciprocal lattice',est:'~16 min',
+ body:`
+ ${carry(
+   ['Cross product and scalar triple product',
+    'Unit normal to a plane',
+    'That $e^{i2\\pi\\times\\text{integer}}=1$'],
+   ['A whole second lattice living in $k$-space',
+    'One reciprocal point ≡ one entire family of real planes',
+    'Reciprocal of FCC is BCC, and vice versa'])}
+
+ ${tp('Definition and geometry')}
+ <p>The reciprocal lattice lives in wavevector space. Each of its points stands for a whole <em>family</em> of parallel real-space planes $(hkl)$:</p>
+ <ul>
+   <li>its <strong>direction</strong> is along the normal $\\hat{\\mathbf n}$ of those planes;</li>
+   <li>its <strong>magnitude</strong> is inversely proportional to their spacing:</li>
+ </ul>
+ $$\\mathbf G_{hkl}=\\frac{2\\pi}{d_{hkl}}\\hat{\\mathbf n}$$
+ <p>Closely spaced real planes ⇒ far-out reciprocal points. This inversion is the entire idea.</p>
+
+ ${tp('Primitive reciprocal vectors')}
+ $$\\mathbf a^{*}=2\\pi\\frac{\\mathbf b\\times\\mathbf c}{\\mathbf a\\cdot(\\mathbf b\\times\\mathbf c)},\\quad
+   \\mathbf b^{*}=2\\pi\\frac{\\mathbf c\\times\\mathbf a}{\\mathbf a\\cdot(\\mathbf b\\times\\mathbf c)},\\quad
+   \\mathbf c^{*}=2\\pi\\frac{\\mathbf a\\times\\mathbf b}{\\mathbf a\\cdot(\\mathbf b\\times\\mathbf c)}$$
+ <p>They are built to satisfy the orthogonality relation</p>
+ $$\\mathbf a_i^{*}\\cdot\\mathbf a_j=2\\pi\\delta_{ij}$$
+ <p>so $\\mathbf a^{*}\\cdot\\mathbf a=2\\pi$ while $\\mathbf a^{*}\\cdot\\mathbf b=\\mathbf a^{*}\\cdot\\mathbf c=0$. The reciprocal cell volume is</p>
+ $$V^{*}=\\frac{(2\\pi)^3}{V}$$
+
+ ${tp('The defining property of G')}
+ <p>For $\\mathbf G=h\\mathbf a^{*}+k\\mathbf b^{*}+l\\mathbf c^{*}$ and any real translation $\\mathbf T=m\\mathbf a+n\\mathbf b+p\\mathbf c$,</p>
+ $$\\mathbf G\\cdot\\mathbf T=2\\pi(hm+kn+lp)=2\\pi\\times\\text{integer}\\;\\Longrightarrow\\;e^{i\\mathbf G\\cdot\\mathbf T}=1$$
+ <p>This is the property that matters: $e^{i\\mathbf G\\cdot\\mathbf r}$ has exactly the periodicity of the crystal. Every periodic function in the crystal can therefore be Fourier-expanded in the $\\mathbf G$'s — which is what makes reciprocal space the natural home for diffraction and, later, for Bloch waves.</p>
+
+ ${tp('Reciprocals of the cubic lattices')}
+ <ul>
+   <li><strong>SC</strong> ($a$) → <strong>SC</strong> with constant $2\\pi/a$.</li>
+   <li><strong>BCC</strong> → <strong>FCC</strong> of side $4\\pi/a$: from the BCC primitive vectors one gets $\\mathbf a^{*}=\\tfrac{2\\pi}{a}(\\hat i+\\hat j)$ and cyclic — the FCC primitive set.</li>
+   <li><strong>FCC</strong> → <strong>BCC</strong> of side $4\\pi/a$: $\\mathbf a^{*}=\\tfrac{2\\pi}{a}(\\hat i+\\hat j-\\hat k)$ and cyclic.</li>
+ </ul>
+ <p>The pairing is reciprocal in both senses of the word, and you will use it the moment you need the Brillouin zone of a real metal.</p>
+
+ ${chk(
+   'A family of planes has a large spacing $d$. Is its reciprocal lattice point near the origin or far from it? What does that imply for the Bragg angle?',
+   '<p><strong>Near the origin</strong>, because $|\\mathbf G|=2\\pi/d$ — big $d$ means small $G$. For the Bragg angle, combine $2d\\sin\\theta=\\lambda$: large $d$ gives small $\\sin\\theta$, so <strong>widely spaced planes diffract at small angles</strong>. This is why the first (innermost, low-angle) reflections in a powder pattern come from the most widely spaced — and hence most close-packed — planes, such as $\\{111\\}$ in FCC. Reciprocal space literally orders the diffraction pattern for you.</p>')}
+`},
+
+{id:'ss1-bz',mod:'Module I',modName:'Crystal Structure &amp; Diffraction',modClass:'m1',
+ title:'Brillouin zones',short:'Brillouin zones',est:'~14 min',
+ body:`
+ ${carry(
+   ['The Wigner–Seitz construction from earlier in this module',
+    'Elastic scattering conserves $|\\mathbf k|$',
+    'Perpendicular bisectors'],
+   ['Bragg\'s law rewritten as a vector condition on $\\mathbf k$',
+    'The Brillouin zone = Wigner–Seitz cell of the <em>reciprocal</em> lattice',
+    'The 3-D zone shapes for BCC and FCC'])}
+
+ ${tp('Bragg\'s law as a vector condition')}
+ ${lad('From k′ = k + G to the zone boundary',[
+   {why:'Diffraction happens exactly when the wavevector change is a reciprocal lattice vector.',
+    m:'$$\\Delta\\mathbf k=\\mathbf k\'-\\mathbf k=\\mathbf G$$'},
+   {why:'Square both sides of $\\mathbf k\'=\\mathbf k+\\mathbf G$.',
+    m:'$$k\'^2=k^2+2\\mathbf k\\cdot\\mathbf G+G^2$$'},
+   {why:'Elastic scattering conserves energy, so $k\'^2=k^2$.',
+    m:'$$2\\mathbf k\\cdot\\mathbf G+G^2=0$$'},
+   {why:'Rearrange into the form that has a geometric meaning.',
+    m:'$$\\mathbf k\\cdot\\Big(\\frac{\\mathbf G}{2}\\Big)=\\Big|\\frac{\\mathbf G}{2}\\Big|^{2}$$'},
+   {why:'Read it: the tip of $\\mathbf k$ lies on the perpendicular bisector plane of $\\mathbf G$.',
+    m:'$$\\text{Bragg reflection}\\iff\\mathbf k\\text{ touches a zone boundary}$$'}
+ ])}
+
+ <p>So the planes that bisect the reciprocal vectors are precisely the surfaces where electrons Bragg-reflect. Bound those planes and you have the <strong>first Brillouin zone</strong> — the Wigner–Seitz cell of the reciprocal lattice.</p>
+
+ ${fig('bz',
+   '<b>Zones, actually constructed.</b> For a 2-D square lattice the dashed indigo lines are the perpendicular bisectors of the shortest $\\mathbf G$ vectors. The copper square is the first zone ($|k_x|,|k_y|\\le\\pi/a$); the teal region built from the $(\\pm1,\\pm1)$ bisectors is the second. Every zone has the same area $(2\\pi/a)^2$ — each holds exactly the same number of $k$-states, which is the fact behind “one band per zone”.',
+   '<span><i class="fill" style="background:var(--pos)"></i>1st zone</span><span><i class="fill" style="background:var(--neg)"></i>2nd zone</span><span><i class="dash" style="border-color:var(--prob)"></i>bisectors of G</span>')}
+
+ ${fig3d('bz3d',
+   'The first Brillouin zone, built in three dimensions from the actual perpendicular-bisector half-spaces of the shortest reciprocal vectors. For an <b>FCC crystal</b> the reciprocal lattice is BCC and you get a <b>truncated octahedron</b> (8 hexagons truncated by 6 squares); switch to <b>BCC crystal</b> and the FCC reciprocal gives a <b>rhombic dodecahedron</b> (12 rhombi). Rotate to count the faces yourself — the solver derives them, so the counts are a result rather than a claim.',
+   '<span><i class="fill" style="background:var(--prob)"></i>first Brillouin zone</span>')}
+
+ ${tp('The 3-D cubic zones')}
+ <ul>
+   <li><strong>BCC crystal</strong> → reciprocal lattice is FCC → shortest $\\mathbf G$ are the 12 vectors $\\tfrac{2\\pi}{a}(\\pm\\hat i\\pm\\hat j)$ and cyclic → first zone is a <strong>rhombic dodecahedron</strong> (12 faces).</li>
+   <li><strong>FCC crystal</strong> → reciprocal lattice is BCC → the 8 vectors $\\tfrac{2\\pi}{a}(\\pm\\hat i\\pm\\hat j\\pm\\hat k)$ give 8 hexagonal faces, truncated by the 6 next-shortest $\\tfrac{2\\pi}{a}(\\pm2\\hat i)$ → first zone is a <strong>truncated octahedron</strong>.</li>
+ </ul>
+
+ ${chk(
+   'What is physically special about an electron whose wavevector lands exactly on a Brillouin zone boundary?',
+   '<p>It satisfies the Bragg condition, so the lattice reflects it: the forward wave $e^{ikx}$ and the reflected wave $e^{-ikx}$ have equal amplitude and combine into <strong>standing waves</strong>. A standing wave carries no net current ($v=\\hbar^{-1}dE/dk=0$ there), and the two possible standing waves — sine-like and cosine-like — pile electron density either on the ion cores or between them, so they have <em>different</em> energies. That energy difference is exactly the <strong>band gap</strong>, opened at $k=\\pm n\\pi/a$. This single fact is the bridge from Module I to band theory in Module II.</p>')}
+`},
+
+/* ═══════════════════ MODULE I · PROBLEM SET ═══════════════════ */
+{id:'ss1-problems',mod:'Module I',modName:'Crystal Structure &amp; Diffraction',modClass:'m1',
+ title:'Worked problems — Module I',short:'Problems I',est:'~45 min',
+ body:`
+ <p class="lead">Each problem is laid out the way you should attack it in the exam: the <span style="color:var(--neg)">theory you must have ready</span>, then the <span style="color:var(--pos)">solution</span>, then a <span style="color:var(--neg)">practice twin</span> with no answer. Do the twin cold — interleave them into your morning block.</p>
+
+ ${tp('Density &amp; the lattice parameter')}
+ ${prob('1.1','Deriving a = (nM / N<sub>A</sub>ρ)<sup>1/3</sup>',
+   pth('<p>Cell volume $a^3$; effective atom count $n$; mass of one atom $M/N_A$; density = mass/volume.</p>')+
+   psol('<p>Mass in the cell $=n\\,(M/N_A)$, volume $=a^3$, so $$\\rho=\\frac{nM}{N_Aa^3}\\;\\Longrightarrow\\;a=\\Big(\\frac{nM}{N_A\\rho}\\Big)^{1/3}$$ The only structure-dependent input is $n$: 1 for SC, 2 for BCC, 4 for FCC.</p>')+
+   prac('<p>A metal is BCC ($n=2$) with density $7.87$ g/cm³ and atomic weight $55.85$ g/mol. Find $a$.</p>'))}
+
+ ${prob('4.3','FCC copper: find a and r from the density',
+   pth('<p>$n=4$ for FCC; $1$ amu $=1.6605\\times10^{-27}$ kg; contact along the face diagonal, $4r=\\sqrt2a$.</p>')+
+   psol('<p>$m=63.54\\times1.6605\\times10^{-27}=1.055\\times10^{-25}$ kg, so the cell mass is $4m=4.220\\times10^{-25}$ kg.</p><p>$a^3=\\dfrac{4.220\\times10^{-25}}{8960}=4.710\\times10^{-29}\\,$m³ ⇒ $a=3.61$ Å.</p><p>$r=\\dfrac{\\sqrt2 a}{4}=1.28$ Å.</p>')+
+   prac('<p>Gold (FCC), atomic weight $196.97$ amu, atomic radius $1.442$ Å. Calculate its density.</p>'))}
+
+ ${tp('Directions, planes &amp; angles')}
+ ${prob('2.1','Indexing edges, face diagonals and body diagonals',
+   pth('<p>Families: cube edges $\\langle100\\rangle$, face diagonals $\\langle110\\rangle$, body diagonals $\\langle111\\rangle$. Count directed vectors, not lines.</p>')+
+   psol('<p><strong>Edges $\\langle100\\rangle$:</strong> $[100],[\\bar100],[010],[0\\bar10],[001],[00\\bar1]$ — 6 directed (12 edges).</p><p><strong>Face diagonals $\\langle110\\rangle$:</strong> 12 directions, e.g. $[110],[\\bar1\\bar10],[1\\bar10],[\\bar110]$ in the $xy$ planes, and cyclic for $yz$ and $zx$.</p><p><strong>Body diagonals $\\langle111\\rangle$:</strong> 4 principal diagonals ⇒ <strong>8</strong> directed vectors: $[111],[\\bar1\\bar1\\bar1],[11\\bar1],[\\bar1\\bar11],[1\\bar11],[\\bar11\\bar1],[\\bar111],[1\\bar1\\bar1]$.</p>')+
+   prac('<p>List all non-parallel $\\langle112\\rangle$ directions lying in the upper half-space ($w>0$).</p>'))}
+
+ ${prob('2.2','Direction common to two planes',
+   pth('<p>The line of intersection of $(h_1k_1l_1)$ and $(h_2k_2l_2)$ is along $\\mathbf n_1\\times\\mathbf n_2$ (cubic, where $[hkl]\\parallel$ normal).</p>')+
+   psol('<p>For $(101)$ and $(111)$: $$\\mathbf u=(1,0,1)\\times(1,1,1)=(-1,0,1)\\Rightarrow[\\bar101]$$ Geometrically both planes contain $(1,0,0)$ and $(0,0,1)$, so the common line is that segment. Reversed sense: $[10\\bar1]$.</p>')+
+   prac('<p>Find the direction common to $(110)$ and $(11\\bar1)$ in a cubic cell.</p>'))}
+
+ ${prob('2.3','Which ⟨111⟩ directions lie in (1-10)?',
+   pth('<p>$[uvw]$ lies in $(hkl)$ iff $hu+kv+lw=0$.</p>')+
+   psol('<p>For $(1\\bar10)$: $u-v=0\\Rightarrow u=v$. Within $\\langle111\\rangle$ that allows $$[111],\\;[\\bar1\\bar1\\bar1],\\;[11\\bar1],\\;[\\bar1\\bar11]$$ The other four members ($[1\\bar11]$ etc.) have $u\\ne v$ and pierce the plane instead.</p>')+
+   prac('<p>Find all $\\langle110\\rangle$ directions lying in the $(111)$ plane.</p>'))}
+
+ ${prob('2.4','Angles between directions',
+   pth('<p>$\\cos\\theta=\\dfrac{h_1h_2+k_1k_2+l_1l_2}{\\sqrt{\\sum h_1^2}\\sqrt{\\sum h_2^2}}$; in cubic crystals the normal to $(hkl)$ is $[hkl]$.</p>')+
+   psol('<p><strong>$(111)$ vs $(121)$:</strong> $\\cos\\theta=\\dfrac{1+2+1}{\\sqrt3\\sqrt6}=\\dfrac{4}{3\\sqrt2}\\approx0.9428\\Rightarrow\\theta\\approx19.47^\\circ$.</p><p><strong>$[111]$ vs $[100]$:</strong> $\\cos\\theta=1/\\sqrt3\\Rightarrow54.74^\\circ$.</p><p><strong>$[111]$ vs $[110]$:</strong> $\\cos\\theta=2/\\sqrt6\\Rightarrow35.26^\\circ$.</p>')+
+   prac('<p>Find the angle between $[1\\bar10]$ and $[10\\bar1]$, and between $[210]$ and the normal to $(112)$.</p>'))}
+
+ ${prob('2.5','Miller indices from intercepts',
+   pth('<p>Express intercepts as multiples of $a,b,c$ → reciprocals → clear fractions to coprime integers. Watch non-unit axial ratios.</p>')+
+   psol('<p><strong>(i)</strong> Intercepts $1,2,0.5$ Å with $a{:}b{:}c=3{:}2{:}1$ ⇒ fractional $\\tfrac13,1,\\tfrac12$ ⇒ reciprocals $3,1,2$ ⇒ $(312)$.</p><p><strong>(ii)</strong> Intercepts $1,2,3$ Å, same axes ⇒ $\\tfrac13,1,3$ ⇒ $3,1,\\tfrac13$ ⇒ ×3 ⇒ $(931)$.</p><p><strong>(iii)</strong> $3a,3b,2c\\to(223)$; $a,2b,\\infty\\to(210)$; $5a,-6b,c\\to(6\\bar5\\,30)$; $a,b/2,c\\to(121)$; $a,b,-c\\to(11\\bar1)$; $a/2,b,\\infty\\to(210)$.</p>')+
+   prac('<p>A plane cuts $2$ Å, $-3$ Å, $1.5$ Å on an orthorhombic cell with $a{:}b{:}c=4{:}3{:}2$. Find $(hkl)$.</p>'))}
+
+ ${tp('Spacings &amp; densities of planes')}
+ ${prob('3.1','Interplanar spacings, and the close-packed rule',
+   pth('<p>$d_{hkl}=a/\\sqrt{h^2+k^2+l^2}$. In FCC, mixed-parity indices are extinguished, so $\\{100\\}$ and $\\{110\\}$ show up as $200$ and $220$.</p>')+
+   psol('<p><strong>(i)</strong> $d_{111}=a/\\sqrt3$, $d_{222}=a/\\sqrt{12}=a/2\\sqrt3$ — half of $d_{111}$.</p><p><strong>(ii) FCC:</strong> $d_{200}=a/2=0.500a$, $d_{220}=a/2\\sqrt2=0.354a$, $d_{111}=a/\\sqrt3=0.577a$. So $d_{111}>d_{200}>d_{220}$ — the close-packed $\\{111\\}$ planes are indeed the most widely spaced.</p>')+
+   prac('<p>Tetragonal lattice, $a=b=3.0$ Å, $c=4.0$ Å. Find $d_{101}$ and $d_{211}$.</p>'))}
+
+ ${prob('4.2','Linear and planar atomic densities in FCC',
+   pth('<p>Linear density = atoms centred on the vector ÷ its length. Planar density = effective atoms in the plane ÷ its area. Corner atoms count $\\tfrac14$ in a face, $\\tfrac16$ in the $(111)$ triangle.</p>')+
+   psol('<p><strong>Linear (FCC):</strong> $[100]$: two half-atoms over $a$ ⇒ $1/a$. $[110]$: $\\tfrac12+1+\\tfrac12=2$ atoms over $\\sqrt2a$ ⇒ $\\sqrt2/a$ (the close-packed direction). $[111]$: only the two corners ⇒ $1/\\sqrt3a$.</p><p><strong>Planar (Ni, $a=3.52$ Å):</strong> $(100)$: 2 atoms over $a^2$ ⇒ $1.61\\times10^{19}$ m⁻². $(110)$: 2 over $\\sqrt2a^2$ ⇒ $1.14\\times10^{19}$. $(111)$: 2 over $\\tfrac{\\sqrt3}{2}a^2$ ⇒ $1.86\\times10^{19}$ — the densest, and no plane in FCC can beat it.</p>')+
+   prac('<p>Find the planar density of the $(110)$ plane in BCC $\\alpha$-iron, $a=2.87$ Å.</p>'))}
+
+ ${tp('Close packing &amp; HCP')}
+ ${prob('4.1','a versus r, and coordination numbers',
+   pth('<p>Contact directions: SC along the edge, BCC along the body diagonal ($\\sqrt3a$), FCC along the face diagonal ($\\sqrt2a$).</p>')+
+   psol('<p><strong>SC:</strong> $a=2r$, $CN=6$, $d_{\\min}=a$.<br><strong>BCC:</strong> $\\sqrt3a=4r\\Rightarrow a=4r/\\sqrt3$, $CN=8$, $d_{\\min}=\\tfrac{\\sqrt3}{2}a$.<br><strong>FCC:</strong> $\\sqrt2a=4r\\Rightarrow a=2\\sqrt2r$, $CN=12$, $d_{\\min}=a/\\sqrt2$.</p>')+
+   prac('<p>BCC iron has $a=2.87$ Å. Find the nearest-neighbour distance and the atomic radius.</p>'))}
+
+ ${prob('4.4','Proving c/a = √(8/3)',
+   pth('<p>Centroid of an equilateral triangle of side $a$ lies $a/\\sqrt3$ from each vertex; the $B$-layer sphere touches all three $A$ spheres.</p>')+
+   psol('<p>$a^2=\\left(\\dfrac{a}{\\sqrt3}\\right)^2+\\left(\\dfrac c2\\right)^2\\Rightarrow\\dfrac23a^2=\\dfrac{c^2}{4}\\Rightarrow\\dfrac ca=\\sqrt{\\dfrac83}\\approx1.633$.</p>')+
+   prac('<p>Magnesium is HCP with $a=3.21$ Å. Assuming the ideal ratio, find $c$ and the cell volume.</p>'))}
+
+ ${prob('4.5','HCP zinc: packing fraction and density',
+   pth('<p>Hexagonal prism volume $V=\\tfrac{3\\sqrt3}{2}a^2c$; $n=6$ atoms per conventional cell.</p>')+
+   psol('<p>$V=\\tfrac{3\\sqrt3}{2}(2.66)^2(4.95)\\times10^{-30}\\approx9.10\\times10^{-29}$ m³.</p><p>$V_{\\text{atoms}}=6\\cdot\\tfrac43\\pi r^3=8\\pi(1.31\\times10^{-10})^3\\approx5.65\\times10^{-29}$ m³ ⇒ $f\\approx0.62$ (below the ideal 0.74 because Zn\'s $c/a=1.86$ is non-ideal).</p><p>$M_{\\text{cell}}=6\\times65.37/(6.023\\times10^{23})$ g $\\approx6.51\\times10^{-25}$ kg ⇒ $\\rho\\approx7156$ kg/m³.</p>')+
+   prac('<p>Titanium is HCP with $a=2.95$ Å, $c=4.68$ Å, $r=1.445$ Å, $M=47.87$ amu. Find its packing fraction and density.</p>'))}
+
+ ${tp('Compound structures')}
+ ${prob('5.1','Diamond: atoms per cell and bond length',
+   pth('<p>Diamond = FCC lattice + 2-atom basis at $(0,0,0)$ and $(\\tfrac14,\\tfrac14,\\tfrac14)$.</p>')+
+   psol('<p><strong>Atoms:</strong> $4$ (FCC) $+\\,4$ (alternate tetrahedral voids) $=8$ per cell.</p><p><strong>Bond length:</strong> $d=\\sqrt{3(a/4)^2}=\\tfrac{\\sqrt3}{4}a$; with $a=5$ Å, $d\\approx2.17$ Å.</p>')+
+   prac('<p>Silicon has $a=5.43$ Å, $M=28.09$ amu. Find the nearest-neighbour distance and the density.</p>'))}
+
+ ${prob('5.2','NaCl: packing efficiency and density',
+   pth('<p>Ions touch along the edge, $a=2(r_++r_-)$; 4 formula units per cell.</p>')+
+   psol('<p>$a=2(0.98+1.81)=5.58$ Å ⇒ $V=1.737\\times10^{-28}$ m³.</p><p>$V_{\\text{ions}}=\\tfrac{16\\pi}{3}[(0.98)^3+(1.81)^3]\\times10^{-30}\\approx1.151\\times10^{-28}$ m³ ⇒ $f\\approx0.663$.</p><p>$M_{\\text{cell}}=4(22.99+35.45)(1.6605\\times10^{-27})\\approx3.88\\times10^{-25}$ kg ⇒ $\\rho\\approx2234$ kg/m³.</p>')+
+   prac('<p>KCl has the NaCl structure with $r_{K^+}=1.33$ Å, $r_{Cl^-}=1.81$ Å, $M_K=39.10$, $M_{Cl}=35.45$ amu. Find $a$, the packing efficiency and the density.</p>'))}
+`},
+
+/* ═══════════════════ MODULE II ═══════════════════ */
+{id:'ss2-drude',mod:'Module II',modName:'Free Electron &amp; Band Theory',modClass:'m2',
+ title:'Classical free electron theory',short:'Drude–Lorentz model',est:'~14 min',
+ body:`
+ ${carry(
+   ['Metals conduct because of mobile valence electrons',
+    'Ohm\'s law $V=IR$; drift velocity',
+    'Kinetic theory of gases; equipartition $\\tfrac32k_BT$'],
+   ['The electron gas as an explicit model with stated assumptions',
+    'Exactly which experiments it gets right',
+    'The four failures that force quantum statistics'])}
+
+ ${tp('The assumptions')}
+ <ul>
+   <li>Fixed positive ion cores; valence electrons move freely through the volume.</li>
+   <li>Electron–electron repulsion neglected.</li>
+   <li>The ion-core potential is taken <em>uniform and constant</em> inside, conventionally $V=0$ — so a conduction electron\'s energy is purely kinetic. <strong>This single assumption is what later fails.</strong></li>
+   <li>The interior sits below the vacuum level by $V_0$, giving a finite surface barrier that confines the electrons.</li>
+   <li>Electrons behave like an ideal gas, but with two differences: they are charged, and their density $n\\sim10^{28}\\,$m⁻³ is enormously higher than an ordinary gas.</li>
+   <li>Lorentz (1909) treated this gas with classical <strong>Maxwell–Boltzmann</strong> statistics.</li>
+ </ul>
+
+ ${tp('What it gets right')}
+ <ol>
+   <li><strong>Ohm\'s law.</strong> With no field the motion is random and carries no current; a field $\\mathcal E$ produces drift acceleration interrupted by scattering, giving a steady drift current proportional to voltage.</li>
+   <li><strong>Wiedemann–Franz law.</strong> The same electrons carry both charge and heat, so $\\sigma/K$ is a constant at fixed temperature, independent of which metal.</li>
+   <li><strong>Optical properties.</strong> Opacity and metallic lustre follow from conduction electrons absorbing the incident wave, oscillating, and re-radiating.</li>
+ </ol>
+
+ ${tp('Where it fails')}
+ <ol>
+   <li><strong>Resistivity vs temperature.</strong> Classical theory gives $\\rho\\propto\\sqrt T$; experiment gives $\\rho\\propto T$.</li>
+   <li><strong>Electronic heat capacity.</strong> Equipartition hands every electron $\\tfrac32k_BT$, predicting $C_v=\\tfrac32R$ per mole. Measured values are $\\lesssim1\\%$ of that and rise <em>linearly</em> with $T$.</li>
+   <li><strong>Paramagnetic susceptibility.</strong> Classical statistics predicts a Curie law $\\chi\\propto1/T$; the observed Pauli paramagnetism is small and nearly temperature-independent.</li>
+   <li><strong>Mean free path.</strong> Cannot explain paths of $10^8$–$10^9$ atomic spacings ($>1$ cm) at low temperature.</li>
+ </ol>
+ <div class="note pitfall"><div class="nh">the common thread</div>Every failure is a <em>statistics</em> failure. Maxwell–Boltzmann lets all $N$ electrons take thermal energy; the Pauli principle does not. Sommerfeld fixes three of the four by swapping in Fermi–Dirac statistics. The fourth (the long mean free path) needs the <em>periodic lattice</em> — a perfectly periodic crystal does not scatter an electron wave at all — which is band theory.</div>
+
+ ${chk(
+   'The classical model predicts an electronic heat capacity about 100× too large at room temperature. State the physical reason in one sentence.',
+   '<p>Because it assumes <strong>every</strong> electron can absorb $\\sim k_BT$ of thermal energy, whereas the Pauli principle blocks all but the tiny fraction within $\\sim k_BT$ of the Fermi level — an electron deep in the sea has no empty state to move into, since every nearby level is already occupied. Only a fraction $\\sim k_BT/E_F=T/T_F\\sim0.01$ of the electrons participate, which suppresses $C_v$ by exactly that factor and also makes it <em>linear</em> in $T$ rather than constant.</p>')}
+`},
+
+{id:'ss2-1d',mod:'Module II',modName:'Free Electron &amp; Band Theory',modClass:'m2',
+ title:'Sommerfeld: the 1-D electron gas',short:'1-D electron gas',est:'~14 min',
+ body:`
+ ${carry(
+   ['Particle in a box: $\\psi_n=\\sqrt{2/L}\\sin(n\\pi x/L)$, $E_n\\propto n^2$',
+    'Pauli exclusion: two electrons per orbital, opposite spin',
+    'Sum of squares $\\sum n^2\\approx s^3/3$'],
+   ['Filling the box with $N$ electrons up to a Fermi level',
+    'The Fermi energy as the top of the filled sea at $T=0$',
+    'Density of states $D(E)$, and that in 1-D it <em>falls</em> as $E^{-1/2}$'])}
+
+ ${tp('The box and its levels')}
+ <p>Confine an electron to $0&lt;x&lt;L$ with infinite walls. The time-independent Schrödinger equation inside gives the familiar result</p>
+ $$\\psi_n(x)=\\sqrt{\\frac2L}\\sin\\Big(\\frac{n\\pi x}{L}\\Big),\\qquad
+   E_n=\\frac{\\hbar^2}{2m}\\Big(\\frac{n\\pi}{L}\\Big)^2=\\frac{n^2h^2}{8mL^2}$$
+
+ ${tp('Fermi energy and ground-state energy in 1-D')}
+ <p>Each $n$ holds two electrons ($m_s=\\pm\\tfrac12$), so $N$ electrons fill up to $n_F=N/2$:</p>
+ $$E_F=\\frac{h^2}{8m}\\Big(\\frac{N}{2L}\\Big)^2$$
+ ${lad('Average energy per electron at T = 0 (1-D)',[
+   {why:'Sum the energies of all filled levels, two electrons each.',
+    m:'$$E_0=2\\sum_{n=1}^{N/2}E_n=2\\frac{h^2}{8mL^2}\\sum_{n=1}^{N/2}n^2$$'},
+   {why:'For $N/2\\gg1$ the sum of squares is dominated by its leading term.',
+    m:'$$\\sum_{n=1}^{s}n^2\\approx\\frac{s^3}{3},\\qquad s=\\frac N2$$'},
+   {why:'Substitute and recognise the bracket as $E_F$.',
+    m:'$$E_0=\\frac13 N\\left[\\frac{h^2}{8mL^2}\\Big(\\frac N2\\Big)^2\\right]=\\frac13NE_F$$'},
+   {why:'Divide by $N$. (Contrast the 3-D answer, $\\tfrac35E_F$, coming next.)',
+    m:'$$\\bar E_0=\\frac13E_F$$'}
+ ])}
+
+ ${tp('Density of states in 1-D')}
+ <p>$D(E)$ counts states per unit energy, including the factor 2 for spin:</p>
+ $$D(E)=2\\frac{dn}{dE}$$
+ <p>From $E=h^2n^2/8mL^2$ we get $dE/dn=h^2n/4mL^2$, and substituting $n=(8mL^2E/h^2)^{1/2}$,</p>
+ $$D(E)=\\frac{4L}{h}\\Big(\\frac{m}{2E}\\Big)^{1/2}\\;\\propto\\;E^{-1/2}$$
+ <div class="note"><div class="nh">dimension matters</div>In 1-D $D(E)\\propto E^{-1/2}$ — it <em>diverges</em> at the band bottom and falls off. In 3-D you will find $D(E)\\propto E^{+1/2}$, rising instead. Same particle, same physics; only the geometry of counting states in $k$-space differs. Never quote one in place of the other.</div>
+
+ ${chk(
+   'A 1-D wire of length $L$ holds $N$ electrons. If you double $N$ at fixed $L$, by what factor does $E_F$ change?',
+   '<p>$E_F=\\dfrac{h^2}{8m}\\left(\\dfrac{N}{2L}\\right)^2\\propto N^2$, so doubling $N$ makes $E_F$ <strong>four times</strong> larger. (Compare 3-D, where $E_F\\propto n^{2/3}$ and doubling the density raises $E_F$ by only $2^{2/3}\\approx1.59$.) The 1-D case is far more sensitive because the levels themselves go as $n^2$ and you are stacking straight up the ladder rather than filling a sphere.</p>')}
+`},
+
+{id:'ss2-3d',mod:'Module II',modName:'Free Electron &amp; Band Theory',modClass:'m2',
+ title:'The 3-D Fermi gas',short:'3-D Fermi gas',est:'~16 min',
+ body:`
+ ${carry(
+   ['Plane waves $e^{i\\mathbf k\\cdot\\mathbf r}$; $p=\\hbar k$',
+    'Volume of a sphere $\\tfrac43\\pi k_F^3$',
+    'Counting states in a box'],
+   ['Periodic (Born–von Kármán) boundary conditions instead of hard walls',
+    'Each $k$-state occupies a volume $(2\\pi/L)^3$ in $k$-space',
+    'The Fermi sphere, and $k_F,E_F,v_F,T_F$ from the density alone'])}
+
+ ${tp('Plane waves and periodic boundary conditions')}
+ <p>For a cube of side $L$, volume $V=L^3$, with $V(\\mathbf r)=0$ inside, use <strong>periodic</strong> boundary conditions $\\psi(x+L,y,z)=\\psi(x,y,z)$ (they describe travelling electrons better than standing-wave walls). The solutions are travelling plane waves:</p>
+ $$\\psi_{\\mathbf k}(\\mathbf r)=\\frac{1}{\\sqrt V}e^{i\\mathbf k\\cdot\\mathbf r},\\qquad
+   k_x=\\frac{2\\pi n_x}{L},\\;k_y=\\frac{2\\pi n_y}{L},\\;k_z=\\frac{2\\pi n_z}{L}$$
+ <p>so each allowed $\\mathbf k$ occupies a $k$-space volume</p>
+ $$\\Omega_k=\\Big(\\frac{2\\pi}{L}\\Big)^3=\\frac{8\\pi^3}{V}$$
+ <p>with $E_{\\mathbf k}=\\dfrac{\\hbar^2k^2}{2m}$, momentum $\\hbar\\mathbf k$ and velocity $\\mathbf v=\\hbar\\mathbf k/m$.</p>
+
+ ${tp('The Fermi sphere')}
+ ${lad('Everything from the electron density n',[
+   {why:'At $T=0$ the electrons fill $k$-space out to a sphere of radius $k_F$. Count: sphere volume ÷ volume per state, times 2 for spin.',
+    m:'$$N=2\\,\\frac{\\tfrac43\\pi k_F^3}{(2\\pi/L)^3}=\\frac{V}{3\\pi^2}k_F^3$$'},
+   {why:'Solve for $k_F$ — it depends only on the density $n=N/V$.',
+    m:'$$k_F=(3\\pi^2 n)^{1/3}$$'},
+   {why:'Feed into $E=\\hbar^2k^2/2m$.',
+    m:'$$\\boxed{\\,E_F=\\frac{\\hbar^2}{2m}(3\\pi^2n)^{2/3}\\,}$$'},
+   {why:'Velocity and temperature at the Fermi surface follow immediately.',
+    m:'$$v_F=\\frac{\\hbar k_F}{m},\\qquad T_F=\\frac{E_F}{k_B}$$'}
+ ])}
+
+ ${fig('fermisea',
+   '<b>The Fermi sea, state by state.</b> Every dot is one allowed $\\mathbf k$ on the grid of spacing $2\\pi/L$; teal dots are occupied at $T=0$, faint ones empty. The boundary is the Fermi surface at $k_F=(3\\pi^2n)^{1/3}$ — set purely by the electron density. Because the grid is so fine in a real crystal ($L\\sim$ cm), the sea looks continuous, but it is a countable set of states, and that countability is what Pauli exploits.',
+   '<span><i class="fill" style="background:var(--neg)"></i>occupied</span><span><i style="border-color:var(--pos)"></i>k_F</span>')}
+
+ <p>Typical numbers for a metal: $E_F\\sim$ 2–7 eV, $v_F\\sim10^6$ m/s, $T_F\\sim10^4$–$10^5$ K. That last figure is the one to remember — it is why room temperature is “cold” for an electron gas.</p>
+
+ ${chk(
+   'Silver is FCC with $r=1.44$ Å and one free electron per atom. Outline (no arithmetic) how you get from that to $E_F$.',
+   '<p>Four steps. <strong>(1)</strong> FCC contact along the face diagonal: $4r=\\sqrt2a\\Rightarrow a=2\\sqrt2r$. <strong>(2)</strong> Cell volume $V=a^3$, and an FCC conventional cell holds 4 atoms ⇒ 4 free electrons (monovalent). <strong>(3)</strong> Density $n=4/a^3$. <strong>(4)</strong> $E_F=\\dfrac{\\hbar^2}{2m}(3\\pi^2n)^{2/3}$. Every Fermi-parameter problem in this module is that same chain: <em>structure → a → n → $k_F$ → $E_F$ → $v_F,T_F$</em>. (For silver it comes out at $n\\approx5.9\\times10^{28}$ m⁻³ and $E_F\\approx5.5$ eV.)</p>')}
+`},
+
+{id:'ss2-dos',mod:'Module II',modName:'Free Electron &amp; Band Theory',modClass:'m2',
+ title:'Density of states &amp; average energy',short:'Density of states',est:'~12 min',
+ body:`
+ ${carry(
+   ['Differentiation and definite integrals',
+    'The idea of “number per unit interval”',
+    'The 1-D result from two topics ago'],
+   ['$D(E)\\propto\\sqrt E$ in three dimensions',
+    'The compact result $D(E_F)=\\tfrac32 N/E_F$',
+    'Average energy per electron $=\\tfrac35E_F$'])}
+
+ ${tp('Deriving D(E) ∝ √E')}
+ <p>Start from the count of filled states at $T=0$ and differentiate:</p>
+ $$N=\\frac{V}{3\\pi^2}\\Big(\\frac{2mE_F}{\\hbar^2}\\Big)^{3/2}
+   \\;\\Longrightarrow\\;
+   D(E)=\\frac{dN}{dE}=\\frac{V}{2\\pi^2}\\Big(\\frac{2m}{\\hbar^2}\\Big)^{3/2}E^{1/2}$$
+ <p>A neat shortcut for the value at the Fermi level: since $N\\propto E_F^{3/2}$, logarithmic differentiation gives $dN/N=\\tfrac32\\,dE_F/E_F$, so</p>
+ $$D(E_F)=\\frac{3}{2}\\frac{N}{E_F}$$
+
+ ${fig('dos',
+   '<b>$D(E)\\propto\\sqrt E$, filled to $E_F$.</b> The curve is the real 3-D density of states; the shaded area is the occupied region at $T=0$ and its area is exactly $N$. Because $D$ <em>rises</em> with energy, most electrons sit near the top of the sea — which is why the average energy is $\\tfrac35E_F$ rather than $\\tfrac12E_F$, and why the states that matter for conduction and heat capacity are the ones at $E_F$.',
+   '<span><i style="border-color:var(--neg)"></i>D(E) ∝ √E</span><span><i class="fill" style="background:var(--neg)"></i>filled at T = 0</span>')}
+
+ ${tp('Average kinetic energy = (3/5)E_F')}
+ ${lad('The 3/5 factor',[
+   {why:'Average energy = total energy ÷ N, with the total weighted by $D(E)$.',
+    m:'$$\\bar E_0=\\frac1N\\int_0^{E_F}E\\,D(E)\\,dE$$'},
+   {why:'Insert $D(E)=A E^{1/2}$ and integrate $E^{3/2}$.',
+    m:'$$=\\frac{A}{N}\\cdot\\frac25E_F^{5/2}$$'},
+   {why:'Use $N=\\int_0^{E_F}D\\,dE=\\tfrac23AE_F^{3/2}$ to eliminate $A$ and $N$.',
+    m:'$$\\bar E_0=\\frac{\\tfrac25E_F^{5/2}}{\\tfrac23E_F^{3/2}}=\\frac35E_F$$'}
+ ])}
+ <p>So even at absolute zero the electron gas carries a large zero-point kinetic energy — the origin of its <em>degeneracy pressure</em>, $P=\\tfrac25 nE_F=\\tfrac23E/V$, and of the bulk modulus $B=\\tfrac53P=\\tfrac{10}{9}E/V$.</p>
+
+ ${chk(
+   'Why is the average energy $\\tfrac35E_F$ and not $\\tfrac12E_F$, as a naive “halfway up” guess suggests?',
+   '<p>Because the states are <strong>not uniformly distributed in energy</strong>. With $D(E)\\propto\\sqrt E$ there are more states — hence more electrons — at high energy than at low, so the distribution is top-heavy and the mean sits <em>above</em> the midpoint. Doing the weighted average $\\int E\\,D\\,dE/\\int D\\,dE$ with $D\\propto E^{1/2}$ gives $\\tfrac{2/5}{2/3}=\\tfrac35$. A flat $D(E)$ would indeed have given $\\tfrac12E_F$; in 1-D, where $D\\propto E^{-1/2}$ is bottom-heavy, the answer drops to $\\tfrac13E_F$.</p>')}
+`},
+
+{id:'ss2-fd',mod:'Module II',modName:'Free Electron &amp; Band Theory',modClass:'m2',
+ title:'Fermi–Dirac distribution &amp; C<sub>v</sub>',short:'Fermi–Dirac &amp; heat capacity',est:'~14 min',
+ body:`
+ ${carry(
+   ['Probability distributions; the Boltzmann factor $e^{-E/k_BT}$',
+    'Heat capacity as $\\partial E/\\partial T$',
+    'The Pauli exclusion principle'],
+   ['The Fermi function and its $+1$ in the denominator',
+    'Why $f(E_F)=\\tfrac12$ at every temperature',
+    'The $T/T_F$ suppression that rescues the heat capacity'])}
+
+ ${tp('The Fermi function')}
+ $$f(E)=\\frac{1}{\\exp\\!\\big(\\frac{E-E_F}{k_BT}\\big)+1}$$
+ <ul>
+   <li><strong>At $T=0$:</strong> a perfect step — $f=1$ below $E_{F0}$, $f=0$ above.</li>
+   <li><strong>At $T>0$:</strong> the step softens over a width $\\sim k_BT$, and $f(E_F)=\\tfrac12$ <em>always</em>.</li>
+   <li>$E_F$ itself drifts only weakly: $E_F(T)\\approx E_{F0}\\Big[1-\\frac{\\pi^2}{12}\\big(\\frac{k_BT}{E_{F0}}\\big)^2\\Big]$.</li>
+ </ul>
+
+ ${fig('fermi',
+   '<b>The step and how it softens.</b> Curves are the exact Fermi function at four temperatures. Notice how little changes: even at high $T$ only a sliver of width $\\sim k_BT$ around $E_F$ is disturbed, and all four curves cross at $f=\\tfrac12$ exactly at $E_F$. Deep states stay frozen at $f=1$ because Pauli offers them nowhere to go.',
+   '<span><i style="border-color:var(--ink)"></i>T = 0</span><span><i style="border-color:var(--pos)"></i>low T</span><span><i style="border-color:var(--prob)"></i>high T</span>')}
+
+ ${tp('Why the electronic heat capacity is tiny — and linear')}
+ ${lad('The T/T_F suppression',[
+   {why:'Only electrons within $\\sim k_BT$ of $E_F$ have empty states to move into.',
+    m:'$$N_{\\text{eff}}\\approx N\\frac{k_BT}{E_F}=N\\frac{T}{T_F}$$'},
+   {why:'Each of those gains about $k_BT$ of thermal energy.',
+    m:'$$E_{\\text{thermal}}\\approx N_{\\text{eff}}k_BT\\approx Nk_B\\frac{T^2}{T_F}$$'},
+   {why:'Differentiate with respect to $T$.',
+    m:'$$C_v=\\frac{\\partial E_{\\text{thermal}}}{\\partial T}\\approx\\frac32Nk_B\\Big(\\frac{T}{T_F}\\Big)$$'},
+   {why:'With $T_F\\sim10^4$–$10^5$ K, at $T=300$ K the factor $T/T_F\\sim0.01$.',
+    m:'$$C_v\\sim1\\%\\text{ of the classical }\\tfrac32Nk_B,\\quad\\text{and }C_v\\propto T\\;\\checkmark$$'}
+ ])}
+
+ ${fig('cv',
+   '<b>Two predictions, one measurement.</b> The flat grey line is the classical equipartition value $(3/2)R$ — temperature-independent and far too big. The teal line is the quantum result $C_v\\propto T$, magnified ×100 here just to be visible on the same axis. Experiment follows the teal line: small, and linear in $T$.',
+   '<span><i class="dash" style="border-color:var(--ink)"></i>classical (3/2)R</span><span><i style="border-color:var(--neg)"></i>quantum ∝ T</span>')}
+
+ ${chk(
+   'At $T=300$ K with $T_F=5\\times10^4$ K, estimate the molar electronic heat capacity, and compare it with the lattice value $3R$.',
+   '<p>$C_v\\approx\\tfrac32R\\,(T/T_F)=\\tfrac32(8.314)(300/5\\times10^4)\\approx\\tfrac32(8.314)(6\\times10^{-3})\\approx0.075\\;$J mol⁻¹K⁻¹.</p><p>The Dulong–Petit lattice contribution is $3R\\approx24.9$ J mol⁻¹K⁻¹ — roughly <strong>330 times larger</strong>. This is why the electronic term is invisible at room temperature and only emerges at low $T$, where the lattice term dies as $T^3$ while the electronic term dies only as $T$; plotting $C_v/T$ against $T^2$ then separates them as a straight line $C_v/T=\\gamma+AT^2$.</p>')}
+`},
+
+{id:'ss2-gap',mod:'Module II',modName:'Free Electron &amp; Band Theory',modClass:'m2',
+ title:'Why bands exist',short:'Origin of band gaps',est:'~12 min',
+ body:`
+ ${carry(
+   ['Conductors, semiconductors and insulators have different band pictures',
+    'Standing waves from counter-propagating travelling waves',
+    'Bragg reflection from a periodic array'],
+   ['The precise assumption of the free-electron model that fails',
+    'Periodic potential $V(x)=V(x+a)$ as the fix',
+    'Gaps opening exactly at $k=\\pm n\\pi/a$'])}
+
+ ${tp('What the free-electron model cannot do')}
+ <p>Three things it simply cannot explain:</p>
+ <ol>
+   <li>Why solids divide into conductors, semiconductors and insulators at all.</li>
+   <li>The sign and magnitude of the Hall coefficient (positive carriers!).</li>
+   <li>The temperature dependence of semiconductor resistivity.</li>
+ </ol>
+ <p>The culprit is the assumption of a <strong>constant</strong> potential inside the metal. Real conduction electrons move through a periodic array of positive ion cores, so the one-electron potential must satisfy</p>
+ $$V(x)=V(x+a)$$
+
+ ${tp('Bragg reflection opens the gap')}
+ <p>Periodicity has three consequences: the energy continuum splits into allowed <strong>bands</strong> separated by forbidden gaps; $E(\\mathbf k)$ becomes periodic in reciprocal space; and the gaps appear exactly at the Brillouin zone boundaries.</p>
+ <p>Why there? Because at those $k$ the electron wave Bragg-reflects off the lattice:</p>
+ $$k=\\frac{2\\pi}{\\lambda}=\\frac{n\\pi}{a}\\;\\Longleftrightarrow\\;n\\lambda=2a$$
+ <p>Forward and reflected waves have equal amplitude and superpose into <strong>standing waves</strong>, which cannot propagate. The two standing waves you can build — $\\psi_+\\propto\\cos(\\pi x/a)$, piling charge <em>on</em> the ion cores, and $\\psi_-\\propto\\sin(\\pi x/a)$, piling it <em>between</em> them — sample the potential differently, so they have different energies. The difference is the gap.</p>
+
+ <div class="note key"><div class="nh">the one-sentence version</div>A gap is the energy difference between the two standing waves that Bragg reflection forces at a zone boundary: one sits on the attractive ion cores (lower energy), the other sits between them (higher energy), and no state exists in between.</div>
+
+ ${chk(
+   'Predict what happens to the band gaps if the periodic potential is switched off ($V\\to0$), and connect it to a picture you have already seen.',
+   '<p>The gaps close and $E(k)$ collapses back to the free-electron parabola $E=\\hbar^2k^2/2m$. With no potential there is nothing to Bragg-reflect from, so no standing waves are forced at $k=\\pm n\\pi/a$, so the two standing-wave energies become degenerate and the discontinuity vanishes. You will see this explicitly in the Kronig–Penney limit $P\\to0$, where the condition reduces to $\\cos(\\alpha a)=\\cos(ka)\\Rightarrow\\alpha=k$ and the spectrum is continuous again. The opposite limit $P\\to\\infty$ shrinks the bands to isolated atomic levels.</p>')}
+`},
+
+{id:'ss2-bloch',mod:'Module II',modName:'Free Electron &amp; Band Theory',modClass:'m2',
+ title:'Bloch\'s theorem',short:'Bloch\'s theorem',est:'~16 min',
+ body:`
+ ${carry(
+   ['Second-order linear ODEs have two independent solutions',
+    'Determinant condition for non-trivial solutions',
+    'Complex numbers of unit modulus, $e^{i\\theta}$'],
+   ['The form a wavefunction <em>must</em> take in a periodic potential',
+    'The Wronskian argument that fixes the determinant to 1',
+    'Bounded vs unbounded roots ⇒ allowed vs forbidden bands'])}
+
+ ${tp('Statement')}
+ <p>For $V(x)=V(x+a)$, the solutions of</p>
+ $$\\frac{d^2\\psi}{dx^2}+\\frac{2m}{\\hbar^2}\\big(E-V(x)\\big)\\psi=0$$
+ <p>are plane waves <em>modulated by the lattice periodicity</em>:</p>
+ $$\\psi(x)=e^{\\pm ikx}u_k(x),\\qquad u_k(x)=u_k(x+a)$$
+ <p>and in three dimensions $\\psi_{\\mathbf k}(\\mathbf r)=e^{i\\mathbf k\\cdot\\mathbf r}u_{\\mathbf k}(\\mathbf r)$ with $u_{\\mathbf k}(\\mathbf r+\\mathbf R)=u_{\\mathbf k}(\\mathbf r)$.</p>
+
+ ${tp('Proof')}
+ ${lad('From two solutions to e^{ika}',[
+   {why:'Let $f,g$ be two real independent solutions. Because $V(x+a)=V(x)$, the shifted functions solve the same equation and must be combinations of $f,g$.',
+    m:'$$f(x+a)=\\alpha_1f+\\alpha_2g,\\qquad g(x+a)=\\beta_1f+\\beta_2g$$'},
+   {why:'Demand that the general solution merely picks up a factor under translation: $\\psi(x+a)=\\lambda\\psi(x)$.',
+    m:'$$A\\alpha_1+B\\beta_1=\\lambda A,\\qquad A\\alpha_2+B\\beta_2=\\lambda B$$'},
+   {why:'Non-trivial $A,B$ require a vanishing determinant.',
+    m:'$$\\lambda^2-(\\alpha_1+\\beta_2)\\lambda+(\\alpha_1\\beta_2-\\alpha_2\\beta_1)=0$$'},
+   {why:'Evaluate the constant term. The Wronskian $W=fg\'-gf\'$ has $dW/dx=0$, so it is the same at $x$ and $x+a$.',
+    m:'$$W(x+a)=(\\alpha_1\\beta_2-\\alpha_2\\beta_1)W(x)\\;\\Rightarrow\\;\\alpha_1\\beta_2-\\alpha_2\\beta_1=1$$'},
+   {why:'The characteristic equation collapses to a reciprocal pair of roots.',
+    m:'$$\\lambda^2-(\\alpha_1+\\beta_2)\\lambda+1=0,\\qquad \\lambda_1\\lambda_2=1$$'}
+ ])}
+
+ ${tp('Allowed vs forbidden, from the roots')}
+ <ul>
+   <li><strong>Case I — $(\\alpha_1+\\beta_2)^2<4$:</strong> the roots are complex conjugates of unit modulus, $\\lambda=e^{\\pm ika}$ with real $k$. Then $\\psi(x+a)=e^{\\pm ika}\\psi(x)$, which is exactly $\\psi=e^{\\pm ikx}u_k(x)$ with $u_k$ periodic. Since $|\\lambda|=1$ the wave stays <strong>bounded</strong> — these are the <strong>allowed bands</strong>.</li>
+   <li><strong>Case II — $(\\alpha_1+\\beta_2)^2>4$:</strong> the roots are real, $\\lambda=e^{\\pm\\mu a}$, giving $\\psi\\sim e^{\\pm\\mu x}u(x)$, which blows up at $+\\infty$ or $-\\infty$. Not normalizable, physically unacceptable — these are the <strong>forbidden gaps</strong>.</li>
+ </ul>
+
+ ${chk(
+   'What does Bloch\'s theorem say about an electron in a <em>perfect</em> crystal, and why does that resolve the classical mean-free-path failure?',
+   '<p>It says the stationary states of a perfect periodic lattice are $\\psi=e^{ikx}u_k(x)$ — <strong>extended, non-decaying travelling waves</strong>. An electron in such a state propagates through the crystal <em>without scattering at all</em>: a perfectly periodic array does not resist an electron wave, any more than a perfect crystal scatters an X-ray away from its Bragg directions. So the mean free path is limited only by <em>departures</em> from periodicity — thermal vibrations (phonons), impurities and defects. That is why cooling a pure metal lets the mean free path grow to $10^8$–$10^9$ atomic spacings, the fourth failure of the classical model.</p>')}
+`},
+
+{id:'ss2-kp',mod:'Module II',modName:'Free Electron &amp; Band Theory',modClass:'m2',
+ title:'The Kronig–Penney model',short:'Kronig–Penney',est:'~16 min',
+ body:`
+ ${carry(
+   ['Rectangular wells and barriers; matching $\\psi$ and $\\psi\'$',
+    'Real vs imaginary wavenumbers for $E$ below a barrier',
+    '$\\cos$ is bounded by $\\pm1$'],
+   ['A solvable periodic potential that produces real bands',
+    'The dimensionless barrier strength $P$',
+    'How the band/gap structure follows from one bounded function'])}
+
+ ${tp('Setting it up')}
+ <p>Approximate the lattice as a periodic array of wells and barriers of period $(a+b)$:</p>
+ $$V(x)=\\begin{cases}0,&0&lt;x&lt;a\\ \\ (\\text{well})\\\\ V_0,&-b&lt;x&lt;0\\ \\ (\\text{barrier})\\end{cases}$$
+ <p>For $E&lt;V_0$ define $\\alpha^2=\\dfrac{2mE}{\\hbar^2}$ and $\\beta^2=\\dfrac{2m(V_0-E)}{\\hbar^2}$. Write Bloch solutions $\\psi=e^{ikx}u_k(x)$ in each region, then impose continuity of $u$ and $u\'$ at $x=0$ and periodic matching between $x=a$ and $x=-b$. Setting the $4\\times4$ coefficient determinant to zero gives</p>
+ $$\\frac{\\beta^2-\\alpha^2}{2\\alpha\\beta}\\sinh(\\beta b)\\sin(\\alpha a)+\\cosh(\\beta b)\\cos(\\alpha a)=\\cos\\big[k(a+b)\\big]$$
+
+ ${tp('The delta-barrier limit')}
+ <p>Let $V_0\\to\\infty$, $b\\to0$ with $V_0b$ finite. Then $\\sinh(\\beta b)\\to\\beta b$, $\\cosh(\\beta b)\\to1$, and the whole thing collapses to the famous form</p>
+ $$\\boxed{\\;P\\,\\frac{\\sin(\\alpha a)}{\\alpha a}+\\cos(\\alpha a)=\\cos(ka)\\;}
+   \\qquad P=\\frac{mV_0ba}{\\hbar^2}$$
+ <p>$P$ is the dimensionless barrier strength — how strongly the lattice grips the electron.</p>
+
+ ${tp('Reading the bands off the graph')}
+ <p>The right-hand side is a cosine, so it can only lie in $[-1,1]$. Real $k$ therefore exists <em>only</em> where</p>
+ $$-1\\le P\\frac{\\sin(\\alpha a)}{\\alpha a}+\\cos(\\alpha a)\\le1$$
+
+ ${fig('kp',
+   '<b>The whole band structure in one curve.</b> The indigo line is the actual left-hand side of the Kronig–Penney condition. Where it lies inside the shaded $\\pm1$ corridor, a real $k$ exists and the energy is <em>allowed</em> — those ranges are marked as copper bars along the bottom. Where the curve escapes the corridor, no real $k$ exists: a <em>forbidden gap</em>. Notice the bars get wider and the gaps narrower as $\\alpha a$ grows, because the $1/\\alpha a$ prefactor damps the oscillation.',
+   '<span><i style="border-color:var(--prob)"></i>P sin(αa)/αa + cos(αa)</span><span><i class="fill" style="background:var(--pos)"></i>allowed bands</span><span><i class="dash" style="border-color:var(--wall)"></i>±1 limit</span>')}
+
+ ${tp('The four consequences')}
+ <ol>
+   <li><strong>Band structure:</strong> alternating allowed bands and forbidden gaps.</li>
+   <li><strong>Band widths:</strong> as $E$ (hence $\\alpha a$) rises, the amplitude of $P\\sin(\\alpha a)/\\alpha a$ falls, so bands broaden and gaps narrow.</li>
+   <li><strong>$P\\to\\infty$ (isolated atoms):</strong> requires $\\sin(\\alpha a)=0\\Rightarrow\\alpha a=n\\pi$, giving discrete levels $E_n=\\dfrac{n^2h^2}{8ma^2}$ — bands shrink to atomic lines.</li>
+   <li><strong>$P\\to0$ (free electrons):</strong> $\\cos(\\alpha a)=\\cos(ka)\\Rightarrow\\alpha=k$, so $E=\\hbar^2k^2/2m$ — gaps vanish, parabola restored.</li>
+ </ol>
+
+ ${chk(
+   'In the Kronig–Penney graph, why do the forbidden gaps get narrower at higher energy?',
+   '<p>Because the term carrying the lattice\'s influence is $P\\dfrac{\\sin(\\alpha a)}{\\alpha a}$, and its amplitude decays like $1/\\alpha a$. At high energy $\\alpha a$ is large, so that term shrinks and the left-hand side is dominated by $\\cos(\\alpha a)$, which already lives inside $[-1,1]$. The curve therefore spends more of its time inside the corridor (wider allowed bands) and pokes out of it less far and less often (narrower gaps). Physically: a fast electron spends little time near each ion core, so the periodic potential perturbs it less — at high enough energy it behaves almost freely.</p>')}
+`},
+
+{id:'ss2-zones',mod:'Module II',modName:'Free Electron &amp; Band Theory',modClass:'m2',
+ title:'E–k schemes &amp; band capacity',short:'E–k schemes &amp; capacity',est:'~12 min',
+ body:`
+ ${carry(
+   ['Periodic functions and period $2\\pi$',
+    'Counting allowed $k$ under periodic boundary conditions',
+    'Two electrons per orbital state'],
+   ['Three equivalent ways to draw the same $E(k)$',
+    'One band holds exactly $2N$ electrons',
+    'Why that number decides metal vs insulator'])}
+
+ ${tp('The three zone schemes')}
+ <p>Because $\\cos(ka)=\\cos[(k+2\\pi n/a)a]$, the energy is periodic in $k$ with period $2\\pi/a$. Three conventional pictures of the same information:</p>
+ <ol>
+   <li><strong>Periodic (repeated) zone:</strong> $E(k)$ redrawn in every zone.</li>
+   <li><strong>Extended zone:</strong> the $n$-th band drawn in the $n$-th zone, $\\dfrac{(n-1)\\pi}{a}<|k|\\le\\dfrac{n\\pi}{a}$, with a discontinuity at every boundary.</li>
+   <li><strong>Reduced zone:</strong> every band translated by a $\\mathbf G$ back into the first zone, $-\\pi/a\\le k\\le\\pi/a$.</li>
+ </ol>
+
+ ${fig('bands',
+   '<b>Extended-zone picture, gaps and all.</b> The dashed grey curve is the free-electron parabola for reference; the coloured branches are the first three bands, each confined to its own zone. Crimson bars at $k=\\pm\\pi/a$ and $\\pm2\\pi/a$ mark the energy discontinuities $E_g$ that Bragg reflection opens. Slide each branch back by a reciprocal lattice vector and you have the reduced-zone scheme.',
+   '<span><i class="dash" style="border-color:var(--ink)"></i>free electron</span><span><i style="border-color:var(--pos)"></i>band 1</span><span><i style="border-color:var(--neg)"></i>band 2</span><span><i class="fill" style="background:var(--wall)"></i>E_g</span>')}
+
+ ${tp('How many electrons fit in one band')}
+ ${lad('The 2N result',[
+   {why:'Periodic boundary conditions on a crystal of length $L=Na$ quantise $k$.',
+    m:'$$e^{ikL}=1\\;\\Rightarrow\\;k=\\frac{2\\pi n}{L},\\qquad dn=\\frac{L}{2\\pi}dk$$'},
+   {why:'The first zone spans a total width $\\Delta k=2\\pi/a$. Count the states in it.',
+    m:'$$N_{\\text{states}}=\\frac{L}{2\\pi}\\cdot\\frac{2\\pi}{a}=\\frac La=N$$'},
+   {why:'So one band has exactly as many orbital states as there are primitive cells. Add spin.',
+    m:'$$N_{\\max}=2N\\ \\text{electrons per band}$$'}
+ ])}
+ <p>This is the counting rule that decides everything: an element with one valence electron per atom half-fills its band (a metal); two electrons per atom exactly fill it (an insulator — unless bands overlap).</p>
+
+ ${chk(
+   'Divalent magnesium supplies $2N$ electrons, exactly enough to fill one band. Why is Mg nevertheless a good metal?',
+   '<p>Because bands <strong>overlap</strong> in three dimensions. The $2N$ counting rule is exact, but it only makes an insulator if the filled band is separated from the next one by a real gap <em>at every point of the Brillouin zone</em>. In Mg the top of the lower band (in some directions of $\\mathbf k$) lies <em>above</em> the bottom of the next band (in other directions), so instead of one full band and one empty one you get two <em>partly</em> filled bands. Partly filled means empty states sit immediately above occupied ones at $E_F$, so electrons accelerate freely under a field. This is the standard explanation for why the divalent alkaline earths are metals rather than insulators.</p>')}
+`},
+
+{id:'ss2-dynamics',mod:'Module II',modName:'Free Electron &amp; Band Theory',modClass:'m2',
+ title:'Velocity, effective mass &amp; holes',short:'Electron dynamics',est:'~16 min',
+ body:`
+ ${carry(
+   ['Group velocity $v_g=d\\omega/dk$ from wave packets',
+    'Newton\'s second law $F=ma$',
+    'Curvature = second derivative'],
+   ['$v=\\hbar^{-1}dE/dk$ — velocity from the band slope',
+    'Effective mass $m^*=\\hbar^2/(d^2E/dk^2)$, which can be <em>negative</em>',
+    'Holes: why a missing electron behaves like a positive particle'])}
+
+ ${tp('Group velocity')}
+ <p>An electron in state $k$ is a wave packet moving at</p>
+ $$v=v_g=\\frac{d\\omega}{dk}=\\frac{1}{\\hbar}\\frac{dE}{dk}$$
+ <ul>
+   <li>Free electron $E=\\hbar^2k^2/2m$: $v=\\hbar k/m\\propto k$, as expected.</li>
+   <li>In a band: at $k=0$ and at the zone boundary $k=\\pm\\pi/a$ the slope vanishes, so $v=0$ — the standing waves again.</li>
+   <li>$v$ is <em>largest at the inflection point</em>, where $d^2E/dk^2=0$.</li>
+ </ul>
+
+ ${tp('Effective mass')}
+ ${lad('Deriving m*',[
+   {why:'Work done by a field $\\mathcal E$ in time $dt$, using $v=\\hbar^{-1}dE/dk$.',
+    m:'$$dE=e\\mathcal E v\\,dt=\\frac{e\\mathcal E}{\\hbar}\\frac{dE}{dk}dt$$'},
+   {why:'But $dE=(dE/dk)\\,dk$, so the crystal momentum obeys a Newton-like law.',
+    m:'$$\\hbar\\frac{dk}{dt}=e\\mathcal E=F_{\\text{ext}}$$'},
+   {why:'Differentiate the velocity to get the acceleration.',
+    m:'$$a=\\frac{dv}{dt}=\\frac1\\hbar\\frac{d^2E}{dk^2}\\frac{dk}{dt}=\\frac{e\\mathcal E}{\\hbar^2}\\frac{d^2E}{dk^2}$$'},
+   {why:'Compare with $a=F/m^*$ and read off the mass.',
+    m:'$$\\boxed{\\,m^{*}=\\frac{\\hbar^{2}}{d^{2}E/dk^{2}}\\,}$$'}
+ ])}
+
+ ${fig('effmass',
+   '<b>One band, three derived curves.</b> Top: a cosine band $E(k)$. Middle: its slope, giving $v=\\hbar^{-1}dE/dk$ — zero at $k=0$ and at the zone edge, maximum at the inflection. Bottom: the curvature $d^2E/dk^2\\propto1/m^{*}$ — <em>positive</em> in the lower half of the band, passing through zero at the inflection (where $m^{*}\\to\\pm\\infty$), and <em>negative</em> in the upper half. All three panels are the same function differentiated, so read them together.',
+   '<span><i style="border-color:var(--pos)"></i>E(k)</span><span><i style="border-color:var(--neg)"></i>v(k)</span><span><i style="border-color:var(--prob)"></i>1/m*</span>')}
+
+ <ul>
+   <li><strong>Lower half of band</strong> ($d^2E/dk^2>0$): $m^{*}>0$, the electron accelerates along the force.</li>
+   <li><strong>Inflection point:</strong> $m^{*}\\to\\pm\\infty$ — the field cannot change the velocity.</li>
+   <li><strong>Upper half</strong> ($d^2E/dk^2<0$): $m^{*}<0$. The electron <em>decelerates</em> under an accelerating field, because it is handing momentum to the lattice through Bragg reflection.</li>
+ </ul>
+
+ ${tp('Holes')}
+ <p>A nearly full band with a vacancy near the top is far easier to describe by tracking the <em>vacancy</em>. Because the missing electron sits where $m^{*}_e<0$, the hole has</p>
+ $$m^{*}_h=-m^{*}_e>0,\\qquad \\mathbf k_h=-\\mathbf k_e,\\qquad \\mathbf v_h=\\mathbf v_e$$
+ <p>i.e. a positive charge $+e$ with a positive mass — a genuine quasiparticle, and the reason the Hall coefficient can come out positive.</p>
+
+ ${chk(
+   'How can an electron have negative effective mass without violating Newton\'s laws?',
+   '<p>Nothing is violated, because $m^{*}$ is not the electron\'s real inertial mass — it is a bookkeeping device that hides the lattice force. The electron actually feels <em>two</em> forces: the applied $e\\mathcal E$ and the periodic lattice potential. Writing $a=F_{\\text{ext}}/m^{*}$ pretends only the external force acts, and buries everything the lattice does inside $m^{*}$. Near the top of a band the lattice force (Bragg reflection, which returns momentum to the crystal) exceeds the applied force, so the net acceleration opposes $\\mathcal E$ — and the bookkeeping registers that as $m^{*}<0$. Total momentum, electron plus lattice, is conserved throughout.</p>')}
+`},
+
+{id:'ss2-classify',mod:'Module II',modName:'Free Electron &amp; Band Theory',modClass:'m2',
+ title:'Metals, semiconductors, insulators',short:'Classifying solids',est:'~12 min',
+ body:`
+ ${carry(
+   ['Band diagrams of conductors, semiconductors and insulators',
+    'Intrinsic conduction rises with temperature',
+    'Typical gap $\\approx1.1$ eV for Si, $0.7$ eV for Ge'],
+   ['The proof that a <em>full</em> band carries no current',
+    'Why metal conductivity <em>falls</em> with temperature but semiconductor conductivity rises',
+    'Semimetals and band overlap'])}
+
+ ${tp('A filled band carries no current')}
+ <p>Define an effective carrier count for a band filled to $k_1$, weighting each state by $m/m^{*}$:</p>
+ $$N_{\\text{eff}}=\\frac{2Lm}{\\pi\\hbar^2}\\int_0^{k_1}\\frac{d^2E}{dk^2}\\,dk
+   =\\frac{2Lm}{\\pi\\hbar^2}\\left.\\frac{dE}{dk}\\right|_{k_1}$$
+ <p>For a <strong>completely filled</strong> band, $k_1=\\pi/a$, where the slope vanishes:</p>
+ $$\\left.\\frac{dE}{dk}\\right|_{\\pi/a}=0\\;\\Longrightarrow\\;N_{\\text{eff}}=0$$
+ <p>A full band contributes exactly zero current, however strong the field. Conduction requires a <em>partly</em> filled band — that is the whole classification in one line.</p>
+
+ ${fig('classify',
+   '<b>The three cases side by side.</b> Teal = filled valence band, outlined = empty conduction band. A metal has no gap at $E_F$ (or overlapping bands), so empty states sit immediately above filled ones. A semiconductor has a narrow gap ($\\sim1$ eV) that thermal energy can bridge. An insulator\'s gap ($\\gtrsim5$ eV) is far beyond $k_BT\\approx0.026$ eV at room temperature.',
+   '<span><i class="fill" style="background:var(--neg)"></i>filled valence band</span><span><i class="dash" style="border-color:var(--wall)"></i>E_g</span>')}
+
+ ${tp('The three cases')}
+ <ol>
+   <li><strong>Insulators:</strong> full valence band, empty conduction band, wide gap $E_g\\gtrsim5$–6 eV (diamond). Thermal energy cannot promote electrons; conductivity is essentially zero.</li>
+   <li><strong>Semiconductors:</strong> same structure, narrow gap $E_g\\sim1$ eV (Si $\\approx1.1$, Ge $\\approx0.7$ eV). At $T=0$ they <em>are</em> insulators. At $T>0$ thermal excitation creates electron–hole pairs and
+     $$\\sigma_{\\text{semi}}\\propto e^{-E_g/2k_BT}$$ — conductivity rises steeply with temperature.</li>
+   <li><strong>Metals:</strong> a partly filled band (alkali metals: one electron per atom in a $2N$ band) or overlapping bands (alkaline earths). Empty states adjoin $E_F$, so conduction is easy; but more phonons at higher $T$ scatter the electrons more, so
+     $$\\sigma_{\\text{metal}}\\propto\\frac1T$$</li>
+ </ol>
+
+ ${chk(
+   'Metallic conductivity falls with temperature while semiconductor conductivity rises. Explain both with one sentence each.',
+   '<p><strong>Metal:</strong> the number of carriers is fixed (the band is already partly filled and $E_F$ barely moves), so raising $T$ only adds lattice vibrations that scatter the electrons more strongly — the mean free path and hence mobility drop, giving $\\sigma\\propto1/T$.</p><p><strong>Semiconductor:</strong> the number of carriers is what changes — raising $T$ promotes exponentially more electrons across the gap, $n\\propto e^{-E_g/2k_BT}$, and that exponential gain swamps the modest mobility loss from extra phonon scattering, so $\\sigma$ rises steeply.</p><p>Carrier <em>mobility</em> falls with $T$ in both; the difference is entirely whether carrier <em>number</em> is fixed or thermally activated.</p>')}
+`},
+
+/* ═══════════════════ MODULE II · PROBLEM SET ═══════════════════ */
+{id:'ss2-problems',mod:'Module II',modName:'Free Electron &amp; Band Theory',modClass:'m2',
+ title:'Worked problems — Module II',short:'Problems II',est:'~45 min',
+ body:`
+ <p class="lead">Same drill: <span style="color:var(--neg)">theory ready</span> → <span style="color:var(--pos)">solution</span> → <span style="color:var(--neg)">practice twin</span>. Nearly every Fermi-parameter question is the same chain — <em>structure → a → n → k<sub>F</sub> → E<sub>F</sub></em> — so drill that path until it is automatic.</p>
+
+ ${tp('Fermi parameters')}
+ ${prob('5.1','1-D metallic line: Fermi energy',
+   pth('<p>$E_n=\\dfrac{h^2n^2}{8mL^2}$; two electrons per level ⇒ $n_F=N/2$, so $E_F=\\dfrac{h^2}{32m}\\Big(\\dfrac NL\\Big)^2$.</p>')+
+   psol('<p>With $N/L=5\\times10^7$ cm⁻¹, $m=9.11\\times10^{-28}$ g, $h=6.626\\times10^{-27}$ erg·s:</p><p>$$E_F=\\frac{(6.626\\times10^{-27})^2}{32(9.11\\times10^{-28})}(5\\times10^7)^2\\approx3.77\\times10^{-12}\\text{ erg}$$</p><p>Dividing by $1.602\\times10^{-12}$ erg/eV gives $E_F\\approx2.35$ eV.</p>')+
+   prac('<p>A 1-D polymer chain of length $2.0\\ \\mu$m holds $8\\times10^3$ conduction electrons. Find $n_F$, $k_F$ and $E_F$ in eV.</p>'))}
+
+ ${prob('5.2','Sodium (BCC): Fermi energy from the atomic radius',
+   pth('<p>BCC contact: $\\sqrt3a=4r$. Conventional BCC cell holds 2 atoms ⇒ 2 electrons if monovalent. Then $E_F=\\dfrac{\\hbar^2}{2m}(3\\pi^2n)^{2/3}$.</p>')+
+   psol('<p>$a=4r/\\sqrt3=4(1.86\\times10^{-10})/\\sqrt3=4.295\\times10^{-10}$ m ⇒ $V=a^3=7.93\\times10^{-29}$ m³.</p><p>$n=2/V=2.52\\times10^{28}$ m⁻³.</p><p>$3\\pi^2n=7.46\\times10^{29}$; $(3\\pi^2n)^{2/3}=8.225\\times10^{19}$ m⁻².</p><p>$E_F=\\dfrac{(1.054\\times10^{-34})^2}{2(9.11\\times10^{-31})}(8.225\\times10^{19})\\approx4.98\\times10^{-19}$ J $\\approx3.11$ eV.</p>')+
+   prac('<p>Lithium is BCC with $r=1.52$ Å, one electron per atom. Find the cell volume, $n$, and $E_{F0}$ in eV.</p>'))}
+
+ ${prob('5.3','Metal with n = 10²⁸ m⁻³',
+   pth('<p>Straight substitution into $E_{F0}=\\dfrac{\\hbar^2}{2m}(3\\pi^2n)^{2/3}$.</p>')+
+   psol('<p>$3\\pi^2n=2.961\\times10^{29}$ ⇒ $(3\\pi^2n)^{2/3}=4.442\\times10^{19}$ m⁻².</p><p>$E_{F0}=\\dfrac{(1.054\\times10^{-34})^2}{2(9.11\\times10^{-31})}(4.442\\times10^{19})\\approx2.71\\times10^{-19}$ J $\\approx1.69$ eV.</p>')+
+   prac('<p>A divalent alloy has $n=4.5\\times10^{28}$ m⁻³. Find $k_F$ and $E_F$ in joules and eV.</p>'))}
+
+ ${prob('5.4','Silver (FCC): E_F, T_F and v_F',
+   pth('<p>FCC: $4r=\\sqrt2a$, 4 atoms per cell. Then $k_F=(3\\pi^2n)^{1/3}$, $E_F=\\hbar^2k_F^2/2m$, $T_F=E_F/k_B$, $v_F=\\hbar k_F/m$.</p>')+
+   psol('<p>$a=2\\sqrt2(1.44\\times10^{-10})=4.073\\times10^{-10}$ m ⇒ $V=6.757\\times10^{-29}$ m³; $n=4/V=5.92\\times10^{28}$ m⁻³.</p><p>$k_F=(3\\pi^2n)^{1/3}\\approx1.206\\times10^{10}$ m⁻¹.</p><p>$E_F=\\dfrac{\\hbar^2k_F^2}{2m}\\approx8.87\\times10^{-19}$ J $\\approx5.50$ eV.</p><p>$T_F=E_F/k_B\\approx6.4\\times10^{4}$ K; $v_F=\\hbar k_F/m\\approx1.39\\times10^{6}$ m/s.</p>')+
+   prac('<p>Gold (FCC, monovalent) has $r=1.442$ Å. Find $n$, $E_F$ (eV), $T_F$ and $v_F$.</p>'))}
+
+ ${prob('5.5','Aluminium: E_F and ground-state energy density',
+   pth('<p>FCC, 4 atoms/cell, 1 electron each. Average energy per electron at $T=0$ is $\\bar E_0=\\tfrac35E_F$, so $u_0=\\tfrac35nE_F$.</p>')+
+   psol('<p>$a=4$ Å ⇒ $V=6.4\\times10^{-29}$ m³; $n=4/V=6.25\\times10^{28}$ m⁻³.</p><p>$k_F=(3\\pi^2n)^{1/3}\\approx7.73\\times10^{9}$ m⁻¹; $E_F\\approx3.65\\times10^{-19}$ J $\\approx2.28$ eV.</p><p>$u_0=\\tfrac35nE_F=\\tfrac35(6.25\\times10^{28})(2.28)\\approx2.14\\times10^{28}$ eV/m³.</p>')+
+   prac('<p>Copper is FCC with $a=3.61$ Å, one electron per atom. Find $n$, $k_F$, $E_F$ (eV) and $u_0$ in J/m³ and eV/m³.</p>'))}
+
+ ${tp('Degeneracy pressure &amp; heat capacity')}
+ ${prob('5.6','Equation of state and bulk modulus of the electron gas',
+   pth('<p>$P=-\\partial E/\\partial V$ at $T=0$ with $E=\\tfrac35NE_{F0}$ and $E_{F0}\\propto V^{-2/3}$; $B=-V\\,\\partial P/\\partial V$.</p>')+
+   psol('<p>$\\dfrac{\\partial E_{F0}}{\\partial V}=-\\dfrac23\\dfrac{E_{F0}}{V}$, so $$P=-\\frac35N\\Big(-\\frac23\\frac{E_{F0}}{V}\\Big)=\\frac25\\frac{NE_{F0}}{V}=\\frac23\\frac EV$$</p><p>Since $P\\propto V^{-5/3}$, $\\partial P/\\partial V=-\\tfrac53P/V$, giving $$B=\\frac53P=\\frac{10}{9}\\frac EV=\\frac23nE_{F0}$$</p>')+
+   prac('<p>For a 2-D electron gas of area $A$, show $E_0=\\tfrac12NE_F$, then derive the spreading pressure $\\Pi=-\\partial E_0/\\partial A$ and the area modulus $B_{2D}$.</p>'))}
+
+ ${prob('5.7','Potassium: Fermi energy and compressibility',
+   pth('<p>$n=\\rho/M_{\\text{atom}}$ for one electron per atom; then $E_{F0}$, and $B=\\tfrac23nE_{F0}$ with $K=1/B$.</p>')+
+   psol('<p>$M=39.1(1.66\\times10^{-27})=6.49\\times10^{-26}$ kg ⇒ $n=860/6.49\\times10^{-26}=1.325\\times10^{28}$ m⁻³.</p><p>$(3\\pi^2n)^{2/3}=5.358\\times10^{19}$ ⇒ $E_{F0}\\approx3.27\\times10^{-19}$ J $\\approx2.04$ eV.</p><p>$B=\\tfrac23nE_{F0}\\approx2.89\\times10^{9}$ N/m²; $K=1/B\\approx3.5\\times10^{-10}$ m²/N.</p>')+
+   prac('<p>Rubidium: $\\rho=1532$ kg/m³, $M=85.47$ amu, one electron per atom. Find $n$, $E_{F0}$ (eV), the degeneracy pressure $P$ and $B$.</p>'))}
+
+ ${prob('5.8','Electronic specific heat estimate',
+   pth('<p>$C_v\\approx\\tfrac32R\\,(T/T_F)$ per mole.</p>')+
+   psol('<p>$T/T_F=100/(5\\times10^4)=2\\times10^{-3}$.</p><p>$C_v\\approx\\tfrac32(8.314)(2\\times10^{-3})\\approx0.025$ J mol⁻¹K⁻¹ — about a thousandth of $3R$, exactly the suppression the quantum theory predicts.</p>')+
+   prac('<p>Copper has $E_F=7.0$ eV. Find $T_F$; estimate $C_v$ per mole at 300 K; and find the temperature at which $C_v$ reaches 1% of $3R$.</p>'))}
+
+ ${tp('Kronig–Penney &amp; band gaps')}
+ ${prob('6.1','Lowest band energy for P ≪ 1',
+   pth('<p>Use $P\\dfrac{\\sin\\alpha a}{\\alpha a}+\\cos\\alpha a=\\cos ka$ at $k\\to0$ ($\\cos ka\\to1$), plus the half-angle identities.</p>')+
+   psol('<p>$P\\dfrac{\\sin\\alpha a}{\\alpha a}=1-\\cos\\alpha a$. Writing $\\sin\\alpha a=2\\sin\\tfrac{\\alpha a}{2}\\cos\\tfrac{\\alpha a}{2}$ and $1-\\cos\\alpha a=2\\sin^2\\tfrac{\\alpha a}{2}$ and dividing:</p><p>$$\\tan\\frac{\\alpha a}{2}=\\frac{P}{\\alpha a}$$</p><p>For $P\\ll1$, $\\alpha a\\ll1$ so $\\tan(\\alpha a/2)\\approx\\alpha a/2$, giving $(\\alpha a)^2\\approx2P$, i.e. $\\alpha^2=2P/a^2$. With $\\alpha^2=2mE/\\hbar^2$: $$E=\\frac{\\hbar^2P}{ma^2}$$</p>')+
+   prac('<p>Using the same relation at $ka=\\pi$ with $\\alpha a=\\pi-\\delta$, $\\delta\\ll1$, find the energy at the top of the first band and show the shift is proportional to $P$.</p>'))}
+
+ ${prob('6.2','Band gap at the zone boundary',
+   pth('<p>At $k=\\pi/a$, $\\cos ka=-1$. Put $\\alpha a=\\pi\\pm\\delta$ and expand to first order; $P=mV_0ba/\\hbar^2$.</p>')+
+   psol('<p>With $\\cos(\\pi\\pm\\delta)\\approx-(1-\\delta^2/2)$ and $\\sin(\\pi\\pm\\delta)\\approx\\mp\\delta$, the relation gives $\\delta\\approx\\pm2P/\\pi$, so $$\\alpha_{1,2}a=\\pi\\mp\\frac{2P}{\\pi}$$</p><p>Squaring to first order, $\\alpha_2^2-\\alpha_1^2=8P/a^2$, hence $$E_g=\\frac{\\hbar^2}{2m}\\cdot\\frac{8P}{a^2}=\\frac{4\\hbar^2P}{ma^2}$$ and substituting $P$ gives, to the standard first-order result, $$E_g=\\frac{2V_0b}{a}$$ (the same answer degenerate perturbation theory gives as $2|V_G|$).</p>')+
+   prac('<p>A 1-D crystal has $a=3.0$ Å, barriers of width $b=0.1$ Å and height $V_0=15$ eV. Check that $V_0ab\\ll\\hbar^2/m$, then find $E_g$ at $k=\\pi/a$ in eV.</p>'))}
+
+ ${prob('6.3','Gap from a Fourier coefficient',
+   pth('<p>The gap at the first zone boundary is twice the first Fourier coefficient of the periodic potential: $E_g=2|V_1|$ with $V_1=\\tfrac1a\\int V(x)\\cos(2\\pi x/a)\\,dx$.</p>')+
+   psol('<p>A well of depth $V$ extending $0.1a$ each side of every site has total width $b=0.2a$:</p><p>$$V_1=\\frac1a\\int_{-0.1a}^{0.1a}(-V)\\cos\\frac{2\\pi x}{a}dx=-\\frac{V}{\\pi}\\sin(0.2\\pi)$$</p><p>$\\sin36^\\circ\\approx0.5878$ ⇒ $|V_1|\\approx0.187V$, so $$E_g=2|V_1|\\approx0.374\\,V\\approx0.37\\,V$$</p>')+
+   prac('<p>Repeat for an attractive well of depth $V_0$ extending $0.05a$ each side (total width $0.1a$): find $E_g$ at $k=\\pi/a$ in terms of $V_0$.</p>'))}
+
+ ${tp('Effective mass &amp; holes')}
+ ${prob('6.4','A hole at the valence band edge',
+   pth('<p>$m^{*}=\\hbar^2/(d^2E/dk^2)$; for a hole $m_h^{*}=-m_e^{*}$, $\\mathbf k_h=-\\mathbf k_e$, $\\mathbf v_h=\\mathbf v_e$, $E_h=-E_e$.</p>')+
+   psol('<p>For $E=-Ak^2$: $dE/dk=-2Ak$, $d^2E/dk^2=-2A$, so $$m_e^{*}=\\frac{\\hbar^2}{-2A}=-\\frac{(1.054\\times10^{-34})^2}{2\\times10^{-39}}\\approx-5.5\\times10^{-30}\\text{ kg}$$ and $m_h^{*}=+5.5\\times10^{-30}$ kg.</p><p>$\\mathbf k_h=-10^{10}\\hat k_x$ m⁻¹ ⇒ $\\mathbf p_h=\\hbar\\mathbf k_h=-1.054\\times10^{-24}\\hat k_x$ kg·m/s.</p><p>$\\mathbf v_h=\\mathbf p_h/m_h^{*}\\approx-1.9\\times10^{5}\\hat k_x$ m/s (same as $v_e=\\hbar^{-1}dE/dk$ ✓).</p><p>$E_e=-Ak^2=-10^{-19}$ J ⇒ $E_h=+10^{-19}$ J $\\approx0.62$ eV.</p>')+
+   prac('<p>For $E(\\mathbf k)=-C(k_x^2+k_y^2+k_z^2)$ with $C=5.0\\times10^{-39}$ J·m², an electron at $\\mathbf k_e=(2\\hat i+3\\hat j)\\times10^{9}$ m⁻¹ is excited away. Find $m_e^{*}$ and $m_h^{*}$, then $\\mathbf p_h$, $\\mathbf v_h$, and the hole energy.</p>'))}
+`},
+
+/* ═══════════════════ CLOSE ═══════════════════ */
+{id:'close',title:'The last mile',short:'Exam &amp; review plan',est:'~10 min',
+ body:`
+ <p class="lead">You\'ve walked both modules. What separates a pass from a top mark now is not more reading — it\'s spaced retrieval and clean exam execution.</p>
+
+ ${tp('Space your returns')}
+ <p>Come back to each module on a widening schedule. Every retrieval that feels slightly effortful is doing real work; fluent re-reading is a comforting illusion of learning.</p>
+ <div class="chips">
+   <span class="chip" data-plan="s-d1">Module I · +1 day</span>
+   <span class="chip" data-plan="s-d3">Module I · +3 days</span>
+   <span class="chip" data-plan="s-d7">Module I · +1 week</span>
+   <span class="chip" data-plan="s2-d1">Module II · +1 day</span>
+   <span class="chip" data-plan="s2-d3">Module II · +3 days</span>
+   <span class="chip" data-plan="s2-d7">Module II · +1 week</span>
+   <span class="chip" data-plan="s-mock">Full closed-book mock</span>
+   <span class="chip" data-plan="s-mixed">Interleaved problem session</span>
+ </div>
+
+ ${tp('The derivations they love to ask <span class="tag">write from blank</span>')}
+ <ul>
+   <li>The rotational restriction $\\cos\\theta=(m-1)/2$ ⇒ only $n=1,2,3,4,6$.</li>
+   <li>$d_{hkl}$ from direction cosines, ending at $a/\\sqrt{h^2+k^2+l^2}$.</li>
+   <li>Ideal HCP $c/a=\\sqrt{8/3}$.</li>
+   <li>Bragg's law, Laue's equations, and the proof they are equivalent.</li>
+   <li>Reciprocal lattice vectors; that FCC ↔ BCC are reciprocals.</li>
+   <li>$2\\mathbf k\\cdot\\mathbf G+G^2=0$ ⇒ zone boundary = Bragg plane.</li>
+   <li>Fermi sphere ⇒ $k_F=(3\\pi^2n)^{1/3}$, $E_F$, and $\\bar E_0=\\tfrac35E_F$.</li>
+   <li>$D(E)\\propto\\sqrt E$ and $D(E_F)=\\tfrac32N/E_F$.</li>
+   <li>Bloch's theorem via the Wronskian; allowed vs forbidden roots.</li>
+   <li>Kronig–Penney condition and its two limits ($P\\to0$, $P\\to\\infty$).</li>
+   <li>$m^{*}=\\hbar^2/(d^2E/dk^2)$ and why a full band carries no current.</li>
+ </ul>
+
+ ${tp('Exam-hall habits that save marks')}
+ <p><strong>State the structure first</strong> — writing “FCC ⇒ $n=4$, $4r=\\sqrt2a$” before substituting prevents the single most common arithmetic loss. <strong>Carry units explicitly</strong> in Fermi problems; mixing Å with m wrecks the $2/3$ power. <strong>Sanity-check</strong>: $E_F$ should land in 2–7 eV, $v_F\\sim10^6$ m/s, $T_F\\sim10^4$–$10^5$ K, packing fractions in $[0.3,0.75]$. <strong>Sleep before, not cram before</strong> — a rested retrieval beats a tired reread every time.</p>
+
+ <div class="note key"><div class="nh">the night-before ritual</div>Don\'t open new material. Do one slow pass of the checkpoints from memory, get the sleep your consolidation depends on, and in the morning do them cold once more. That bracket — study, sleep, retrieve — is the most reliable memory pattern in the literature, and you\'ve built your whole day around it.</div>
+
+ <p class="dim" style="margin-top:1.4rem;text-align:center"><span class="spark">⬡</span> &nbsp;Good luck. Mark this done when your review schedule is set.</p>
+`},
+
+];
+window.STATIONS=STATIONS;
+
+/* ── module grouping: Module ▸ Section ▸ Topic ── */
+const MODULES=[
+ {id:'mod-0',name:'Orientation',sub:'How to use this',
+  stations:['start']},
+ {id:'mod-1',name:'Module I',sub:'Crystal Structure &amp; X-ray Diffraction',
+  stations:['ss1-classify','ss1-cells','ss1-symmetry','ss1-bravais','ss1-planes',
+            'ss1-dspacing','ss1-packing','ss1-compounds','ss1-xrd','ss1-recip',
+            'ss1-bz','ss1-problems']},
+ {id:'mod-2',name:'Module II',sub:'Free Electron &amp; Band Theory',
+  stations:['ss2-drude','ss2-1d','ss2-3d','ss2-dos','ss2-fd','ss2-gap','ss2-bloch',
+            'ss2-kp','ss2-zones','ss2-dynamics','ss2-classify','ss2-problems']},
+ {id:'mod-3',name:'Finish',sub:'Exam &amp; review plan',
+  stations:['close']}
+];
+window.MODULES=MODULES;

@@ -1,4 +1,4 @@
-# Node Description Batch 8 of 61
+# Node Description Batch 8 of 68
 
 Graphify is running in assistant/skill mode (no API key). You are the host
 assistant (Claude Code / Codex / Gemini CLI). Read the prompt below and write
@@ -9,6 +9,9 @@ your JSON answer to the answer file.
 You are documenting nodes in a knowledge graph.
 For each entry below, write ONE concise factual plain-language sentence
 describing what it is or does. Use only the provided context.
+For a code symbol (kind=code-symbol — a function, class, or constant),
+describe what the function/symbol does based on its name, source location
+and neighbors — e.g. "Resolves the configured ontology profile from graphify.yaml.".
 For an entity node (any other kind — e.g. a person, place, event, object),
 describe what the entity is and its role, grounded in its type, its
 relations (neighbors) and the provided citations/evidence — e.g.
@@ -23,6 +26,16 @@ No marketing language.
 Respond ONLY with a JSON object mapping each node id (as a string) to its
 one-sentence description — no prose, no markdown fences.
 
+- "runner_main": "main.cpp" | kind=code-symbol | source=windows/runner/main.cpp:L1 | neighbors=[1fa1705 OK, eb38f80 Fix Linux quit handling, Linux …, main(), wWinMain(), 675d2a1 EXPRESS] | lang=en
+- "runner_win32_window_createandshow": "CreateAndShow()" | kind=code-symbol | source=packages/webview_cef/example/windows/runner/win32_window.cpp:L105 | neighbors=[win32_window.h, Destroy(), GetWindowClass(), OnCreate(), Scale()] | lang=en
+- "runner_win32_window_messagehandler": "MessageHandler()" | kind=code-symbol | source=windows/runner/win32_window.cpp:L176 | neighbors=[win32_window.h, Destroy(), GetClientArea(), UpdateTheme(), Win32Window::WndProc()] | lang=en
+- "services_ide_settings_service": "ide_settings_service.dart" | kind=code-symbol | source=lib/services/ide_settings_service.dart:L1 | neighbors=[329bdab ny, IdeSettings, IdeSettingsService, loadSettings(), updateSettings()] | lang=en
+- "services_latex_json_repairer": "latex_json_repairer.dart" | kind=code-symbol | source=lib/services/latex_json_repairer.dart:L1 | neighbors=[e52e844 feat(release): v26.8.27 - LaTeX…, extractJsonString(), LatexJsonRepairer, _removeTrailingCommas(), repair()] | lang=en
+- "utils_toast_utils": "toast_utils.dart" | kind=code-symbol | source=lib/utils/toast_utils.dart:L1 | neighbors=[1393ac9 6th, a22f95b feat: complete celestial light …, ea88f41 Farsan, showToast(), a055e9b PRE-RE] | lang=en
+- "widgets_desktop_webview_stub": "desktop_webview_stub.dart" | kind=code-symbol | source=lib/widgets/desktop_webview_stub.dart:L1 | neighbors=[8554e22 feat: the web build compiles an…, a22f95b feat: complete celestial light …, DesktopWebView, desktopWebViewEnsureInitialized(), Function()] | lang=en
+- "widgets_glassy_nav_bar": "glassy_nav_bar.dart" | kind=code-symbol | source=lib/widgets/glassy_nav_bar.dart:L1 | neighbors=[1393ac9 6th, 7dbab59 Merge pull request #2 from ihja…, 99745d3 theme: migrate GlassyNavBar and…, a22f95b feat: complete celestial light …, GlassyNavBar] | lang=en
+- "widgets_walkthrough_banner": "walkthrough_banner.dart" | kind=code-symbol | source=lib/widgets/walkthrough_banner.dart:L1 | neighbors=[9d1d7bc NAA, a22f95b feat: complete celestial light …, ea4994a Support program & try_yourself …, _Card, WalkthroughBanner] | lang=en
+- "commit:repo:github.com/ihjas-ahammed/duofy@0184924c054fbb57a045eff2cffa9dcf66e360e2": "0184924 theme: migrate analytics_view" | kind=Commit | source=git | neighbors=[main, 61c1ed4 theme: migrate quick_review_she…, analytics_view.dart, 1bb5af4 theme: migrate theory_view] | lang=en
 - "commit:repo:github.com/ihjas-ahammed/duofy@01d6dd3f123e6eef98d41e26f7eddc8219fbd83b": "01d6dd3 Merge branch 'main' of https://github.com/ihjas-ahammed/duofy" | kind=Commit | source=git | neighbors=[main, 2ca4f58 chore: add Android builds v26.7…, 67c2b34 chore: add Android builds v26.7…, bccabe4 pyq_meta all set] | lang=en
 - "commit:repo:github.com/ihjas-ahammed/duofy@0498e66e0b4e83c85ec72d12710d69766746a5b2": "0498e66 theme: migrate source_pdf_upload_screen" | kind=Commit | source=git | neighbors=[main, af53b52 theme: migrate pyq_tab_screen, source_pdf_upload_screen.dart, d1dbb62 theme: migrate course_edit_stru…] | lang=en
 - "commit:repo:github.com/ihjas-ahammed/duofy@07c746483e2a405e5d87118eca1225f7142f8709": "07c7464 theme: migrate lesson_path" | kind=Commit | source=git | neighbors=[main, ee65d46 theme: migrate lesson_accordion, lesson_path.dart, 61c1ed4 theme: migrate quick_review_she…] | lang=en
@@ -53,16 +66,6 @@ one-sentence description — no prose, no markdown fences.
 - "commit:repo:github.com/ihjas-ahammed/duofy@c04f5ba5819dd4dd73a91545cf41ca6bdf442e23": "c04f5ba fix: resolve static analyzer invalid_assignment error by casting dynami…" | kind=Commit | source=git | neighbors=[b5b2ecb fix: resolve incorrect deadline…, main, 00fdc1a chore: add Android builds v26.7…, deadline_service.dart] | lang=en
 - "commit:repo:github.com/ihjas-ahammed/duofy@c476ed9cb30ab4f001fb555f816aeb1db46745b5": "c476ed9 555555555555555555555555555upp" | kind=Commit | source=git | neighbors=[main, 994c7de chore: add Android and Windows …, summary_screen.dart, da7e93c Merge branch 'main' of https://…] | lang=en
 - "commit:repo:github.com/ihjas-ahammed/duofy@d1dbb620dbce40b03d06851e297aca1990c8ab5c": "d1dbb62 theme: migrate course_edit_structure_screen" | kind=Commit | source=git | neighbors=[main, 0498e66 theme: migrate source_pdf_uploa…, course_edit_structure_screen.dart, d5c7c96 theme: migrate generate_book_sc…] | lang=en
-- "commit:repo:github.com/ihjas-ahammed/duofy@d361f24f296c431b931dd3adb299c1c7d33c5c31": "d361f24 chore: add Android builds v26.7.10 [skip ci]" | kind=Commit | source=git | neighbors=[main, 7dbab59 Merge pull request #2 from ihja…, e9979c0 rebrand: rename app display nam…, d68d72b XZ] | lang=en
-- "commit:repo:github.com/ihjas-ahammed/duofy@d5b97ce691fdb039989ae583ba7af5a6164c7664": "d5b97ce theme: migrate book_dashboard_screen" | kind=Commit | source=git | neighbors=[9c0e7f3 theme: migrate safe_pdf_viewer,…, main, ef45a4f theme: migrate document_store_s…, book_dashboard_screen.dart] | lang=fr
-- "commit:repo:github.com/ihjas-ahammed/duofy@d5c7c966ab702f553e9b3bdb7d5205e575094d17": "d5c7c96 theme: migrate generate_book_screen" | kind=Commit | source=git | neighbors=[main, d1dbb62 theme: migrate course_edit_stru…, generate_book_screen.dart, ef45a4f theme: migrate document_store_s…] | lang=en
-- "commit:repo:github.com/ihjas-ahammed/duofy@d7af759a21ebef9e11067468f259b0f94110a258": "d7af759 feat(release & python): add release.txt, update builds/latest.json, add…" | kind=Commit | source=git | neighbors=[main, 137f329 chore: add Android builds v26.7…, python_runner_service.dart, df113f4 chore: add Android builds v26.7…] | lang=en
-- "commit:repo:github.com/ihjas-ahammed/duofy@d843901af3fd62c2c959421cce8636085d2f2132": "d843901 theme: migrate ai_queue_screen" | kind=Commit | source=git | neighbors=[7976120 theme: migrate practice_screen, main, 2934308 theme: migrate metacognition_se…, ai_queue_screen.dart] | lang=en
-- "commit:repo:github.com/ihjas-ahammed/duofy@e02893dec2071867e1e4822dd40d6920b69404ff": "e02893d ux: answer feedback and interaction polish in lessons" | kind=Commit | source=git | neighbors=[1322f3d ASZ, main, be9dc1e ux: confetti burst and XP count…, lesson_screen.dart] | lang=en
-- "commit:repo:github.com/ihjas-ahammed/duofy@e6b51ae9239254930ffacdd7b02e3c85f08e72a7": "e6b51ae theme: migrate course_settings_screen" | kind=Commit | source=git | neighbors=[af53b52 theme: migrate pyq_tab_screen, main, f8116b9 theme: migrate summary_screen, course_settings_screen.dart] | lang=en
-- "commit:repo:github.com/ihjas-ahammed/duofy@eb1723ae71839c568506848ec2b30b1f5d3a1539": "eb1723a fix: preserve Navigator result on LessonScreen replacement to support A…" | kind=Commit | source=git | neighbors=[6b3299a chore: add Android builds v26.7…, main, 4026742 chore: add Android builds v26.7…, lesson_screen.dart] | lang=en
-- "commit:repo:github.com/ihjas-ahammed/duofy@ee65d46b13a584981788717ad0109bb688b007bb": "ee65d46 theme: migrate lesson_accordion" | kind=Commit | source=git | neighbors=[07c7464 theme: migrate lesson_path, main, 9280539 theme: migrate lesson_assistant…, lesson_accordion.dart] | lang=en
-- "commit:repo:github.com/ihjas-ahammed/duofy@ef45a4f6a790ee48f3a36eb40a9d3e71f3c31610": "ef45a4f theme: migrate document_store_screen" | kind=Commit | source=git | neighbors=[d5b97ce theme: migrate book_dashboard_s…, main, d5c7c96 theme: migrate generate_book_sc…, document_store_screen.dart] | lang=pt
 
 ## Instructions
 

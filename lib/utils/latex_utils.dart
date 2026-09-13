@@ -28,6 +28,8 @@ class LatexUtils {
     s = s.replaceAll(r'\]', r'$$');
     s = s.replaceAll(r'\(', r'$');
     s = s.replaceAll(r'\)', r'$');
+    // Normalize escaped dollar signs \$\$ or \$ -> $$ or $
+    s = s.replaceAll(r'\$', r'$');
 
     // 2. Fix double backslashes in JSON strings (e.g. \\frac -> \frac)
     s = s.replaceAllMapped(RegExp(r'\\\\([a-zA-Z]+)'), (m) => '\\${m[1]}');

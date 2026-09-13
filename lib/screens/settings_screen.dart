@@ -19,6 +19,9 @@ import 'ai_queue_screen.dart';
 import 'experiments_screen.dart';
 import 'ai_providers_screen.dart';
 import 'python_ide_screen.dart';
+import '../models/tree_reader_models.dart';
+import 'tree_reader/tree_reader_screen.dart';
+import 'tree_reader/html_app_viewer_screen.dart';
 import '../services/update_service.dart';
 import '../widgets/update_dialog.dart';
 
@@ -782,6 +785,283 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildHierarchicalReaderCard() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: GlobalState.dropdownReaderFlowNotifier,
+      builder: (context, isDropdownEnabled, _) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          decoration: BoxDecoration(
+            color: context.colors.surfaceAlt,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDropdownEnabled
+                  ? const Color(0xFF10B981).withValues(alpha: 0.6)
+                  : context.colors.outline,
+              width: isDropdownEnabled ? 1.5 : 1.0,
+            ),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      LucideIcons.layers,
+                      color: Color(0xFF10B981),
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                'Drop-down Tree Flow',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 16,
+                                  color: context.colors.textPrimary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981)
+                                    .withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'EXPERIMENTAL',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFF10B981),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Hierarchical Module ▸ Section ▸ Topic reader',
+                          style: TextStyle(
+                            color: context.colors.textFaint,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: isDropdownEnabled,
+                    activeThumbColor: const Color(0xFF10B981),
+                    onChanged: (val) async {
+                      await GlobalState.setDropdownReaderFlow(val);
+                      setState(() {});
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Replaces linear slide carousels with multi-level collapsible drop-downs. Features interactive step ladders with peek/reveal, self-check confidence ratings, code playgrounds, and cascading tick progress.',
+                style: TextStyle(
+                  color: context.colors.textSecondary,
+                  fontSize: 12,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Divider(color: context.colors.outline, height: 1),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Icon(LucideIcons.bookOpen, size: 14, color: context.colors.textFaint),
+                  const SizedBox(width: 6),
+                  Text(
+                    'NEW READING MATERIALS (APPS)',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
+                      color: context.colors.textFaint,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _buildReadingMaterialTile(
+                title: 'Python for Data Analysis',
+                subtitle: '12 Topics • NumPy, Pandas, Matplotlib, Seaborn, Sklearn',
+                icon: '🐍',
+                accentColor: const Color(0xFF3B82F6),
+                course: TreeCourse.pythonCourse,
+                htmlAsset: 'docs/apps/PYTHON_12.html',
+                isDark: isDark,
+              ),
+              const SizedBox(height: 8),
+              _buildReadingMaterialTile(
+                title: 'LaTeX & Document Typesetting',
+                subtitle: '10 Topics • Math, Matrices, Floats, TikZ & Beamer',
+                icon: '📜',
+                accentColor: const Color(0xFF8B5CF6),
+                course: TreeCourse.latexCourse,
+                htmlAsset: 'docs/apps/LATEX_1.html',
+                isDark: isDark,
+              ),
+              const SizedBox(height: 8),
+              _buildReadingMaterialTile(
+                title: 'Solid State Physics',
+                subtitle: '6 Topics • Bravais Lattices, Reciprocal Space, Phonons',
+                icon: '⚛️',
+                accentColor: const Color(0xFF06B6D4),
+                course: TreeCourse.solidStateCourse,
+                htmlAsset: 'docs/apps/SOLID_STATE.html',
+                isDark: isDark,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildReadingMaterialTile({
+    required String title,
+    required String subtitle,
+    required String icon,
+    required Color accentColor,
+    required TreeCourse course,
+    required String htmlAsset,
+    required bool isDark,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: context.colors.outline),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => TreeReaderScreen(course: course),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          child: Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(icon, style: const TextStyle(fontSize: 17)),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12.5,
+                        color: context.colors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: context.colors.textFaint,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                padding: EdgeInsets.zero,
+                icon: const Icon(LucideIcons.globe, size: 15),
+                tooltip: 'View Original Web App',
+                color: context.colors.textFaint,
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => HtmlAppViewerScreen(
+                        title: title,
+                        htmlAssetPath: htmlAsset,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 4),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accentColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => TreeReaderScreen(course: course),
+                    ),
+                  );
+                },
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Open',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    SizedBox(width: 3),
+                    Icon(LucideIcons.arrowRight, size: 12),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   String _formatTimeOfDay(TimeOfDay time) {
     final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
     final period = time.period == DayPeriod.am ? 'AM' : 'PM';
@@ -1469,6 +1749,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildPythonIdeTile(),
               const SizedBox(height: 32),
 
+              const Text(
+                'Reading Flow (Experimental)',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Experience courses structured with multi-level dropdowns, derivation ladders, and cascading ticks.',
+                style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+              _buildHierarchicalReaderCard(),
+              const SizedBox(height: 32),
+
               Container(
                 decoration: AppTheme.glassOf(context),
                 child: SwitchListTile(
@@ -1801,6 +2094,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildAiProvidersTile(),
           const SizedBox(height: 12),
           _buildPythonIdeTile(),
+          const SizedBox(height: 32),
+
+          const Text(
+            'Reading Flow (Experimental)',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Experience courses structured with multi-level dropdowns, derivation ladders, and cascading ticks.',
+            style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          _buildHierarchicalReaderCard(),
           const SizedBox(height: 32),
 
           const Text(

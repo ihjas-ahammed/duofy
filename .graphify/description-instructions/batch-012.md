@@ -1,4 +1,4 @@
-# Node Description Batch 13 of 61
+# Node Description Batch 13 of 68
 
 Graphify is running in assistant/skill mode (no API key). You are the host
 assistant (Claude Code / Codex / Gemini CLI). Read the prompt below and write
@@ -12,11 +12,49 @@ describing what it is or does. Use only the provided context.
 For a code symbol (kind=code-symbol — a function, class, or constant),
 describe what the function/symbol does based on its name, source location
 and neighbors — e.g. "Resolves the configured ontology profile from graphify.yaml.".
-Write every description in English (en). Do not switch languages.
+For an entity node (any other kind — e.g. a person, place, event, object),
+describe what the entity is and its role, grounded in its type, its
+relations (neighbors) and the provided citations/evidence — e.g.
+"Lady Carfax, a wealthy heiress who disappears en route to Lausanne.".
+Ground entity descriptions in the citations/evidence when present; do not
+speculate beyond the context, so a node with no supporting context may be
+left out of the reply.
+Write every description in Portuguese (pt). Do not switch languages.
 No marketing language.
 Respond ONLY with a JSON object mapping each node id (as a string) to its
 one-sentence description — no prose, no markdown fences.
 
+- "test_latex_ide_test": "latex_ide_test.dart" | kind=code-symbol | source=test/latex_ide_test.dart:L1 | neighbors=[e52e844 feat(release): v26.8.27 - LaTeX…, apostrophes(), main()]
+- "test_module_notes_test": "module_notes_test.dart" | kind=code-symbol | source=test/module_notes_test.dart:L1 | neighbors=[14e7263 feat: Quick Generate Module Not…, e52e844 feat(release): v26.8.27 - LaTeX…, main()]
+- "test_page_mapping_test": "page_mapping_test.dart" | kind=code-symbol | source=test/page_mapping_test.dart:L1 | neighbors=[1fa1705 OK, ed71b03 io, main()]
+- "test_pdfx_test": "pdfx_test.dart" | kind=code-symbol | source=test/pdfx_test.dart:L1 | neighbors=[1fa1705 OK, 64cd7e0 XA, main()]
+- "test_review_scheduler_test": "review_scheduler_test.dart" | kind=code-symbol | source=test/review_scheduler_test.dart:L1 | neighbors=[1fa1705 OK, f10ef09 feat: metacognitive loop, four …, main()]
+- "test_syncfusion_math_test": "syncfusion_math_test.dart" | kind=code-symbol | source=test/syncfusion_math_test.dart:L1 | neighbors=[14e7263 feat: Quick Generate Module Not…, cleanLatexForSyncfusion(), main()]
+- "test_toc_matcher_test": "toc_matcher_test.dart" | kind=code-symbol | source=test/toc_matcher_test.dart:L1 | neighbors=[1fa1705 OK, main(), 742f017 feat: add offline TocMatcher he…]
+- "test_walkthrough_course_test": "walkthrough_course_test.dart" | kind=code-symbol | source=test/walkthrough_course_test.dart:L1 | neighbors=[9d1d7bc NAA, ea4994a Support program & try_yourself …, main()]
+- "test_webview_cef_test": "webview_cef_test.dart" | kind=code-symbol | source=packages/webview_cef/test/webview_cef_test.dart:L1 | neighbors=[getPlatformVersion(), main(), MockWebviewCefPlatform]
+- "test_widget_test": "widget_test.dart" | kind=code-symbol | source=test/widget_test.dart:L1 | neighbors=[1fa1705 OK, ed71b03 io, main()]
+- "update_parse_snapshot": "parse_snapshot()" | kind=code-symbol | source=update.py:L12 | neighbors=[update.py, Parses the snapshot content and yields …, update_project_from_snapshot()]
+- "update_update_project_from_snapshot": "update_project_from_snapshot()" | kind=code-symbol | source=update.py:L70 | neighbors=[update.py, Reads the snapshot file and updates the…, parse_snapshot()]
+- "widgets_daily_goals_popup": "daily_goals_popup.dart" | kind=code-symbol | source=lib/widgets/daily_goals_popup.dart:L1 | neighbors=[a15c42e feat(daily-goals): Add Gamified…, checkAndShow(), DailyGoalsPopup]
+- "widgets_responsive_center": "responsive_center.dart" | kind=code-symbol | source=lib/widgets/responsive_center.dart:L1 | neighbors=[a22f95b feat: complete celestial light …, ResponsiveCenter, ResponsiveMaxWidth]
+- "windows_webview_cef_keyevent": "webview_cef_keyevent.h" | kind=code-symbol | source=packages/webview_cef/windows/webview_cef_keyevent.h:L1 | neighbors=[GetCefKeyboardModifiers(), getCefKeyEvent(), IsKeyDown()]
+- "windows_webview_cef_keyevent_getcefkeyboardmodifiers": "GetCefKeyboardModifiers()" | kind=code-symbol | source=packages/webview_cef/windows/webview_cef_keyevent.h:L9 | neighbors=[webview_cef_keyevent.h, IsKeyDown(), getCefKeyEvent()]
+- "windows_webview_cef_keyevent_getcefkeyevent": "getCefKeyEvent()" | kind=code-symbol | source=packages/webview_cef/windows/webview_cef_keyevent.h:L91 | neighbors=[webview_cef_keyevent.h, GetCefKeyboardModifiers(), IsKeyDown()]
+- "windows_webview_cef_keyevent_iskeydown": "IsKeyDown()" | kind=code-symbol | source=packages/webview_cef/windows/webview_cef_keyevent.h:L4 | neighbors=[webview_cef_keyevent.h, GetCefKeyboardModifiers(), getCefKeyEvent()]
+- "windows_webview_cef_plugin_c_api": "webview_cef_plugin_c_api.cpp" | kind=code-symbol | source=packages/webview_cef/windows/webview_cef_plugin_c_api.cpp:L1 | neighbors=[handleWndProcForCEF(), initCEFProcesses(), WebviewCefPluginCApiRegisterWithRegistr…]
+- "windows_webview_cef_plugin_encode_wvalue_to_flvalue": "encode_wvalue_to_flvalue()" | kind=code-symbol | source=packages/webview_cef/windows/webview_cef_plugin.cpp:L77 | neighbors=[webview_cef_plugin.h, HandleMethodCall(), RegisterWithRegistrar()]
+- "windows_webview_cef_plugin_registerwithregistrar": "RegisterWithRegistrar()" | kind=code-symbol | source=packages/webview_cef/windows/webview_cef_plugin.cpp:L209 | neighbors=[webview_cef_plugin.h, encode_wvalue_to_flvalue(), HandleMethodCall()]
+- "commit:repo:github.com/ihjas-ahammed/duofy@bc59a6e578a281ca8d75b67ff67c1b483664f959": "bc59a6e chore: add Android builds v26.9.1 [skip ci]" | kind=Commit | source=git | neighbors=[0b36b76 feat(release): v26.9.1 - Multi-…, main]
+- "common_webview_app_simplebrowserviewdelegate": "SimpleBrowserViewDelegate" | kind=code-symbol | source=packages/webview_cef/common/webview_app.cc:L56 | neighbors=[webview_app.h, .SimpleBrowserViewDelegate()]
+- "common_webview_app_simplewindowdelegate": "SimpleWindowDelegate" | kind=code-symbol | source=packages/webview_cef/common/webview_app.cc:L19 | neighbors=[webview_app.h, .SimpleWindowDelegate()]
+- "common_webview_cookievisitor_getvisitedcookies": "getVisitedCookies()" | kind=code-symbol | source=packages/webview_cef/common/webview_cookieVisitor.cc:L35 | neighbors=[webview_cookieVisitor.h, Visit()]
+- "common_webview_cookievisitor_visit": "Visit()" | kind=code-symbol | source=packages/webview_cef/common/webview_cookieVisitor.cc:L15 | neighbors=[webview_cookieVisitor.h, getVisitedCookies()]
+- "common_webview_handler_getdatauri": "GetDataURI()" | kind=code-symbol | source=packages/webview_cef/common/webview_handler.cc:L44 | neighbors=[webview_handler.h, OnLoadError()]
+- "common_webview_handler_ischromeruntimeenabled": "IsChromeRuntimeEnabled()" | kind=code-symbol | source=packages/webview_cef/common/webview_handler.cc:L252 | neighbors=[webview_handler.h, OnLoadError()]
+- "common_webview_handler_loadurl": "loadUrl()" | kind=code-symbol | source=packages/webview_cef/common/webview_handler.cc:L406 | neighbors=[webview_handler.h, OnBeforePopup()]
+- "common_webview_handler_onbeforepopup": "OnBeforePopup()" | kind=code-symbol | source=packages/webview_cef/common/webview_handler.cc:L168 | neighbors=[webview_handler.h, loadUrl()]
+- "common_webview_handler_onprocessmessagereceived": "OnProcessMessageReceived()" | kind=code-symbol | source=packages/webview_cef/common/webview_handler.cc:L61 | neighbors=[webview_handler.h, to_string()]
 - "common_webview_handler_ontakefocus": "OnTakeFocus()" | kind=code-symbol | source=packages/webview_cef/common/webview_handler.cc:L184 | neighbors=[webview_handler.h, executeJavaScript()]
 - "common_webview_handler_setjavascriptchannels": "setJavaScriptChannels()" | kind=code-symbol | source=packages/webview_cef/common/webview_handler.cc:L556 | neighbors=[webview_handler.h, executeJavaScript()]
 - "common_webview_js_handler_callcppfunction": "CallCppFunction()" | kind=code-symbol | source=packages/webview_cef/common/webview_js_handler.cc:L247 | neighbors=[webview_js_handler.h, Execute()]
@@ -26,37 +64,6 @@ one-sentence description — no prose, no markdown fences.
 - "common_webview_js_handler_startrequest": "StartRequest()" | kind=code-symbol | source=packages/webview_cef/common/webview_js_handler.cc:L137 | neighbors=[webview_js_handler.h, Execute()]
 - "common_webview_plugin_cursoraction": "cursorAction()" | kind=code-symbol | source=packages/webview_cef/common/webview_plugin.cc:L516 | neighbors=[webview_plugin.h, HandleMethodCall()]
 - "common_webview_plugin_initcallback": "initCallback()" | kind=code-symbol | source=packages/webview_cef/common/webview_plugin.cc:L33 | neighbors=[webview_plugin.h, HandleMethodCall()]
-- "common_webview_plugin_startcef": "startCEF()" | kind=code-symbol | source=packages/webview_cef/common/webview_plugin.cc:L564 | neighbors=[webview_plugin.h, HandleMethodCall()]
-- "common_webview_plugin_stopcef": "stopCEF()" | kind=code-symbol | source=packages/webview_cef/common/webview_plugin.cc:L621 | neighbors=[webview_plugin.h, HandleMethodCall()]
-- "common_webview_plugin_uninitcallback": "uninitCallback()" | kind=code-symbol | source=packages/webview_cef/common/webview_plugin.cc:L222 | neighbors=[webview_plugin.h, WebviewPlugin()]
-- "common_webview_plugin_webviewplugin": "WebviewPlugin()" | kind=code-symbol | source=packages/webview_cef/common/webview_plugin.cc:L20 | neighbors=[webview_plugin.h, uninitCallback()]
-- "common_webview_value_webview_ptr_array_free": "webview_ptr_array_free()" | kind=code-symbol | source=packages/webview_cef/common/webview_value.cc:L95 | neighbors=[webview_value.h, webview_ptr_array_unref()]
-- "common_webview_value_webview_value_get_string": "webview_value_get_string()" | kind=code-symbol | source=packages/webview_cef/common/webview_value.cc:L607 | neighbors=[webview_value.h, webview_value_to_string()]
-- "common_webview_value_webview_value_get_value": "webview_value_get_value()" | kind=code-symbol | source=packages/webview_cef/common/webview_value.cc:L727 | neighbors=[webview_value.h, webview_ptr_array_index()]
-- "common_webview_value_webview_value_new_bool": "webview_value_new_bool()" | kind=code-symbol | source=packages/webview_cef/common/webview_value.cc:L171 | neighbors=[webview_value.h, webview_value_new()]
-- "common_webview_value_webview_value_new_double": "webview_value_new_double()" | kind=code-symbol | source=packages/webview_cef/common/webview_value.cc:L192 | neighbors=[webview_value.h, webview_value_new()]
-- "common_webview_value_webview_value_new_double_list": "webview_value_new_double_list()" | kind=code-symbol | source=packages/webview_cef/common/webview_value.cc:L260 | neighbors=[webview_value.h, webview_value_new()]
-- "common_webview_value_webview_value_new_float": "webview_value_new_float()" | kind=code-symbol | source=packages/webview_cef/common/webview_value.cc:L185 | neighbors=[webview_value.h, webview_value_new()]
-- "common_webview_value_webview_value_new_float_list": "webview_value_new_float_list()" | kind=code-symbol | source=packages/webview_cef/common/webview_value.cc:L250 | neighbors=[webview_value.h, webview_value_new()]
-- "common_webview_value_webview_value_new_int": "webview_value_new_int()" | kind=code-symbol | source=packages/webview_cef/common/webview_value.cc:L178 | neighbors=[webview_value.h, webview_value_new()]
-- "common_webview_value_webview_value_new_int32_list": "webview_value_new_int32_list()" | kind=code-symbol | source=packages/webview_cef/common/webview_value.cc:L230 | neighbors=[webview_value.h, webview_value_new()]
-- "common_webview_value_webview_value_new_int64_list": "webview_value_new_int64_list()" | kind=code-symbol | source=packages/webview_cef/common/webview_value.cc:L240 | neighbors=[webview_value.h, webview_value_new()]
-- "common_webview_value_webview_value_new_null": "webview_value_new_null()" | kind=code-symbol | source=packages/webview_cef/common/webview_value.cc:L167 | neighbors=[webview_value.h, webview_value_new()]
-- "common_webview_value_webview_value_new_string_len": "webview_value_new_string_len()" | kind=code-symbol | source=packages/webview_cef/common/webview_value.cc:L206 | neighbors=[webview_value.h, webview_value_new()]
-- "common_webview_value_webview_value_new_uint8_list": "webview_value_new_uint8_list()" | kind=code-symbol | source=packages/webview_cef/common/webview_value.cc:L220 | neighbors=[webview_value.h, webview_value_new()]
-- "data_mock_books": "mock_books.dart" | kind=code-symbol | source=lib/data/mock_books.dart:L1 | neighbors=[draw(), resize()]
-- "lib_webview_cef_method_channel": "webview_cef_method_channel.dart" | kind=code-symbol | source=packages/webview_cef/lib/webview_cef_method_channel.dart:L1 | neighbors=[getPlatformVersion(), MethodChannelWebviewCef]
-- "linux_webview_cef_keyevent_gdkeventtowindowskeycode": "GdkEventToWindowsKeyCode()" | kind=code-symbol | source=packages/webview_cef/linux/webview_cef_keyevent.h:L608 | neighbors=[webview_cef_keyevent.h, KeyboardCodeFromXKeysym()]
-- "linux_webview_cef_keyevent_keyboardcodefromxkeysym": "KeyboardCodeFromXKeysym()" | kind=code-symbol | source=packages/webview_cef/linux/webview_cef_keyevent.h:L207 | neighbors=[webview_cef_keyevent.h, GdkEventToWindowsKeyCode()]
-- "linux_webview_cef_plugin_encode_flvalue_to_wvalue": "encode_flvalue_to_wvalue()" | kind=code-symbol | source=packages/webview_cef/linux/webview_cef_plugin.cc:L136 | neighbors=[webview_cef_plugin.cc, webview_cef_plugin_handle_method_call()]
-- "linux_webview_cef_plugin_method_call_cb": "method_call_cb()" | kind=code-symbol | source=packages/webview_cef/linux/webview_cef_plugin.cc:L252 | neighbors=[webview_cef_plugin.cc, webview_cef_plugin_handle_method_call()]
-- "linux_webview_cef_plugin_webview_cef_plugin_register_with_registrar": "webview_cef_plugin_register_with_registrar()" | kind=code-symbol | source=packages/webview_cef/linux/webview_cef_plugin.cc:L259 | neighbors=[webview_cef_plugin.cc, encode_wavlue_to_flvalue()]
-- "linux_webview_cef_plugin_webviewtexturerenderer": "WebviewTextureRenderer" | kind=code-symbol | source=packages/webview_cef/linux/webview_cef_plugin.cc:L29 | neighbors=[webview_cef_plugin.cc, .WebviewTextureRenderer()]
-- "platform_file_image_io": "file_image_io.dart" | kind=code-symbol | source=lib/platform/file_image_io.dart:L1 | neighbors=[8554e22 feat: the web build compiles an…, a22f95b feat: complete celestial light …]
-- "platform_file_image_shim": "file_image_shim.dart" | kind=code-symbol | source=lib/platform/file_image_shim.dart:L1 | neighbors=[8554e22 feat: the web build compiles an…, a22f95b feat: complete celestial light …]
-- "platform_file_image_web": "file_image_web.dart" | kind=code-symbol | source=lib/platform/file_image_web.dart:L1 | neighbors=[8554e22 feat: the web build compiles an…, a22f95b feat: complete celestial light …]
-- "platform_io_shim": "io_shim.dart" | kind=code-symbol | source=lib/platform/io_shim.dart:L1 | neighbors=[8554e22 feat: the web build compiles an…, a22f95b feat: complete celestial light …]
-- "platform_isolate_shim": "isolate_shim.dart" | kind=code-symbol | source=lib/platform/isolate_shim.dart:L1 | neighbors=[8554e22 feat: the web build compiles an…, a22f95b feat: complete celestial light …]
 
 ## Instructions
 

@@ -47,7 +47,11 @@ app.*.map.json
 # CEF (Chromium Embedded Framework) SDK — large artifacts the webview_cef build
 # downloads into per-platform `third/` dirs (windows/third, macos/third, …).
 packages/webview_cef/**/third/
- 
+packages/webview_cef/**/prebuilt.zip
+
+# Media captures
+*.mp4
+
 # Scratch scripts and credentials
 /scratch/
 

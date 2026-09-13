@@ -1,4 +1,4 @@
-# Node Description Batch 21 of 61
+# Node Description Batch 21 of 68
 
 Graphify is running in assistant/skill mode (no API key). You are the host
 assistant (Claude Code / Codex / Gemini CLI). Read the prompt below and write
@@ -12,60 +12,51 @@ describing what it is or does. Use only the provided context.
 For a code symbol (kind=code-symbol — a function, class, or constant),
 describe what the function/symbol does based on its name, source location
 and neighbors — e.g. "Resolves the configured ontology profile from graphify.yaml.".
-For an entity node (any other kind — e.g. a person, place, event, object),
-describe what the entity is and its role, grounded in its type, its
-relations (neighbors) and the provided citations/evidence — e.g.
-"Lady Carfax, a wealthy heiress who disappears en route to Lausanne.".
-Ground entity descriptions in the citations/evidence when present; do not
-speculate beyond the context, so a node with no supporting context may be
-left out of the reply.
-LANGUAGE: each entry has a `lang=` marker giving the language of its source.
-Write that entry's description in EXACTLY that language. Do not translate to
-a single common language — match each node's source language individually.
+Write every description in English (en). Do not switch languages.
 No marketing language.
 Respond ONLY with a JSON object mapping each node id (as a string) to its
 one-sentence description — no prose, no markdown fences.
 
-- "models_app_models_lessonformat": "LessonFormat" | kind=code-symbol | source=lib/models/app_models.dart:L139 | neighbors=[app_models.dart] | lang=en
-- "models_app_models_matchpair": "MatchPair" | kind=code-symbol | source=lib/models/app_models.dart:L2512 | neighbors=[app_models.dart] | lang=en
-- "models_app_models_module": "Module" | kind=code-symbol | source=lib/models/app_models.dart:L1624 | neighbors=[app_models.dart] | lang=en
-- "models_app_models_qpquestion": "QpQuestion" | kind=code-symbol | source=lib/models/app_models.dart:L1466 | neighbors=[app_models.dart] | lang=en
-- "models_app_models_qpsection": "QpSection" | kind=code-symbol | source=lib/models/app_models.dart:L1504 | neighbors=[app_models.dart] | lang=en
-- "models_app_models_questionpaper": "QuestionPaper" | kind=code-symbol | source=lib/models/app_models.dart:L1538 | neighbors=[app_models.dart] | lang=en
-- "models_app_models_quickreviewitem": "QuickReviewItem" | kind=code-symbol | source=lib/models/app_models.dart:L1603 | neighbors=[app_models.dart] | lang=en
-- "models_app_models_quizoption": "QuizOption" | kind=code-symbol | source=lib/models/app_models.dart:L2526 | neighbors=[app_models.dart] | lang=en
-- "models_app_models_section": "Section" | kind=code-symbol | source=lib/models/app_models.dart:L1703 | neighbors=[app_models.dart] | lang=en
-- "models_app_models_slide": "Slide" | kind=code-symbol | source=lib/models/app_models.dart:L2199 | neighbors=[app_models.dart] | lang=en
-- "models_app_models_slidetemplate": "SlideTemplate" | kind=code-symbol | source=lib/models/app_models.dart:L32 | neighbors=[app_models.dart] | lang=en
-- "models_app_models_str": "_str()" | kind=code-symbol | source=lib/models/app_models.dart:L3 | neighbors=[app_models.dart] | lang=en
-- "models_app_models_tree": "tree" | kind=code-symbol | source=lib/models/app_models.dart:L901 | neighbors=[app_models.dart] | lang=en
-- "models_app_models_trees": "trees" | kind=code-symbol | source=lib/models/app_models.dart:L898 | neighbors=[app_models.dart] | lang=en
-- "models_app_models_unit": "Unit" | kind=code-symbol | source=lib/models/app_models.dart:L1894 | neighbors=[app_models.dart] | lang=en
-- "models_app_models_updateid": "updateId()" | kind=code-symbol | source=lib/models/app_models.dart:L1411 | neighbors=[app_models.dart] | lang=en
-- "models_app_models_wordcount": "_wordCount()" | kind=code-symbol | source=lib/models/app_models.dart:L2069 | neighbors=[app_models.dart] | lang=en
-- "models_daily_goal_dailygoal": "DailyGoal" | kind=code-symbol | source=lib/models/daily_goal.dart:L4 | neighbors=[daily_goal.dart] | lang=en
-- "models_daily_goal_dailygoalupdateevent": "DailyGoalUpdateEvent" | kind=code-symbol | source=lib/models/daily_goal.dart:L117 | neighbors=[daily_goal.dart] | lang=en
-- "models_pyq_models_pyqexamattempt": "PyqExamAttempt" | kind=code-symbol | source=lib/models/pyq_models.dart:L103 | neighbors=[pyq_models.dart] | lang=en
-- "models_pyq_models_pyqitem": "PyqItem" | kind=code-symbol | source=lib/models/pyq_models.dart:L3 | neighbors=[pyq_models.dart] | lang=en
-- "models_pyq_models_pyqquestionanswer": "PyqQuestionAnswer" | kind=code-symbol | source=lib/models/pyq_models.dart:L57 | neighbors=[pyq_models.dart] | lang=en
-- "onboarding_onboarding_screen_dispose": "dispose()" | kind=code-symbol | source=lib/screens/onboarding/onboarding_screen.dart:L67 | neighbors=[onboarding_screen.dart] | lang=en
-- "onboarding_onboarding_screen_finish": "_finish()" | kind=code-symbol | source=lib/screens/onboarding/onboarding_screen.dart:L72 | neighbors=[onboarding_screen.dart] | lang=en
-- "onboarding_onboarding_screen_onboardingpage": "_OnboardingPage" | kind=code-symbol | source=lib/screens/onboarding/onboarding_screen.dart:L10 | neighbors=[onboarding_screen.dart] | lang=en
-- "onboarding_onboarding_screen_onboardingscreen": "OnboardingScreen" | kind=code-symbol | source=lib/screens/onboarding/onboarding_screen.dart:L22 | neighbors=[onboarding_screen.dart] | lang=en
-- "onboarding_onboarding_screen_onboardingscreenstate": "_OnboardingScreenState" | kind=code-symbol | source=lib/screens/onboarding/onboarding_screen.dart:L29 | neighbors=[onboarding_screen.dart] | lang=en
-- "packup_rationale_163": "Checks if a file is likely binary based on its extension or content." | kind=entity | source=packup.py:L163 | neighbors=[is_likely_binary_file()] | lang=en
-- "packup_rationale_189": "Packs all relevant files into a single text file." | kind=entity | source=packup.py:L189 | neighbors=[pack_project()] | lang=pt
-- "packup_rationale_57": "Loads patterns from .gitignore file in the root directory." | kind=entity | source=packup.py:L57 | neighbors=[load_gitignore_patterns()] | lang=en
-- "packup_rationale_81": "Checks if a given path (relative to project root) should be ignored.     Uses .g" | kind=entity | source=packup.py:L81 | neighbors=[should_ignore()] | lang=en
-- "platform_io_stub_add": "add()" | kind=code-symbol | source=lib/platform/io_stub.dart:L182 | neighbors=[io_stub.dart] | lang=en
-- "platform_io_stub_close": "close()" | kind=code-symbol | source=lib/platform/io_stub.dart:L186 | neighbors=[io_stub.dart] | lang=en
-- "platform_io_stub_connect": "connect()" | kind=code-symbol | source=lib/platform/io_stub.dart:L179 | neighbors=[io_stub.dart] | lang=en
-- "platform_io_stub_copy": "copy()" | kind=code-symbol | source=lib/platform/io_stub.dart:L85 | neighbors=[io_stub.dart] | lang=en
-- "platform_io_stub_create": "create()" | kind=code-symbol | source=lib/platform/io_stub.dart:L61 | neighbors=[io_stub.dart] | lang=en
-- "platform_io_stub_createsync": "createSync()" | kind=code-symbol | source=lib/platform/io_stub.dart:L63 | neighbors=[io_stub.dart] | lang=en
-- "platform_io_stub_createtemp": "createTemp()" | kind=code-symbol | source=lib/platform/io_stub.dart:L115 | neighbors=[io_stub.dart] | lang=en
-- "platform_io_stub_delete": "delete()" | kind=code-symbol | source=lib/platform/io_stub.dart:L37 | neighbors=[io_stub.dart] | lang=en
-- "platform_io_stub_deletesync": "deleteSync()" | kind=code-symbol | source=lib/platform/io_stub.dart:L38 | neighbors=[io_stub.dart] | lang=en
+- "lib_main_myapp": "MyApp" | kind=code-symbol | source=packages/webview_cef/example/lib/main.dart:L11 | neighbors=[main.dart]
+- "lib_main_myappstate": "_MyAppState" | kind=code-symbol | source=packages/webview_cef/example/lib/main.dart:L18 | neighbors=[main.dart]
+- "lib_main_popintent": "PopIntent" | kind=code-symbol | source=lib/main.dart:L528 | neighbors=[main.dart]
+- "lib_main_showglobalerroralert": "showGlobalErrorAlert()" | kind=code-symbol | source=lib/main.dart:L83 | neighbors=[main.dart]
+- "lib_main_showratelimitdialog": "showRateLimitDialog()" | kind=code-symbol | source=lib/main.dart:L186 | neighbors=[main.dart]
+- "lib_main_synccurrentbrightness": "_syncCurrentBrightness()" | kind=code-symbol | source=lib/main.dart:L532 | neighbors=[main.dart]
+- "lib_webview_cef_method_channel_getplatformversion": "getPlatformVersion()" | kind=code-symbol | source=packages/webview_cef/lib/webview_cef_method_channel.dart:L13 | neighbors=[webview_cef_method_channel.dart]
+- "lib_webview_cef_method_channel_methodchannelwebviewcef": "MethodChannelWebviewCef" | kind=code-symbol | source=packages/webview_cef/lib/webview_cef_method_channel.dart:L7 | neighbors=[webview_cef_method_channel.dart]
+- "lib_webview_cef_platform_interface_getplatformversion": "getPlatformVersion()" | kind=code-symbol | source=packages/webview_cef/lib/webview_cef_platform_interface.dart:L26 | neighbors=[webview_cef_platform_interface.dart]
+- "lib_webview_cef_platform_interface_that": "that" | kind=code-symbol | source=packages/webview_cef/lib/webview_cef_platform_interface.dart:L19 | neighbors=[webview_cef_platform_interface.dart]
+- "lib_webview_cef_platform_interface_webviewcefplatform": "WebviewCefPlatform" | kind=code-symbol | source=packages/webview_cef/lib/webview_cef_platform_interface.dart:L5 | neighbors=[webview_cef_platform_interface.dart]
+- "linux_main": "main.cc" | kind=code-symbol | source=packages/webview_cef/example/linux/main.cc:L1 | neighbors=[main()]
+- "linux_main_main": "main()" | kind=code-symbol | source=packages/webview_cef/example/linux/main.cc:L4 | neighbors=[main.cc]
+- "linux_my_application_my_application_activate": "my_application_activate()" | kind=code-symbol | source=packages/webview_cef/example/linux/my_application.cc:L19 | neighbors=[my_application.h]
+- "linux_my_application_my_application_class_init": "my_application_class_init()" | kind=code-symbol | source=packages/webview_cef/example/linux/my_application.cc:L94 | neighbors=[my_application.h]
+- "linux_my_application_my_application_dispose": "my_application_dispose()" | kind=code-symbol | source=packages/webview_cef/example/linux/my_application.cc:L88 | neighbors=[my_application.h]
+- "linux_my_application_my_application_init": "my_application_init()" | kind=code-symbol | source=packages/webview_cef/example/linux/my_application.cc:L100 | neighbors=[my_application.h]
+- "linux_my_application_my_application_local_command_line": "my_application_local_command_line()" | kind=code-symbol | source=packages/webview_cef/example/linux/my_application.cc:L69 | neighbors=[my_application.h]
+- "linux_my_application_my_application_new": "my_application_new()" | kind=code-symbol | source=packages/webview_cef/example/linux/my_application.cc:L102 | neighbors=[my_application.h]
+- "linux_webview_cef_keyevent_getcefstatemodifiers": "GetCefStateModifiers()" | kind=code-symbol | source=packages/webview_cef/linux/webview_cef_keyevent.h:L778 | neighbors=[webview_cef_keyevent.h]
+- "linux_webview_cef_keyevent_getcontrolcharacter": "GetControlCharacter()" | kind=code-symbol | source=packages/webview_cef/linux/webview_cef_keyevent.h:L808 | neighbors=[webview_cef_keyevent.h]
+- "linux_webview_cef_keyevent_getwindowskeycodewithoutlocation": "GetWindowsKeyCodeWithoutLocation()" | kind=code-symbol | source=packages/webview_cef/linux/webview_cef_keyevent.h:L762 | neighbors=[webview_cef_keyevent.h]
+- "linux_webview_cef_plugin_initcefprocesses": "initCEFProcesses()" | kind=code-symbol | source=packages/webview_cef/linux/webview_cef_plugin.cc:L292 | neighbors=[webview_cef_plugin.cc]
+- "linux_webview_cef_plugin_processkeyeventforcef": "processKeyEventForCEF()" | kind=code-symbol | source=packages/webview_cef/linux/webview_cef_plugin.cc:L298 | neighbors=[webview_cef_plugin.cc]
+- "linux_webview_cef_plugin_webview_cef_plugin_class_init": "webview_cef_plugin_class_init()" | kind=code-symbol | source=packages/webview_cef/linux/webview_cef_plugin.cc:L243 | neighbors=[webview_cef_plugin.cc]
+- "linux_webview_cef_plugin_webview_cef_plugin_dispose": "webview_cef_plugin_dispose()" | kind=code-symbol | source=packages/webview_cef/linux/webview_cef_plugin.cc:L233 | neighbors=[webview_cef_plugin.cc]
+- "linux_webview_cef_plugin_webview_cef_plugin_init": "webview_cef_plugin_init()" | kind=code-symbol | source=packages/webview_cef/linux/webview_cef_plugin.cc:L248 | neighbors=[webview_cef_plugin.cc]
+- "linux_webview_cef_plugin_webviewtexturerenderer_webviewtexturerenderer": ".WebviewTextureRenderer()" | kind=code-symbol | source=packages/webview_cef/linux/webview_cef_plugin.cc:L32 | neighbors=[WebviewTextureRenderer]
+- "linux_webview_cef_texture_webview_cef_texture_class_init": "webview_cef_texture_class_init()" | kind=code-symbol | source=packages/webview_cef/linux/webview_cef_texture.h:L51 | neighbors=[webview_cef_texture.h]
+- "linux_webview_cef_texture_webview_cef_texture_copy_pixels": "webview_cef_texture_copy_pixels()" | kind=code-symbol | source=packages/webview_cef/linux/webview_cef_texture.h:L25 | neighbors=[webview_cef_texture.h]
+- "linux_webview_cef_texture_webview_cef_texture_init": "webview_cef_texture_init()" | kind=code-symbol | source=packages/webview_cef/linux/webview_cef_texture.h:L55 | neighbors=[webview_cef_texture.h]
+- "linux_webview_cef_texture_webview_cef_texture_new": "webview_cef_texture_new()" | kind=code-symbol | source=packages/webview_cef/linux/webview_cef_texture.h:L47 | neighbors=[webview_cef_texture.h]
+- "models_ai_task_aitask": "AiTask" | kind=code-symbol | source=lib/models/ai_task.dart:L3 | neighbors=[ai_task.dart]
+- "models_app_models_book": "Book" | kind=code-symbol | source=lib/models/app_models.dart:L528 | neighbors=[app_models.dart]
+- "models_app_models_bool": "_bool()" | kind=code-symbol | source=lib/models/app_models.dart:L24 | neighbors=[app_models.dart]
+- "models_app_models_copywith": "copyWith" | kind=code-symbol | source=lib/models/app_models.dart:L1373 | neighbors=[app_models.dart]
+- "models_app_models_coursefolder": "CourseFolder" | kind=code-symbol | source=lib/models/app_models.dart:L2280 | neighbors=[app_models.dart]
+- "models_app_models_getcompletedlessonsuptosection": "getCompletedLessonsUpToSection()" | kind=code-symbol | source=lib/models/app_models.dart:L1013 | neighbors=[app_models.dart]
+- "models_app_models_getestimatedlessonsforsection": "getEstimatedLessonsForSection()" | kind=code-symbol | source=lib/models/app_models.dart:L908 | neighbors=[app_models.dart]
+- "models_app_models_getestimatedlessonsuptosection": "getEstimatedLessonsUpToSection()" | kind=code-symbol | source=lib/models/app_models.dart:L941 | neighbors=[app_models.dart]
 
 ## Instructions
 

@@ -1,0 +1,2535 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Wave Function Bench</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* ═════════ tokens: light is the base, dark redefines ═════════ */
+:root{
+  --red-rgb:198,52,72; --yellow-rgb:166,102,4; --green-rgb:14,120,84;
+  --violet-rgb:96,72,190; --blue-rgb:10,118,132;
+  --ink-rgb:22,19,35;
+  --void:#F4F2F8; --bench:#FFFFFF; --panel:#EDEAF4; --panel2:#E1DCEE;
+  --rule:#D6D0E4; --rule-soft:#E7E3F0;
+  --ink:#161323; --dim:#4E4860; --faint:#7A7391;
+  --screen:#0A0C12;
+  --shadow:0 1px 2px rgba(23,26,34,.06),0 4px 14px rgba(23,26,34,.05);
+  --shadow-lift:0 2px 6px rgba(23,26,34,.10),0 10px 26px rgba(23,26,34,.09);
+  --on-accent:#FFFFFF;
+  --is-dark:0;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --red-rgb:255,110,110; --yellow-rgb:255,180,84; --green-rgb:92,224,138;
+    --violet-rgb:167,139,250; --blue-rgb:76,213,224;
+    --ink-rgb:239,235,246;
+    --void:#0A0810; --bench:#12101C; --panel:#181528; --panel2:#201C34;
+    --rule:#2C2740; --rule-soft:#1E1A2E;
+    --ink:#EFEBF6; --dim:#A29CB8; --faint:#6B6483;
+    --screen:#08060E;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+    --shadow-lift:0 6px 22px rgba(0,0,0,.45);
+    --on-accent:#0A0C12;
+    --is-dark:1;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --red-rgb:255,110,110; --yellow-rgb:255,180,84; --green-rgb:92,224,138;
+  --violet-rgb:167,139,250; --blue-rgb:76,213,224;
+  --ink-rgb:239,235,246;
+  --void:#0A0810; --bench:#12101C; --panel:#181528; --panel2:#201C34;
+  --rule:#2C2740; --rule-soft:#1E1A2E;
+  --ink:#EFEBF6; --dim:#A29CB8; --faint:#6B6483;
+  --screen:#08060E;
+  --shadow:0 1px 2px rgba(0,0,0,.4);
+  --shadow-lift:0 6px 22px rgba(0,0,0,.45);
+  --on-accent:#0A0C12;
+  --is-dark:1;
+  color-scheme:dark;
+}
+:root{
+  --red:rgb(var(--red-rgb)); --yellow:rgb(var(--yellow-rgb)); --green:rgb(var(--green-rgb));
+  --violet:rgb(var(--violet-rgb)); --blue:rgb(var(--blue-rgb));
+  --accent:var(--blue); --accent-rgb:var(--blue-rgb);
+  --a0:rgba(var(--accent-rgb),0); --a2:rgba(var(--accent-rgb),.13); --a3:rgba(var(--accent-rgb),.42);
+  --f-d:'Archivo','Helvetica Neue',Arial,sans-serif;
+  --f-b:'Spectral',Georgia,'Iowan Old Style','Times New Roman',serif;
+  --f-m:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --col:46rem;
+  --sp:clamp(1rem,3.5vw,1.6rem);
+  --tap:40px;
+}
+.m1{--accent-rgb:var(--yellow-rgb)}
+.m2{--accent-rgb:var(--blue-rgb)}
+.m3{--accent-rgb:var(--violet-rgb)}
+.m4{--accent-rgb:var(--green-rgb)}
+.m1,.m2,.m3,.m4{--accent:rgb(var(--accent-rgb));
+  --a0:rgba(var(--accent-rgb),0);--a2:rgba(var(--accent-rgb),.13);--a3:rgba(var(--accent-rgb),.42)}
+
+@media (pointer:coarse){ :root{--tap:46px} }
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--void);color:var(--ink);
+  font-family:var(--f-b);font-size:16px;line-height:1.62;
+  -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
+}
+img{max-width:100%}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:6px}
+::selection{background:rgba(var(--blue-rgb),.24)}
+
+/* ═════════ shell ═════════ */
+#app{display:grid;grid-template-columns:1fr;min-height:100vh}
+.rail{display:none}
+.stage{padding:0 var(--sp) 6.8rem;max-width:100%;overflow-x:clip}
+.wrap{max-width:var(--col);margin:0 auto}
+
+.topbar{
+  position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:.55rem;
+  margin:0 calc(var(--sp) * -1);padding:.5rem var(--sp);
+  background:color-mix(in srgb,var(--void) 88%,transparent);
+  backdrop-filter:blur(14px) saturate(1.4);
+  border-bottom:1px solid var(--rule-soft);
+}
+@supports not (background:color-mix(in srgb,red 50%,blue)){ .topbar{background:var(--void)} }
+.topbar .mark{font-family:var(--f-d);font-weight:700;font-size:1rem;letter-spacing:-.02em;line-height:1;flex:1;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar .mark em{font-style:italic;color:var(--yellow)}
+.pill{font-family:var(--f-m);font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;
+  padding:.24rem .55rem;border:1px solid var(--rule);border-radius:99px;color:var(--dim);white-space:nowrap;
+  background:var(--bench)}
+.pill b{color:var(--ink);font-weight:500}
+
+/* icon button (theme switch) */
+.iconbtn{
+  appearance:none;background:var(--bench);border:1px solid var(--rule);border-radius:10px;
+  width:var(--tap);height:var(--tap);min-width:var(--tap);display:grid;place-items:center;cursor:pointer;
+  color:var(--dim);transition:background .15s,border-color .15s,color .15s;flex:0 0 auto;
+  touch-action:manipulation;
+}
+.iconbtn:hover{background:var(--panel);color:var(--ink);border-color:var(--accent)}
+.iconbtn:active{transform:translateY(1px)}
+.iconbtn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.iconbtn .lbl{display:none}
+
+.tabbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:50;display:grid;grid-template-columns:repeat(5,1fr);
+  background:color-mix(in srgb,var(--bench) 94%,transparent);
+  backdrop-filter:blur(16px) saturate(1.4);border-top:1px solid var(--rule);
+  padding-bottom:env(safe-area-inset-bottom);box-shadow:var(--shadow);
+}
+@supports not (background:color-mix(in srgb,red 50%,blue)){ .tabbar{background:var(--bench)} }
+.tabbar button{
+  appearance:none;background:none;border:0;color:var(--faint);cursor:pointer;
+  padding:.55rem .2rem .6rem;display:flex;flex-direction:column;align-items:center;gap:.24rem;
+  font-family:var(--f-b);font-size:.63rem;letter-spacing:.05em;text-transform:uppercase;
+  position:relative;transition:color .15s;touch-action:manipulation;min-height:56px;justify-content:center;
+}
+.tabbar button svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.tabbar button::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%) scaleX(0);
+  width:36px;height:2.5px;border-radius:0 0 3px 3px;background:var(--yellow);transition:transform .22s ease}
+.tabbar button[aria-selected="true"]{color:var(--ink)}
+.tabbar button[aria-selected="true"]::before{transform:translateX(-50%) scaleX(1)}
+.tabbar button:active{background:var(--panel)}
+
+.view{display:none;animation:rise .28s ease both}
+.view.on{display:block}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001s!important;transition-duration:.001s!important}}
+
+/* ═════════ type ═════════ */
+h1,h2,h3,h4{text-wrap:balance;margin:0}
+h1{font-family:var(--f-d);font-weight:700;font-size:clamp(1.95rem,6.6vw,2.85rem);line-height:1.06;letter-spacing:-.028em}
+h2{font-family:var(--f-d);font-weight:600;font-size:clamp(1.45rem,4.6vw,1.95rem);line-height:1.14;letter-spacing:-.022em}
+h3{font-size:1.02rem;font-weight:600;letter-spacing:-.005em}
+h4{font-size:.9rem;font-weight:600}
+p{margin:0 0 .85rem}
+a{color:var(--blue)}
+.eyebrow{font-family:var(--f-m);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.lede{color:var(--dim);font-size:1.02rem}
+.dimtx{color:var(--dim)}
+.kbd,code{font-family:var(--f-m);font-size:.88em;background:var(--panel);border:1px solid var(--rule);
+  border-radius:5px;padding:.05em .35em;color:var(--ink)}
+hr.rule{border:0;border-top:1px solid var(--rule);margin:2.4rem 0}
+.fringe{height:22px;margin:.9rem 0 0;position:relative}
+.fringe::before,.fringe::after{content:"";position:absolute;left:0;background:var(--accent);border-radius:1px}
+.fringe::before{top:0;height:2px;width:100%;opacity:.85}
+.fringe::after{top:10px;height:1.5px;width:56%;opacity:.5}
+.fringe i{position:absolute;left:0;top:17px;height:1px;width:31%;background:var(--accent);opacity:.32;border-radius:1px}
+.stack{display:flex;flex-direction:column;gap:.75rem}
+.row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+
+/* ═════════ bench (home) ═════════ */
+.hero{padding:2rem 0 1.2rem}
+.hero h1 em{font-style:italic;color:var(--yellow)}
+.countdown{display:flex;align-items:baseline;gap:.55rem;font-family:var(--f-m);margin:1.1rem 0 .3rem}
+.countdown b{font-family:var(--f-d);font-weight:700;font-size:2.4rem;letter-spacing:-.03em;line-height:1;color:var(--yellow);
+  font-variant-numeric:tabular-nums}
+.countdown span{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+.setexam{appearance:none;background:none;border:0;border-bottom:1px dashed var(--rule);color:var(--dim);
+  font:inherit;font-size:.82rem;cursor:pointer;padding:.2rem 0;min-height:32px;touch-action:manipulation}
+.setexam:hover{color:var(--ink);border-bottom-color:var(--accent)}
+
+.plan{display:grid;gap:.55rem;margin:1.4rem 0}
+.planrow{display:grid;grid-template-columns:2.1rem 1fr auto;gap:.7rem;align-items:center;
+  padding:.8rem .85rem;background:var(--bench);border:1px solid var(--rule-soft);border-radius:12px;
+  border-left:3px solid var(--accent);cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit;
+  box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s,border-color .15s;touch-action:manipulation}
+.planrow:hover{box-shadow:var(--shadow-lift);border-color:var(--rule)}
+.planrow:active{transform:scale(.995)}
+.planrow .rn{font-family:var(--f-d);font-weight:600;font-size:1.15rem;color:var(--accent);line-height:1}
+.planrow .nm{min-width:0}
+.planrow .nm b{display:block;font-weight:600;font-size:.95rem}
+.planrow .nm small{color:var(--faint);font-size:.76rem;font-family:var(--f-m)}
+.planrow .mk{font-family:var(--f-m);font-size:.8rem;color:var(--dim);text-align:right;white-space:nowrap}
+.planrow .mk i{display:block;font-style:normal;font-size:.68rem;color:var(--faint)}
+.bar{height:5px;background:var(--panel2);border-radius:3px;overflow:hidden;grid-column:1/-1;margin-top:.25rem}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .4s}
+
+.cards{display:grid;gap:.7rem;grid-template-columns:1fr}
+@media(min-width:520px){.cards{grid-template-columns:1fr 1fr}}
+.card{background:var(--bench);border:1px solid var(--rule-soft);border-radius:13px;padding:1rem;box-shadow:var(--shadow)}
+.card h4{margin-bottom:.35rem}
+.card p{font-size:.88rem;color:var(--dim);margin:0}
+
+/* ═════════ buttons ═════════ */
+.btn{appearance:none;font:inherit;font-weight:500;font-size:.9rem;cursor:pointer;
+  background:var(--bench);color:var(--ink);border:1px solid var(--rule);border-radius:10px;
+  padding:.5rem 1rem;min-height:var(--tap);display:inline-flex;align-items:center;justify-content:center;gap:.4rem;
+  transition:background .15s,border-color .15s,transform .1s,box-shadow .15s;
+  touch-action:manipulation;box-shadow:var(--shadow)}
+.btn:hover{background:var(--panel);border-color:var(--accent)}
+.btn:active{transform:translateY(1px);box-shadow:none}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn.sm{padding:.35rem .75rem;font-size:.82rem;min-height:36px;border-radius:9px}
+@media(pointer:coarse){.btn.sm{min-height:40px;padding:.4rem .85rem}}
+.btn[disabled]{opacity:.45;cursor:not-allowed;box-shadow:none}
+.btn[disabled]:active{transform:none}
+
+/* ═════════ module content ═════════ */
+.modtabs{display:flex;gap:.4rem;overflow-x:auto;padding:.7rem 0 .8rem;scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;position:sticky;top:3.5rem;z-index:20;
+  background:linear-gradient(180deg,var(--void) 72%,transparent)}
+.modtabs::-webkit-scrollbar{display:none}
+.modtab{flex:0 0 auto;font:inherit;font-size:.83rem;cursor:pointer;padding:.45rem .9rem;border-radius:99px;
+  background:var(--bench);border:1px solid var(--rule);color:var(--dim);white-space:nowrap;min-height:38px;
+  transition:background .15s,color .15s,border-color .15s;touch-action:manipulation;box-shadow:var(--shadow)}
+.modtab:active{transform:translateY(1px)}
+.modtab[aria-selected="true"]{color:var(--on-accent);font-weight:600}
+.modtab.m1[aria-selected="true"]{background:var(--yellow);border-color:var(--yellow)}
+.modtab.m2[aria-selected="true"]{background:var(--blue);border-color:var(--blue)}
+
+.mod{display:none}
+.mod.on{display:block}
+.modhead{padding:.4rem 0 1.4rem}
+.modhead .eyebrow b{color:var(--accent);font-weight:500}
+.modhead h2{margin:.35rem 0 .5rem}
+
+.unit{scroll-margin-top:6.5rem;padding:1.7rem 0 .4rem}
+.unit>.uh{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.9rem;flex-wrap:wrap;
+  border-top:1px solid var(--rule);padding-top:1.1rem}
+.unit>.uh .n{font-family:var(--f-m);font-size:.72rem;color:var(--accent);letter-spacing:.08em;
+  border:1px solid var(--a3);border-radius:6px;padding:.12rem .42rem;white-space:nowrap;background:var(--a2)}
+.unit>.uh h3{font-size:1.15rem}
+
+.carry{display:grid;gap:0;border:1px solid var(--rule);border-radius:13px;overflow:hidden;margin:0 0 1.2rem;
+  box-shadow:var(--shadow)}
+@media(min-width:640px){.carry{grid-template-columns:1fr 1fr}}
+.carry>div{padding:.85rem .95rem}
+.carry .old{background:var(--panel);border-bottom:1px solid var(--rule)}
+@media(min-width:640px){.carry .old{border-bottom:0;border-right:1px solid var(--rule)}}
+.carry .new{background:var(--bench);background-image:linear-gradient(180deg,var(--a2),transparent)}
+.carry h5{margin:0 0 .35rem;font-family:var(--f-m);font-size:.68rem;letter-spacing:.12em;
+  text-transform:uppercase;font-weight:500}
+.carry .old h5{color:var(--faint)}
+.carry .new h5{color:var(--accent)}
+.carry p{font-size:.88rem;margin:0;color:var(--dim)}
+.carry .new p{color:var(--ink)}
+.carry ul{margin:.2rem 0 0;padding-left:1.05rem;font-size:.88rem}
+.carry li{margin:.18rem 0}
+
+.fx{background:var(--bench);border:1px solid var(--rule);border-left:3px solid var(--accent);
+  border-radius:10px;padding:.8rem 1rem;margin:1rem 0;box-shadow:var(--shadow)}
+.fx .lbl{font-family:var(--f-m);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--accent);display:block;margin-bottom:.15rem}
+.fx .why{font-size:.83rem;color:var(--dim);margin:.35rem 0 0}
+
+.ladder{border:1px solid var(--rule);border-radius:13px;margin:1.2rem 0;overflow:hidden;background:var(--bench);
+  box-shadow:var(--shadow)}
+.ladder>header{padding:.75rem .95rem;border-bottom:1px solid var(--rule);display:flex;gap:.6rem;align-items:center;
+  flex-wrap:wrap;background:var(--panel)}
+.ladder>header .lbl{font-family:var(--f-m);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.ladder>header b{font-size:.92rem;font-weight:600;flex:1 1 12rem;min-width:0}
+.rung{padding:.75rem .95rem;border-top:1px dashed var(--rule);font-size:.94rem}
+.rung:first-of-type{border-top:0}
+.rung.hid{display:none}
+.ladder>footer{padding:.65rem .95rem;display:flex;gap:.5rem;border-top:1px solid var(--rule);background:var(--panel)}
+.ladder .steplbl{font-family:var(--f-m);font-size:.68rem;color:var(--faint);display:block;margin-bottom:.2rem;
+  letter-spacing:.05em}
+
+.check{border:1px solid var(--a3);background:var(--bench);background-image:linear-gradient(180deg,var(--a2),transparent);
+  border-radius:13px;padding:.9rem 1rem;margin:1.2rem 0;box-shadow:var(--shadow)}
+.check .q{font-weight:500;font-size:.95rem;margin:0 0 .6rem}
+.check .q b{font-family:var(--f-m);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--accent);display:block;font-weight:500;margin-bottom:.25rem}
+.check .a{display:none;font-size:.92rem;color:var(--dim);border-top:1px dashed var(--rule);padding-top:.6rem;margin-top:.6rem}
+.check.open .a{display:block}
+.check .a strong{color:var(--ink);font-weight:600}
+
+.trap{display:flex;gap:.65rem;background:rgba(var(--red-rgb),.08);border:1px solid rgba(var(--red-rgb),.30);
+  border-radius:10px;padding:.75rem .9rem;margin:1rem 0;font-size:.89rem}
+.trap .ic{color:var(--red);flex:0 0 auto;font-family:var(--f-m);font-size:.7rem;letter-spacing:.1em;
+  text-transform:uppercase;padding-top:.15rem}
+.trap p{margin:0}
+.trap b{color:var(--red)}
+
+.note{border-left:2px solid var(--rule);padding-left:.9rem;margin:1rem 0;font-size:.89rem;color:var(--dim)}
+
+table.tbl{width:100%;border-collapse:collapse;font-size:.86rem;margin:1rem 0;min-width:22rem}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.tbl th,table.tbl td{text-align:left;padding:.5rem .6rem;border-bottom:1px solid var(--rule-soft);vertical-align:top}
+table.tbl th{font-family:var(--f-m);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);
+  border-bottom:1px solid var(--rule)}
+table.tbl td:first-child{color:var(--ink)}
+table.tbl tbody tr:hover{background:var(--panel)}
+
+ul.tick{list-style:none;padding:0;margin:.6rem 0}
+ul.tick li{position:relative;padding-left:1.15rem;margin:.3rem 0;font-size:.92rem}
+ul.tick li::before{content:"";position:absolute;left:0;top:.62em;width:5px;height:5px;border-radius:50%;
+  background:var(--accent)}
+
+/* ═════════ sim bench ═════════ */
+.simwrap{margin:1.4rem 0;background:var(--bench);border:1px solid var(--rule);border-radius:14px;overflow:hidden;
+  box-shadow:var(--shadow)}
+@media(min-width:1180px){.simwrap{width:52rem;margin-left:-3rem}}
+.simwrap>header{padding:.75rem .95rem;display:flex;gap:.55rem;align-items:baseline;flex-wrap:wrap;
+  border-bottom:1px solid var(--rule);background:var(--panel)}
+.simwrap>header .lbl{font-family:var(--f-m);font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.simwrap>header b{font-size:.93rem;font-weight:600;flex:1 1 10rem}
+.draghint{font-family:var(--f-m);font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--faint);border:1px solid var(--rule);border-radius:99px;padding:.16rem .5rem;white-space:nowrap}
+.simwrap canvas{display:block;width:100%;height:auto;touch-action:pan-y;background:var(--bench)}
+.simwrap canvas.grab{cursor:ew-resize}
+.ctrls{display:grid;gap:.7rem .95rem;padding:.85rem .95rem;border-top:1px solid var(--rule);
+  grid-template-columns:1fr}
+@media(min-width:600px){.ctrls{grid-template-columns:1fr 1fr}}
+.ctrl{display:grid;grid-template-columns:1fr auto;gap:.1rem .5rem;align-items:baseline;font-size:.8rem}
+.ctrl>span:first-child{grid-row:1;grid-column:1;font-family:var(--f-m);color:var(--dim)}
+.ctrl output{grid-row:1;grid-column:2;font-family:var(--f-m);color:var(--ink);
+  font-variant-numeric:tabular-nums;text-align:right;font-size:.8rem;font-weight:500}
+.ctrl input[type=range]{grid-row:2;grid-column:1/-1;margin-top:.1rem}
+
+input[type=range]{
+  appearance:none;-webkit-appearance:none;width:100%;background:transparent;cursor:pointer;margin:0;
+  height:26px;touch-action:pan-y;
+}
+@media(pointer:coarse){ input[type=range]{height:34px} }
+input[type=range]::-webkit-slider-runnable-track{
+  height:6px;border-radius:99px;
+  background:linear-gradient(90deg,var(--accent) calc(var(--p,0) * 100%),var(--panel2) calc(var(--p,0) * 100%));
+  border:1px solid var(--rule);
+}
+input[type=range]::-moz-range-track{height:6px;border-radius:99px;background:var(--panel2);border:1px solid var(--rule)}
+input[type=range]::-moz-range-progress{height:6px;border-radius:99px;background:var(--accent)}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--bench);border:3px solid var(--accent);margin-top:-8px;
+  box-shadow:var(--shadow);transition:transform .12s;
+}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;
+  background:var(--bench);border:3px solid var(--accent);box-shadow:var(--shadow)}
+@media(pointer:coarse){
+  input[type=range]::-webkit-slider-thumb{width:26px;height:26px;margin-top:-11px}
+  input[type=range]::-moz-range-thumb{width:26px;height:26px}
+}
+input[type=range]:active::-webkit-slider-thumb{transform:scale(1.15)}
+input[type=range]:focus-visible::-webkit-slider-thumb{outline:2px solid var(--blue);outline-offset:2px}
+
+.readouts{display:flex;flex-wrap:wrap;gap:.45rem;padding:0 .95rem .85rem;align-items:center}
+.readouts:first-of-type{padding-top:.8rem}
+.ro{font-family:var(--f-m);font-size:.74rem;background:var(--panel);border:1px solid var(--rule);
+  border-radius:7px;padding:.28rem .55rem;color:var(--dim);font-variant-numeric:tabular-nums}
+.ro b{color:var(--accent);font-weight:500}
+.simwrap figcaption{padding:0 .95rem 1rem;font-size:.84rem;color:var(--dim)}
+.seg{display:flex;gap:.35rem;flex-wrap:wrap}
+.seg button{font:inherit;font-size:.78rem;padding:.4rem .75rem;border-radius:9px;cursor:pointer;
+  background:var(--bench);border:1px solid var(--rule);color:var(--dim);min-height:38px;
+  transition:background .15s,color .15s,border-color .15s;touch-action:manipulation}
+@media(pointer:coarse){.seg button{min-height:42px;padding:.45rem .85rem}}
+.seg button:hover{border-color:var(--accent);color:var(--ink)}
+.seg button:active{transform:translateY(1px)}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+
+/* ═════════ drill ═════════ */
+.qcard{background:var(--bench);border:1px solid var(--rule);border-radius:14px;padding:1.1rem;margin:1rem 0;
+  box-shadow:var(--shadow)}
+.qmeta{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.7rem}
+.tag{font-family:var(--f-m);font-size:.64rem;letter-spacing:.09em;text-transform:uppercase;
+  padding:.2rem .5rem;border-radius:6px;border:1px solid var(--rule);color:var(--faint)}
+.tag.acc{color:var(--accent);border-color:var(--a3);background:var(--a2)}
+.qtext{font-size:1.02rem;margin:0 0 .9rem}
+.opts{display:grid;gap:.5rem}
+.opt{display:flex;gap:.65rem;align-items:flex-start;text-align:left;font:inherit;font-size:.93rem;
+  cursor:pointer;background:var(--panel);border:1px solid var(--rule);border-radius:11px;padding:.75rem .85rem;
+  color:var(--ink);transition:border-color .15s,background .15s,transform .1s;touch-action:manipulation}
+.opt:hover{border-color:var(--accent);background:var(--panel2)}
+.opt:active{transform:translateY(1px)}
+.opt .k{font-family:var(--f-m);font-size:.78rem;color:var(--faint);flex:0 0 auto;font-weight:600}
+.opt.right{border-color:var(--green);background:rgba(var(--green-rgb),.12)}
+.opt.right .k{color:var(--green)}
+.opt.wrong{border-color:var(--red);background:rgba(var(--red-rgb),.12)}
+.opt.wrong .k{color:var(--red)}
+.opt[disabled]{cursor:default;opacity:1}
+.expl{display:none;margin-top:.9rem;padding-top:.85rem;border-top:1px dashed var(--rule);font-size:.92rem;color:var(--dim)}
+.expl.on{display:block}
+.expl strong{color:var(--ink)}
+.numin{font:inherit;font-family:var(--f-m);background:var(--panel);border:1px solid var(--rule);
+  color:var(--ink);border-radius:10px;padding:.55rem .75rem;width:9rem;min-height:var(--tap)}
+.numin:focus{border-color:var(--accent);outline:none}
+select.numin{width:auto;max-width:100%;cursor:pointer}
+.conf{display:flex;gap:.45rem;margin:.7rem 0 0;flex-wrap:wrap;align-items:center}
+.progline{display:flex;gap:.4rem;align-items:center;font-family:var(--f-m);font-size:.74rem;color:var(--faint)}
+.dots{display:flex;gap:3px;flex-wrap:wrap}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--panel2);display:block}
+.dots i.ok{background:var(--green)}.dots i.no{background:var(--red)}.dots i.cur{background:var(--yellow)}
+textarea.essay{width:100%;min-height:9rem;font:inherit;font-size:.93rem;background:var(--panel);
+  border:1px solid var(--rule);color:var(--ink);border-radius:11px;padding:.75rem .85rem;resize:vertical}
+textarea.essay:focus{border-color:var(--accent);outline:none}
+.aiout{white-space:pre-wrap;font-size:.9rem;color:var(--dim);margin-top:.8rem;border-top:1px dashed var(--rule);padding-top:.7rem}
+.bdcheck{display:flex;gap:.7rem;align-items:flex-start;font-size:.92rem;cursor:pointer;padding:.25rem 0}
+.bdcheck input{width:20px;height:20px;margin-top:.2rem;accent-color:var(--green);flex:0 0 auto}
+
+/* ═════════ sheet ═════════ */
+.sheet{font-size:.88rem}
+.sheet h3{font-family:var(--f-d);font-weight:600;font-size:1.32rem;letter-spacing:-.02em;color:var(--accent);margin:0}
+.sblock{border:1px solid var(--rule);border-radius:13px;padding:.95rem 1rem;margin:.85rem 0;background:var(--bench);
+  box-shadow:var(--shadow)}
+.sgrid{display:grid;gap:.45rem .9rem;grid-template-columns:1fr}
+@media(min-width:620px){.sgrid{grid-template-columns:1fr 1fr}}
+.si{display:grid;grid-template-columns:1fr;gap:.1rem;padding:.4rem 0;border-bottom:1px dotted var(--rule)}
+.si .t{font-size:.78rem;color:var(--faint);font-family:var(--f-m)}
+.timerbar{position:sticky;top:0;z-index:30;background:var(--void);
+  padding:.6rem 0;border-bottom:1px solid var(--rule);display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+.tclock{font-family:var(--f-d);font-weight:700;font-size:1.6rem;color:var(--yellow);font-variant-numeric:tabular-nums;line-height:1}
+.tsegs{display:flex;gap:2px;flex:1 1 8rem;height:6px;min-width:6rem}
+.tsegs i{flex:1;background:var(--panel2);border-radius:2px}
+.tsegs i.on{background:var(--yellow)}
+
+/* ═════════ desktop rail ═════════ */
+@media(min-width:900px){
+  #app{grid-template-columns:15.5rem 1fr}
+  .tabbar{display:none}
+  .stage{padding-bottom:3rem}
+  .rail{display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;
+    border-right:1px solid var(--rule);padding:1.4rem 1rem;background:var(--bench)}
+  .rail .mark{font-family:var(--f-d);font-weight:700;font-size:1.25rem;line-height:1.15;letter-spacing:-.02em;margin-bottom:.15rem}
+  .rail .mark em{font-style:italic;color:var(--yellow)}
+  .rail .sub{font-family:var(--f-m);font-size:.66rem;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--faint);margin-bottom:1.3rem}
+  .rail nav{display:flex;flex-direction:column;gap:.15rem}
+  .rail nav button{font:inherit;font-size:.88rem;text-align:left;cursor:pointer;background:none;border:0;
+    color:var(--dim);padding:.5rem .6rem;border-radius:9px;display:flex;align-items:center;gap:.6rem;
+    transition:background .15s,color .15s}
+  .rail nav button:hover{background:var(--panel);color:var(--ink)}
+  .rail nav button[aria-selected="true"]{background:var(--panel2);color:var(--ink);font-weight:500}
+  .rail nav button svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .rail .sec{font-family:var(--f-m);font-size:.62rem;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--faint);margin:1.3rem 0 .4rem;padding:0 .6rem}
+  .rail .mlink{display:flex;align-items:center;gap:.55rem;font:inherit;font-size:.85rem;cursor:pointer;
+    background:none;border:0;color:var(--dim);padding:.42rem .6rem;border-radius:9px;text-align:left;width:100%;
+    transition:background .15s,color .15s}
+  .rail .mlink:hover{background:var(--panel);color:var(--ink)}
+  .rail .mlink .sw{width:9px;height:9px;border-radius:3px;flex:0 0 auto}
+  .rail .foot{margin-top:auto;padding-top:1rem}
+  .rail .iconbtn{width:100%;justify-content:flex-start;padding:0 .6rem;display:flex;gap:.6rem;
+    align-items:center;font-size:.85rem;font-family:var(--f-b);border-radius:9px}
+  .rail .iconbtn .lbl{display:inline}
+  .topbar{display:none}
+  .modtabs{top:0;padding-top:1rem}
+  .unit{scroll-margin-top:4.2rem}
+  .hero{padding-top:2.6rem}
+}
+
+/* ═════════ print: only the crunch sheet, always on white ═════════ */
+@media print{
+  body{background:#fff;color:#000;font-size:10.5pt}
+  .rail,.tabbar,.topbar,.timerbar,.noprint{display:none!important}
+  .view{display:none!important}
+  #view-sheet{display:block!important}
+  .stage{padding:0}
+  .sblock{border:1px solid #bbb;background:#fff;box-shadow:none;break-inside:avoid;page-break-inside:avoid}
+  .sheet h3{color:#000}
+  .si .t{color:#555}
+  .si{border-bottom:1px dotted #bbb}
+  .trap{background:#f4f4f4;border-color:#999}
+  .pill{border-color:#bbb;color:#444;background:none}
+}
+</style>
+
+<div id="app">
+<aside class="rail">
+  <div class="mark">The Wave <em>Function</em> Bench</div>
+  <div class="sub">Quantum Mechanics I · Modules I–II</div>
+  <nav id="railnav">
+    <button data-go="bench" aria-selected="true"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Bench</button>
+    <button data-go="learn"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M20 18v3H6.5A2.5 2.5 0 0 1 4 18.5"/></svg>Learn</button>
+    <button data-go="drill"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Drill</button>
+    <button data-go="toolkit"><svg viewBox="0 0 24 24"><path d="M4 7h7M4 12h10M4 17h5"/><path d="M17.5 5v14M15 8.5 17.5 5 20 8.5"/></svg>Toolkit</button>
+    <button data-go="sheet"><svg viewBox="0 0 24 24"><path d="M5 3h14v18H5z"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/></svg>Sheet</button>
+  </nav>
+  <div class="sec">Modules</div>
+  <div style="display:flex;flex-direction:column;gap:.1rem">
+    <button class="mlink" data-mod="m1"><i class="sw" style="background:var(--yellow)"></i>I · Wave function<span style="margin-left:auto;font-family:var(--f-m);font-size:.7rem;color:var(--faint)">10</span></button>
+    <button class="mlink" data-mod="m2"><i class="sw" style="background:var(--blue)"></i>II · TISE<span style="margin-left:auto;font-family:var(--f-m);font-size:.7rem;color:var(--faint)">20</span></button>
+  </div>
+  <div class="sec">Method</div>
+  <div style="padding:0 .6rem;font-size:.78rem;color:var(--faint);line-height:1.5">
+    Read → attempt the ladder → move the bench → answer aloud → mixed drill.<br><br>
+    <span id="railprog" style="font-family:var(--f-m);color:var(--dim)">0 of 0 checkpoints cleared</span>
+  </div>
+  <div class="foot"><button class="iconbtn" data-theme-btn aria-label="Change theme"></button></div>
+</aside>
+
+<main class="stage">
+<div class="topbar">
+  <div class="mark">Wave <em>Function</em> Bench</div>
+  <div class="pill" id="toppill"><b>0%</b> ready</div>
+  <button class="iconbtn" data-theme-btn aria-label="Change theme"></button>
+</div>
+
+<!-- ══════════════════════ BENCH ══════════════════════ -->
+<section id="view-bench" class="view on m2">
+<div class="wrap">
+  <div class="hero">
+    <div class="eyebrow">Semester V · Core in Major · 4 credits · 60 hours</div>
+    <h1>Bohr gave you rules.<br>This gives you the <em>equation</em>.</h1>
+    <p class="lede" style="margin-top:.9rem">Your +2 handed you \(\lambda = h/p\), quantised orbits and the photoelectric equation as facts to apply. Modules I and II replace all of it with one differential equation and one rule for reading it — and then make you solve it for a box, a free particle, a step and a barrier.</p>
+    <div class="countdown">
+      <b id="cdnum">--</b><span id="cdunit">to the paper</span>
+    </div>
+    <button class="setexam" id="setexam">set exam time →</button>
+    <div class="fringe"><i></i></div>
+  </div>
+
+  <h3 style="margin-top:1.6rem">What this covers — 30 of the 70 marks</h3>
+  <p class="dimtx" style="font-size:.9rem">Module II alone carries twice the marks of Module I, and every one of its units ends in a derivation you can be asked to reproduce.</p>
+  <div class="plan" id="plan"></div>
+  <p class="dimtx" style="font-size:.84rem;margin-top:-.4rem">Module III (Mathematical tools, 25 marks) and Module IV (Harmonic oscillator, 15 marks) are not in this app yet.</p>
+
+  <div class="card" style="border-left:3px solid var(--blue)">
+    <h4>A working route — about 2 h 30 m</h4>
+    <p style="margin-top:.4rem">
+      <b style="color:var(--ink)">0:00</b> Stationary states and the infinite well (50 min) — the 20-mark core, done first.<br>
+      <b style="color:var(--ink)">0:50</b> Free particle, wave packets, probability current (30 min).<br>
+      <b style="color:var(--ink)">1:20</b> Potential step and barrier (35 min) — end on tunnelling.<br>
+      <b style="color:var(--ink)">1:55</b> All of Module I (25 min) — short, and mostly one idea plus statistics.<br>
+      <b style="color:var(--ink)">2:20</b> Mixed drill, no notes.<br>
+      <b style="color:var(--ink)">Exam − 10 min</b> The crunch sheet. Nothing else.
+    </p>
+  </div>
+
+  <h3 style="margin-top:2rem">The one convention used everywhere here</h3>
+  <div class="card" style="margin-top:.6rem">
+    <p style="margin:0;font-size:.92rem">Every wave function in this app is drawn with <b style="color:var(--yellow)">gold where \(\psi\) is positive</b> and <b style="color:var(--blue)">cyan where it is negative</b>, with \(|\psi|^2\) shaded underneath. Sign is not decoration — it is what makes nodes, parity and orthogonality visible, and it is the first thing to draw in any exam sketch.</p>
+  </div>
+
+  <h3 style="margin-top:2rem">How to work each unit</h3>
+  <p class="dimtx" style="font-size:.9rem">Re-reading a derivation you already understand teaches you nothing. Five moves, in this order:</p>
+  <div class="cards" style="margin-top:.8rem">
+    <div class="card"><h4>1 · Read the delta only</h4><p>Each unit opens with what you carry over from +2 or from mathematics, and what is genuinely new. Skip the carry-over line when it's obvious — that is what it's for.</p></div>
+    <div class="card"><h4>2 · Attempt the ladder first</h4><p>Every derivation is hidden one rung at a time. Predict the next line before you reveal it. In QM the algebra is short; it is knowing <i>which move comes next</i> that earns marks.</p></div>
+    <div class="card"><h4>3 · Move the bench</h4><p>Say what the number will do before you drag. If the tunnelling probability surprises you, you don't own the formula yet.</p></div>
+    <div class="card"><h4>4 · Answer the checkpoint aloud</h4><p>From memory, out loud, then reveal. Recognition feels like knowledge and isn't.</p></div>
+    <div class="card"><h4>5 · Drill interleaved</h4><p>Mix Module I and II questions. Jumbling feels harder and scores better.</p></div>
+    <div class="card"><h4>6 · Brain-dump before bed</h4><p>Ten minutes of free recall on blank paper, then check against the list. What you miss is your actual revision list.</p></div>
+  </div>
+
+  <h3 style="margin-top:2rem">Jump straight in</h3>
+  <div class="row" style="margin-top:.6rem">
+    <button class="btn pri" data-go="learn" data-mod="m2">Start Module II</button>
+    <button class="btn" data-go="drill">Mixed drill</button>
+    <button class="btn" data-go="sheet">10-minute sheet</button>
+  </div>
+  <p class="dimtx" style="font-size:.82rem;margin-top:1rem">Progress is saved on this device only. <button class="setexam" id="resetprog">reset progress</button></p>
+</div>
+</section>
+
+<!-- ══════════════════════ LEARN ══════════════════════ -->
+<section id="view-learn" class="view">
+<div class="wrap">
+  <div class="modtabs" id="modtabs">
+    <button class="modtab m1" data-mod="m1" aria-selected="false">I · The wave function</button>
+    <button class="modtab m2" data-mod="m2" aria-selected="true">II · Time-independent SE</button>
+  </div>
+
+<!-- ─────────── MODULE I ─────────── -->
+<article class="mod m1" id="mod-m1">
+  <div class="modhead">
+    <div class="eyebrow">Module I · 6 hours · <b>10 marks</b> · Griffiths §1.1–1.6</div>
+    <h2>The Wave Function</h2>
+    <p class="lede">Five short units that install the whole apparatus: a complex state, a law of motion for it, a rule for turning it into predictions, and the statistics you need to state those predictions properly.</p>
+    <div class="fringe"><i></i></div>
+  </div>
+
+  <section class="unit" id="u1">
+    <div class="uh"><span class="n">Unit 1</span><h3>The Schrödinger equation and the statistical interpretation</h3></div>
+    <div class="carry">
+      <div class="old"><h5>You carry over</h5><p>\(\lambda=h/p\), \(E=h\nu\), Bohr's quantised orbits, "electrons behave like waves too". All of it handed to you as results, with no equation behind them.</p></div>
+      <div class="new"><h5>New ground</h5><ul>
+        <li>The state is a <b>complex</b> function \(\Psi(x,t)\), not a trajectory</li>
+        <li>One equation of motion, playing the role of \(F=ma\)</li>
+        <li>Born's rule: \(|\Psi|^2\) is a probability <b>density</b></li>
+        <li>Indeterminacy, the three positions on it, and collapse</li>
+      </ul></div>
+    </div>
+
+    <p>Classically, \(m\ddot x=-\partial V/\partial x\) plus two initial conditions gives \(x(t)\), and every other quantity follows from it. Quantum mechanics replaces the trajectory with a wave function and Newton's law with:</p>
+    <div class="fx"><span class="lbl">Time-dependent Schrödinger equation</span>
+      $$i\hbar\frac{\partial\Psi}{\partial t}=-\frac{\hbar^2}{2m}\frac{\partial^2\Psi}{\partial x^2}+V(x,t)\,\Psi$$
+      <p class="why">\(\hbar=h/2\pi=1.0546\times10^{-34}\,\)J·s. Given \(\Psi(x,0)\), this determines \(\Psi(x,t)\) for all later \(t\) — <b>deterministically</b>. The indeterminacy of quantum mechanics is not in this equation; it enters only when you measure.</p>
+    </div>
+    <div class="fx"><span class="lbl">Born's statistical interpretation</span>
+      $$P_{ab}(t)=\int_a^b|\Psi(x,t)|^2\,dx,\qquad |\Psi|^2=\Psi^*\Psi$$
+      <p class="why">\(|\Psi(x,t)|^2\) is the probability <i>per unit length</i> of finding the particle at \(x\). The probability of finding it at one exact point is zero — you must always integrate over an interval.</p>
+    </div>
+
+    <div class="trap"><span class="ic">Trap</span><p>\(\Psi\) itself is <b>not</b> a probability and is not measurable — it is complex. \(|\Psi|^2\) is a <b>density</b>, with units of 1/length in 1D, so it can be greater than 1. Only its integral over a region is a probability.</p></div>
+
+    <h4>The measurement problem — the 3-mark bookwork</h4>
+    <p>A measurement finds the particle at \(x=C\). Where was it just before?</p>
+    <ul class="tick">
+      <li><b>Realist:</b> it was at \(C\); \(\Psi\) is an incomplete description and some hidden variable fixes the answer.</li>
+      <li><b>Orthodox (Copenhagen):</b> it was nowhere definite; the measurement <i>made</i> it be at \(C\).</li>
+      <li><b>Agnostic:</b> the question is unanswerable and therefore not physics.</li>
+    </ul>
+    <p><b>Bell (1964)</b> showed local realist theories obey inequalities that quantum mechanics violates; experiment sides with quantum mechanics, ruling out <i>local</i> hidden variables and leaving the orthodox position (or explicitly non-local theories such as de Broglie–Bohm).</p>
+    <div class="fx"><span class="lbl">Collapse — two kinds of evolution</span>
+      <p class="why" style="margin-top:0">A repeated measurement must give \(C\) again, so the first measurement must have changed the state into a spike at \(C\). Quantum mechanics therefore has <b>two</b> dynamics: continuous, deterministic, unitary evolution under the Schrödinger equation between measurements, and discontinuous, non-unitary <b>collapse</b> at a measurement.</p>
+    </div>
+
+    <figure class="simwrap" data-sim="born">
+      <header><span class="lbl">Bench 01</span><b>One particle at a time: where the pattern comes from</b></header>
+      <canvas></canvas>
+      <div class="readouts">
+        <span class="ro">detections <b data-out="n">–</b></span>
+        <span class="ro">rate <b data-out="rate">–</b></span>
+        <span class="ro">mode <b data-out="mode">–</b></span>
+      </div>
+      <div class="ctrls">
+        <label class="ctrl"><span>detections so far</span><input type="range" min="0" max="4000" value="60" step="10" data-k="n"><output></output></label>
+        <label class="ctrl"><span>slit separation</span><input type="range" min="0.6" max="3" value="1.6" step="0.05" data-k="d"><output></output></label>
+      </div>
+      <div class="readouts"><div class="seg" data-seg="mode"><button data-v="both" aria-pressed="true">Both slits open</button><button data-v="one" aria-pressed="false">One slit blocked</button></div></div>
+      <figcaption>Each dot is one whole particle arriving at one place. Nothing about a single detection looks wavelike; the curve \(|\Psi|^2\) only appears in the <b>statistics</b> of thousands of them. Block a slit and the pattern is not half the previous one — it is a different function, because amplitudes add, not probabilities.</figcaption>
+    </figure>
+
+    <div class="check" data-ck="m1c1">
+      <p class="q"><b>Checkpoint · say it out loud</b>Why can't \(|\Psi(x,t)|^2\) be called "the probability that the particle is at \(x\)"?</p>
+      <div class="row"><button class="btn sm" data-ck-show>Reveal</button></div>
+      <div class="a">Because \(x\) is a <strong>continuous</strong> variable: the probability of any single exact value is zero. \(|\Psi|^2\) is a probability <strong>density</strong> — probability per unit length — and only \(\int_a^b|\Psi|^2dx\) is a probability. Its dimensions are \(\mathrm{length}^{-1}\), which is also why \(|\Psi|^2\) may exceed 1 while a probability never can.
+      <div class="row" style="margin-top:.6rem"><button class="btn sm" data-ck-hit>Got it</button><button class="btn sm" data-ck-miss>Not yet</button></div></div>
+    </div>
+  </section>
+
+  <section class="unit" id="u2">
+    <div class="uh"><span class="n">Unit 2</span><h3>Probability: discrete and continuous variables</h3></div>
+    <div class="carry">
+      <div class="old"><h5>You carry over</h5><p>Mean, median and mode; reading a histogram. Nothing here is difficult — it is the vocabulary the rest of the course is written in.</p></div>
+      <div class="new"><h5>New ground</h5><ul>
+        <li>\(\langle f(j)\rangle\) for an arbitrary function, not just \(\langle j\rangle\)</li>
+        <li>Variance as \(\langle j^2\rangle-\langle j\rangle^2\), and the proof</li>
+        <li>Why \(\langle j^2\rangle\ge\langle j\rangle^2\) always</li>
+        <li>The continuous version, and why a density is not a probability</li>
+      </ul></div>
+    </div>
+    <div class="fx"><span class="lbl">Discrete</span>
+      $$P(j)=\frac{N(j)}{N},\qquad \sum_j P(j)=1,\qquad \langle j\rangle=\sum_j jP(j),\qquad \langle f(j)\rangle=\sum_j f(j)P(j)$$
+      <p class="why">Note carefully: \(\langle j^2\rangle=\sum j^2P(j)\), which is <b>not</b> \(\langle j\rangle^2\). Confusing the two is the single most common slip in this module.</p>
+    </div>
+    <div class="ladder" data-lad="qm-var">
+      <header><span class="lbl">Derive</span><b>The variance identity</b><span class="pill">2–3 marks</span></header>
+      <div class="rung"><span class="steplbl">Step 1 · why not just average the deviation</span>Let \(\Delta j=j-\langle j\rangle\). Then \(\langle\Delta j\rangle=\langle j\rangle-\langle j\rangle=0\) always — the deviations cancel, so the mean deviation measures nothing. Square first.</div>
+      <div class="rung"><span class="steplbl">Step 2 · expand the square</span>$$\sigma^2\equiv\langle(\Delta j)^2\rangle=\big\langle j^2-2j\langle j\rangle+\langle j\rangle^2\big\rangle$$ \(\langle j\rangle\) is a <i>number</i>, so it comes out of the averages.</div>
+      <div class="rung"><span class="steplbl">Step 3 · collect</span>$$\sigma^2=\langle j^2\rangle-2\langle j\rangle\langle j\rangle+\langle j\rangle^2=\boxed{\langle j^2\rangle-\langle j\rangle^2}$$</div>
+      <div class="rung"><span class="steplbl">Step 4 · the inequality for free</span>\(\sigma^2\ge0\) because it is an average of squares, hence $$\langle j^2\rangle\ge\langle j\rangle^2$$ with equality <b>only</b> for a distribution of zero spread — every member the same. This is the seed of every uncertainty relation you will meet.</div>
+      <footer><button class="btn sm" data-lad-next>Next step ›</button><button class="btn sm" data-lad-all>Show all</button></footer>
+    </div>
+    <div class="fx"><span class="lbl">Continuous</span>
+      $$dP=\rho(x)\,dx,\qquad \int_{-\infty}^{\infty}\rho\,dx=1,\qquad \langle x\rangle=\int x\rho\,dx,\qquad \sigma^2=\langle x^2\rangle-\langle x\rangle^2$$
+      <p class="why">Every sum becomes an integral and \(P(j)\) becomes \(\rho(x)dx\). In quantum mechanics \(\rho(x)=|\Psi(x,t)|^2\) — that substitution is the whole of Module I.</p>
+    </div>
+
+    <figure class="simwrap" data-sim="stats">
+      <header><span class="lbl">Bench 02</span><b>Mean, median, mode and σ on one distribution</b></header>
+      <canvas></canvas>
+      <div class="readouts">
+        <span class="ro">⟨x⟩ <b data-out="mean">–</b></span><span class="ro">median <b data-out="med">–</b></span>
+        <span class="ro">mode <b data-out="mode">–</b></span><span class="ro">σ <b data-out="sig">–</b></span>
+        <span class="ro">⟨x²⟩ <b data-out="x2">–</b></span>
+      </div>
+      <div class="ctrls">
+        <label class="ctrl"><span>skew</span><input type="range" min="-1" max="1" value="0.55" step="0.02" data-k="sk"><output></output></label>
+        <label class="ctrl"><span>spread</span><input type="range" min="0.3" max="2.2" value="1" step="0.02" data-k="w"><output></output></label>
+      </div>
+      <figcaption>Push the skew and watch mean, median and mode separate — they only coincide for a symmetric distribution. Watch \(\langle x^2\rangle\) stay stubbornly above \(\langle x\rangle^2\); the gap <i>is</i> \(\sigma^2\).</figcaption>
+    </figure>
+  </section>
+
+  <section class="unit" id="u3">
+    <div class="uh"><span class="n">Unit 3</span><h3>Normalization</h3></div>
+    <div class="carry">
+      <div class="old"><h5>You carry over</h5><p>That a probability distribution must sum to 1, and how to do a definite integral.</p></div>
+      <div class="new"><h5>New ground</h5><ul>
+        <li>Normalisation fixes \(|A|\) and <b>never</b> the phase</li>
+        <li>Square-integrability as the admission ticket for a physical state</li>
+        <li>The proof that normalisation, once imposed, <b>stays</b> — which needs the Schrödinger equation</li>
+      </ul></div>
+    </div>
+    <div class="fx"><span class="lbl">Normalisation condition</span>
+      $$\int_{-\infty}^{\infty}|\Psi(x,t)|^2dx=1$$
+      <p class="why">The Schrödinger equation is linear and homogeneous, so if \(\Psi\) solves it so does \(A\Psi\). That freedom is exactly what you spend on normalisation. It determines \(|A|\); the phase \(e^{i\theta}\) survives untouched and carries no physical content. States with \(\int|\Psi|^2=\infty\) (a plane wave, for one) cannot be normalised and are not physical states on their own.</p>
+    </div>
+    <div class="ladder" data-lad="qm-norm">
+      <header><span class="lbl">Derive</span><b>Normalisation is preserved in time</b><span class="pill">5 marks · classic</span></header>
+      <div class="rung"><span class="steplbl">Step 1 · move the derivative inside</span>$$\frac{d}{dt}\int_{-\infty}^{\infty}|\Psi|^2dx=\int_{-\infty}^{\infty}\frac{\partial}{\partial t}|\Psi|^2dx$$ (Ordinary derivative outside because the integral is a function of \(t\) alone.)</div>
+      <div class="rung"><span class="steplbl">Step 2 · product rule</span>$$\frac{\partial}{\partial t}|\Psi|^2=\frac{\partial}{\partial t}(\Psi^*\Psi)=\Psi^*\frac{\partial\Psi}{\partial t}+\frac{\partial\Psi^*}{\partial t}\Psi$$</div>
+      <div class="rung"><span class="steplbl">Step 3 · use the equation, and its conjugate</span>$$\frac{\partial\Psi}{\partial t}=\frac{i\hbar}{2m}\frac{\partial^2\Psi}{\partial x^2}-\frac{i}{\hbar}V\Psi,\qquad \frac{\partial\Psi^*}{\partial t}=-\frac{i\hbar}{2m}\frac{\partial^2\Psi^*}{\partial x^2}+\frac{i}{\hbar}V\Psi^*$$ The \(V\) terms cancel in the sum — <b>this step needs \(V\) real</b>.</div>
+      <div class="rung"><span class="steplbl">Step 4 · recognise a total derivative</span>$$\frac{\partial}{\partial t}|\Psi|^2=\frac{i\hbar}{2m}\left(\Psi^*\frac{\partial^2\Psi}{\partial x^2}-\frac{\partial^2\Psi^*}{\partial x^2}\Psi\right)=\frac{\partial}{\partial x}\left[\frac{i\hbar}{2m}\left(\Psi^*\frac{\partial\Psi}{\partial x}-\frac{\partial\Psi^*}{\partial x}\Psi\right)\right]$$</div>
+      <div class="rung"><span class="steplbl">Step 5 · integrate and kill the boundary</span>$$\frac{d}{dt}\int|\Psi|^2dx=\left[\frac{i\hbar}{2m}\left(\Psi^*\frac{\partial\Psi}{\partial x}-\frac{\partial\Psi^*}{\partial x}\Psi\right)\right]_{-\infty}^{+\infty}=0$$ because a normalisable \(\Psi\) and its derivative must vanish at \(\pm\infty\). <b>Normalise once and it stays normalised.</b> The bracket you just discarded is the probability current \(J\) of Unit 9.</div>
+      <footer><button class="btn sm" data-lad-next>Next step ›</button><button class="btn sm" data-lad-all>Show all</button></footer>
+    </div>
+
+    <figure class="simwrap" data-sim="normalize">
+      <header><span class="lbl">Bench 03</span><b>Finding \(A\): the integral you actually have to do</b></header>
+      <canvas></canvas>
+      <div class="readouts">
+        <span class="ro">∫|ψ|²dx <b data-out="I">–</b></span><span class="ro">A <b data-out="A">–</b></span>
+        <span class="ro">⟨x⟩ <b data-out="mean">–</b></span><span class="ro">σ<sub>x</sub> <b data-out="sig">–</b></span>
+      </div>
+      <div class="ctrls">
+        <label class="ctrl"><span>width parameter</span><input type="range" min="0.3" max="3" value="1" step="0.02" data-k="w"><output></output></label>
+        <label class="ctrl"><span>trial amplitude A</span><input type="range" min="0.2" max="2.5" value="1" step="0.01" data-k="A"><output></output></label>
+      </div>
+      <div class="readouts"><div class="seg" data-seg="shape"><button data-v="gauss" aria-pressed="true">Gaussian</button><button data-v="tri" aria-pressed="false">Triangle</button><button data-v="hump" aria-pressed="false">sin hump</button></div></div>
+      <figcaption>Move the amplitude until the shaded area reads exactly 1 — that value is \(A\), and the bench prints the exact answer beside it. The shape selector gives the three integrals that actually turn up in exams: the Gaussian, the triangle, and \(\sin^2\) over a well.</figcaption>
+    </figure>
+  </section>
+
+  <section class="unit" id="u4">
+    <div class="uh"><span class="n">Unit 4</span><h3>Momentum, and the birth of operators</h3></div>
+    <div class="carry">
+      <div class="old"><h5>You carry over</h5><p>\(p=mv\), and \(v=dx/dt\). Also integration by parts.</p></div>
+      <div class="new"><h5>New ground</h5><ul>
+        <li>\(\langle x\rangle\) is an <b>ensemble</b> average, not a trajectory</li>
+        <li>Differentiating \(\langle x\rangle\) produces \(\langle p\rangle\) — and a differential <b>operator</b></li>
+        <li>\(\hat p=-i\hbar\,\partial/\partial x\), and the recipe \(\hat Q=Q(x,\hat p)\)</li>
+      </ul></div>
+    </div>
+    <div class="ladder" data-lad="qm-mom">
+      <header><span class="lbl">Derive</span><b>The momentum operator from \(d\langle x\rangle/dt\)</b><span class="pill">5 marks</span></header>
+      <div class="rung"><span class="steplbl">Step 1 · differentiate the average</span>$$\frac{d\langle x\rangle}{dt}=\int x\,\frac{\partial|\Psi|^2}{\partial t}\,dx=\frac{i\hbar}{2m}\int x\,\frac{\partial}{\partial x}\!\left(\Psi^*\frac{\partial\Psi}{\partial x}-\frac{\partial\Psi^*}{\partial x}\Psi\right)dx$$ using Step 4 of the previous ladder.</div>
+      <div class="rung"><span class="steplbl">Step 2 · integrate by parts once</span>The boundary term dies at \(\pm\infty\), and \(\partial x/\partial x=1\): $$\frac{d\langle x\rangle}{dt}=-\frac{i\hbar}{2m}\int\left(\Psi^*\frac{\partial\Psi}{\partial x}-\frac{\partial\Psi^*}{\partial x}\Psi\right)dx$$</div>
+      <div class="rung"><span class="steplbl">Step 3 · by parts again on the second term</span>$$\int\frac{\partial\Psi^*}{\partial x}\Psi\,dx=-\int\Psi^*\frac{\partial\Psi}{\partial x}dx \;\Longrightarrow\; \frac{d\langle x\rangle}{dt}=-\frac{i\hbar}{m}\int\Psi^*\frac{\partial\Psi}{\partial x}dx$$</div>
+      <div class="rung"><span class="steplbl">Step 4 · read off the operator</span>Defining \(\langle p\rangle=m\,d\langle x\rangle/dt\): $$\langle p\rangle=\int\Psi^*\left(-i\hbar\frac{\partial}{\partial x}\right)\Psi\,dx\;\Longrightarrow\;\boxed{\hat p=-i\hbar\frac{\partial}{\partial x}},\quad \hat x=x$$</div>
+      <footer><button class="btn sm" data-lad-next>Next step ›</button><button class="btn sm" data-lad-all>Show all</button></footer>
+    </div>
+    <div class="fx"><span class="lbl">The recipe for any observable</span>
+      $$\langle Q(x,p)\rangle=\int\Psi^*\,Q\!\left(x,-i\hbar\frac{\partial}{\partial x}\right)\Psi\,dx,\qquad \hat T=\frac{\hat p^2}{2m}=-\frac{\hbar^2}{2m}\frac{\partial^2}{\partial x^2}$$
+      <p class="why">Every classical quantity is rewritten in terms of \(x\) and \(p\), then \(p\) is replaced by \(-i\hbar\partial_x\), and the result is sandwiched between \(\Psi^*\) and \(\Psi\). The whole Hamiltonian \(\hat H=\hat T+V\) is built this way.</p>
+    </div>
+    <div class="trap"><span class="ic">Trap</span><p>\(\langle x\rangle\) is <b>not</b> "the average of repeated measurements on one particle" — the first measurement collapses the state and the rest would all return the same value. It is the average over an <b>ensemble</b> of identically prepared systems, each measured once. And \(d\langle x\rangle/dt=\langle p\rangle/m\) is a statement about averages, not a trajectory.</p></div>
+  </section>
+
+  <section class="unit" id="u5">
+    <div class="uh"><span class="n">Unit 5</span><h3>The uncertainty principle</h3></div>
+    <div class="carry">
+      <div class="old"><h5>You carry over</h5><p>"\(\Delta x\,\Delta p\ge h/4\pi\)", usually justified by a story about a microscope disturbing the electron.</p></div>
+      <div class="new"><h5>New ground</h5><ul>
+        <li>The real origin: <b>Fourier</b>. Localised in \(x\) ⇒ broad in \(k\), always</li>
+        <li>\(\sigma\) means a standard deviation over an ensemble, not an instrument error</li>
+        <li>Equality holds — and only for a Gaussian</li>
+      </ul></div>
+    </div>
+    <p>A wave with one exact wavelength stretches over all space; a wave confined to a small region needs a broad band of wavelengths to build it. That is a theorem about Fourier transforms, true of sound and water waves too. What makes it physics is de Broglie:</p>
+    <div class="fx"><span class="lbl">Heisenberg's relation</span>
+      $$p=\hbar k\qquad\Longrightarrow\qquad \sigma_x\,\sigma_p\ \ge\ \frac{\hbar}{2}$$
+      <p class="why">\(\sigma_x=\sqrt{\langle x^2\rangle-\langle x\rangle^2}\) and \(\sigma_p=\sqrt{\langle p^2\rangle-\langle p\rangle^2}\), both computed from a single state \(\Psi\). A spread in wavelength <i>is</i> a spread in momentum, so a well-localised particle simply has no well-defined momentum to be disturbed.</p>
+    </div>
+    <div class="trap"><span class="ic">Trap</span><p>This is not a statement that measuring position "kicks" the particle. It is a property of the state itself: prepare a thousand identical systems, measure position on half and momentum on the other half, and the two spreads obey the inequality. Write it with \(\sigma\), not \(\Delta\), if you want the marks.</p></div>
+
+    <figure class="simwrap" data-sim="uncertain">
+      <header><span class="lbl">Bench 04</span><b>Squeeze it in \(x\), watch it spread in \(p\)</b></header>
+      <canvas></canvas>
+      <div class="readouts">
+        <span class="ro">σ<sub>x</sub> <b data-out="sx">–</b></span><span class="ro">σ<sub>p</sub> <b data-out="sp">–</b></span>
+        <span class="ro">σ<sub>x</sub>σ<sub>p</sub> <b data-out="prod">–</b></span><span class="ro">floor <b data-out="floor">ħ/2</b></span>
+      </div>
+      <div class="ctrls">
+        <label class="ctrl"><span>packet width σ<sub>x</sub> (Å)</span><input type="range" min="0.2" max="4" value="1" step="0.02" data-k="s"><output></output></label>
+        <label class="ctrl"><span>mean momentum ħk₀</span><input type="range" min="0" max="6" value="3" step="0.1" data-k="k"><output></output></label>
+      </div>
+      <div class="readouts"><div class="seg" data-seg="shape"><button data-v="gauss" aria-pressed="true">Gaussian (minimum)</button><button data-v="box" aria-pressed="false">Square pulse</button></div></div>
+      <figcaption>The two panels are Fourier partners: narrow one and the other widens, with the product pinned at \(\hbar/2\) for a Gaussian. Switch to a square pulse and the product jumps <i>above</i> the floor — the Gaussian is the only shape that achieves equality.</figcaption>
+    </figure>
+
+    <div class="check" data-ck="m1c2">
+      <p class="q"><b>Checkpoint</b>An electron is confined to a region about \(1\,\)Å across. Estimate the minimum spread in its momentum, and the kinetic energy that implies.</p>
+      <div class="row"><button class="btn sm" data-ck-show>Reveal</button></div>
+      <div class="a">\(\sigma_p\ge\dfrac{\hbar}{2\sigma_x}=\dfrac{1.055\times10^{-34}}{2\times10^{-10}}\approx5.3\times10^{-25}\ \mathrm{kg\,m\,s^{-1}}\).<br><br>Then \(E\sim\dfrac{\sigma_p^2}{2m}=\dfrac{(5.3\times10^{-25})^2}{2\times9.11\times10^{-31}}\approx1.5\times10^{-19}\,\mathrm{J}\approx\mathbf{1\ eV}\).<br><br>That is the <strong>order of magnitude</strong> of atomic binding energies — and it is why an electron cannot simply sit still inside an atom. (Solving the box exactly gives \(E_1=37.6\) eV for \(a=1\) Å; the uncertainty estimate sets the scale, not the number.)
+      <div class="row" style="margin-top:.6rem"><button class="btn sm" data-ck-hit>Got it</button><button class="btn sm" data-ck-miss>Not yet</button></div></div>
+    </div>
+  </section>
+</article>
+
+<!-- ─────────── MODULE II ─────────── -->
+<article class="mod m2 on" id="mod-m2">
+  <div class="modhead">
+    <div class="eyebrow">Module II · 13 hours · <b>20 marks</b> · Griffiths §2.1, 2.2, 2.4 · Zettili §3.6.4, 4.4, 4.5</div>
+    <h2>Time-Independent Schrödinger Equation</h2>
+    <p class="lede">Six units and the biggest block of marks on the paper. One trick — separation of variables — turns the law of motion into an eigenvalue problem, and then you solve it four times: for a box, for free space, for a step and for a barrier.</p>
+    <div class="fringe"><i></i></div>
+  </div>
+
+  <section class="unit" id="u6">
+    <div class="uh"><span class="n">Unit 6</span><h3>Stationary states</h3></div>
+    <div class="carry">
+      <div class="old"><h5>You carry over</h5><p>Separation of variables from your differential-equations course: if a PDE splits into a function of \(x\) times a function of \(t\), each side must equal a constant.</p></div>
+      <div class="new"><h5>New ground</h5><ul>
+        <li>The separation constant <b>is the energy</b></li>
+        <li>Four properties of separable solutions — the examinable list</li>
+        <li>The general solution is a <b>sum</b>, and only the sum can move</li>
+        <li>\(|c_n|^2\) as the probability of measuring \(E_n\)</li>
+      </ul></div>
+    </div>
+    <div class="ladder" data-lad="qm-sep">
+      <header><span class="lbl">Derive</span><b>Separation of variables → the TISE</b><span class="pill">5 marks · near-certain</span></header>
+      <div class="rung"><span class="steplbl">Step 1 · the assumption</span>Take \(V=V(x)\) only, and look for solutions of the special form $$\Psi(x,t)=\psi(x)\,\phi(t)$$ (Not all solutions look like this — that is the point of Step 6.)</div>
+      <div class="rung"><span class="steplbl">Step 2 · substitute</span>$$i\hbar\,\psi\frac{d\phi}{dt}=-\frac{\hbar^2}{2m}\frac{d^2\psi}{dx^2}\phi+V\psi\phi$$</div>
+      <div class="rung"><span class="steplbl">Step 3 · divide by \(\psi\phi\)</span>$$i\hbar\frac{1}{\phi}\frac{d\phi}{dt}=-\frac{\hbar^2}{2m}\frac{1}{\psi}\frac{d^2\psi}{dx^2}+V(x)$$ The left side depends only on \(t\); the right only on \(x\). Two independent variables can only agree if both sides are the <b>same constant</b>, call it \(E\).</div>
+      <div class="rung"><span class="steplbl">Step 4 · the time half</span>$$\frac{d\phi}{dt}=-\frac{iE}{\hbar}\phi\;\Longrightarrow\;\phi(t)=e^{-iEt/\hbar}$$ A pure phase of constant modulus — this is why nothing observable moves.</div>
+      <div class="rung"><span class="steplbl">Step 5 · the space half</span>$$-\frac{\hbar^2}{2m}\frac{d^2\psi}{dx^2}+V(x)\psi=E\psi\qquad\text{i.e.}\qquad \hat H\psi=E\psi$$ An <b>eigenvalue equation</b> for the Hamiltonian. All the physics of a given potential is in its spectrum \(\{E_n\}\) and eigenfunctions \(\{\psi_n\}\).</div>
+      <div class="rung"><span class="steplbl">Step 6 · rebuild the general solution</span>The equation is linear, so superpose: $$\Psi(x,t)=\sum_{n}c_n\psi_n(x)e^{-iE_nt/\hbar},\qquad c_n=\int\psi_n^*(x)\Psi(x,0)\,dx$$ Every solution can be written this way — that is what "complete" means for the set \(\{\psi_n\}\).</div>
+      <footer><button class="btn sm" data-lad-next>Next step ›</button><button class="btn sm" data-lad-all>Show all</button></footer>
+    </div>
+
+    <h4>The four properties — write these as a numbered list</h4>
+    <div class="fx"><span class="lbl">1 · They are stationary</span>
+      $$|\Psi(x,t)|^2=\psi^*e^{+iEt/\hbar}\psi e^{-iEt/\hbar}=|\psi(x)|^2$$
+      <p class="why">The phase cancels, so the probability density — and every expectation value of a time-independent operator — is frozen. In particular \(\langle x\rangle\) is constant and therefore \(\langle p\rangle=m\,d\langle x\rangle/dt=0\).</p>
+    </div>
+    <div class="fx"><span class="lbl">2 · They have a definite total energy</span>
+      $$\langle H\rangle=\int\psi^*\hat H\psi\,dx=E,\qquad \langle H^2\rangle=E^2\;\Longrightarrow\;\sigma_H^2=E^2-E^2=0$$
+      <p class="why">Zero variance means <b>every</b> measurement of the energy returns \(E\) — not an average, a certainty. This is what "the system has energy \(E\)" means quantum-mechanically.</p>
+    </div>
+    <div class="fx"><span class="lbl">3 · The general solution is a linear combination</span>
+      $$\Psi(x,t)=\sum_{n=1}^{\infty}c_n\psi_n(x)e^{-iE_nt/\hbar}$$
+      <p class="why">Each term carries its <i>own</i> rotating phase \(e^{-iE_nt/\hbar}\). Different rates means the relative phases change, so a superposition <b>does</b> evolve — which is the only way anything ever happens.</p>
+    </div>
+    <div class="fx"><span class="lbl">4 · \(|c_n|^2\) is the probability of getting \(E_n\)</span>
+      $$\sum_n|c_n|^2=1,\qquad \langle H\rangle=\sum_n|c_n|^2E_n$$
+      <p class="why">Both are constants of the motion, because the \(c_n\) never change — only their phases do. Measuring the energy of a superposition gives one of the \(E_n\), at random, with probability \(|c_n|^2\).</p>
+    </div>
+
+    <h4>Six general theorems for one-dimensional potentials</h4>
+    <ul class="tick">
+      <li>\(E\) must be <b>real</b> for a normalisable solution.</li>
+      <li>\(\psi\) can always be taken <b>real</b> for a non-degenerate bound state (if \(\psi\) solves it, so does \(\psi^*\)).</li>
+      <li>If \(V(-x)=V(x)\), the eigenstates can be chosen with <b>definite parity</b>, even or odd.</li>
+      <li>\(E>V_{\min}\) always; otherwise \(\psi''\) and \(\psi\) share a sign everywhere and \(\psi\) blows up.</li>
+      <li>1D bound states are <b>non-degenerate</b>.</li>
+      <li><b>Node theorem:</b> the ground state has no interior nodes and the \(n\)-th state has \(n-1\) — a free sanity check on any sketch.</li>
+    </ul>
+
+    <figure class="simwrap" data-sim="super">
+      <header><span class="lbl">Bench 05</span><b>Why "stationary" deserves its name</b></header>
+      <canvas></canvas>
+      <div class="readouts">
+        <span class="ro">state <b data-out="state">–</b></span><span class="ro">⟨H⟩ <b data-out="H">–</b></span>
+        <span class="ro">σ<sub>H</sub> <b data-out="sig">–</b></span><span class="ro">beat period <b data-out="T">–</b></span>
+      </div>
+      <div class="ctrls">
+        <label class="ctrl"><span>mix c₂ (c₁²+c₂²=1)</span><input type="range" min="0" max="1" value="0" step="0.01" data-k="c"><output></output></label>
+        <label class="ctrl"><span>upper level n</span><input type="range" min="2" max="5" value="2" step="1" data-k="n2"><output></output></label>
+      </div>
+      <figcaption>At \(c_2=0\) the state is pure \(\psi_1\): the phase spins (watch the colour cycle) but \(|\Psi|^2\) never twitches, and \(\sigma_H=0\). Add any \(c_2\) and the density sloshes at the beat frequency \((E_2-E_1)/\hbar\), while \(\sigma_H\) becomes non-zero — the energy is genuinely indefinite.</figcaption>
+    </figure>
+
+    <div class="check" data-ck="m2c1">
+      <p class="q"><b>Checkpoint · say it out loud</b>Both \(\psi_1\) and \(\psi_2\) are stationary states. Why is \(\tfrac{1}{\sqrt2}(\psi_1+\psi_2)\) not?</p>
+      <div class="row"><button class="btn sm" data-ck-show>Reveal</button></div>
+      <div class="a">Because the two terms carry <strong>different</strong> phase factors, \(e^{-iE_1t/\hbar}\) and \(e^{-iE_2t/\hbar}\). In \(|\Psi|^2\) the cross term survives as \(\cos\!\big[(E_2-E_1)t/\hbar\big]\), so the density oscillates with period \(T=2\pi\hbar/(E_2-E_1)\). Only when a single term is present does the phase cancel against its own conjugate. Correspondingly \(\sigma_H\ne0\): the energy is no longer definite.
+      <div class="row" style="margin-top:.6rem"><button class="btn sm" data-ck-hit>Got it</button><button class="btn sm" data-ck-miss>Not yet</button></div></div>
+    </div>
+  </section>
+
+  <section class="unit" id="u7">
+    <div class="uh"><span class="n">Unit 7</span><h3>The infinite square well</h3></div>
+    <div class="carry">
+      <div class="old"><h5>You carry over</h5><p>Standing waves on a string fixed at both ends: only whole numbers of half-wavelengths fit, \(L=n\lambda/2\).</p></div>
+      <div class="new"><h5>New ground</h5><ul>
+        <li>The same boundary condition, now applied to \(\psi\), <b>quantises the energy</b></li>
+        <li>\(E_n\propto n^2\) — an unevenly spaced ladder</li>
+        <li>Orthonormality and completeness, and how to get \(c_n\)</li>
+        <li>Zero-point energy: \(E_1\ne0\), and why it can't be</li>
+      </ul></div>
+    </div>
+    <div class="ladder" data-lad="qm-well">
+      <header><span class="lbl">Derive</span><b>The infinite square well, end to end</b><span class="pill">8 marks · the safest question on the paper</span></header>
+      <div class="rung"><span class="steplbl">Step 1 · set up</span>$$V(x)=\begin{cases}0,&0\le x\le a\\ \infty,&\text{otherwise}\end{cases}$$ Outside the well \(\psi=0\) (infinite potential ⇒ zero probability). Inside, the TISE is $$-\frac{\hbar^2}{2m}\frac{d^2\psi}{dx^2}=E\psi\;\Longrightarrow\;\frac{d^2\psi}{dx^2}=-k^2\psi,\qquad k\equiv\frac{\sqrt{2mE}}{\hbar}$$</div>
+      <div class="rung"><span class="steplbl">Step 2 · general solution</span>$$\psi(x)=A\sin kx+B\cos kx$$ This is the classical SHM equation — you already know its solutions.</div>
+      <div class="rung"><span class="steplbl">Step 3 · boundary conditions</span>\(\psi\) must be continuous, so it must match the zero outside: \(\psi(0)=0\Rightarrow B=0\); \(\psi(a)=0\Rightarrow A\sin ka=0\). Since \(A=0\) would be no state at all, $$ka=n\pi,\qquad n=1,2,3,\dots$$ (\(n=0\) gives \(\psi\equiv0\); negative \(n\) only flips the sign, which is the same state.)</div>
+      <div class="rung"><span class="steplbl">Step 4 · the energies fall out</span>$$k_n=\frac{n\pi}{a}\;\Longrightarrow\;\boxed{E_n=\frac{\hbar^2k_n^2}{2m}=\frac{n^2\pi^2\hbar^2}{2ma^2}}$$ Energy is quantised purely because the wave has to fit — nothing was quantised by hand.</div>
+      <div class="rung"><span class="steplbl">Step 5 · normalise</span>$$\int_0^a|A|^2\sin^2\!\frac{n\pi x}{a}dx=|A|^2\frac{a}{2}=1\;\Longrightarrow\;A=\sqrt{\frac{2}{a}}$$ $$\boxed{\psi_n(x)=\sqrt{\frac{2}{a}}\sin\!\frac{n\pi x}{a}}$$ (\(\int_0^a\sin^2=a/2\) — the average of \(\sin^2\) is \(\tfrac12\).)</div>
+      <div class="rung"><span class="steplbl">Step 6 · the full time-dependent state</span>$$\Psi(x,t)=\sum_{n=1}^{\infty}c_n\sqrt{\frac{2}{a}}\sin\!\frac{n\pi x}{a}\,e^{-iE_nt/\hbar},\qquad c_n=\sqrt{\frac{2}{a}}\int_0^a\sin\!\frac{n\pi x}{a}\,\Psi(x,0)\,dx$$ using orthonormality \(\int_0^a\psi_m^*\psi_n dx=\delta_{mn}\).</div>
+      <footer><button class="btn sm" data-lad-next>Next step ›</button><button class="btn sm" data-lad-all>Show all</button></footer>
+    </div>
+    <div class="fx"><span class="lbl">Properties worth one line each</span>
+      <p class="why" style="margin-top:0">Alternately <b>even and odd</b> about the centre of the well · the \(n\)-th state has \(n-1\) interior <b>nodes</b> · they are mutually <b>orthogonal</b> · they are <b>complete</b> (this is just the Fourier sine series) · the levels get <b>further apart</b> as \(n\) grows, since \(E_n\propto n^2\).</p>
+    </div>
+    <div class="trap"><span class="ic">Trap</span><p>\(n\) starts at <b>1</b>, and \(E_1=\pi^2\hbar^2/2ma^2\ne0\). A particle in a box can never be at rest: \(E=0\) would mean \(p=0\) exactly, violating \(\sigma_x\sigma_p\ge\hbar/2\) for a particle confined to width \(a\). That non-zero \(E_1\) is the <b>zero-point energy</b>.</p></div>
+
+    <figure class="simwrap" data-sim="well">
+      <header><span class="lbl">Bench 06</span><b>The box: levels, wave functions and densities</b></header>
+      <canvas></canvas>
+      <div class="readouts">
+        <span class="ro">n <b data-out="n">–</b></span><span class="ro">E<sub>n</sub> <b data-out="E">–</b></span>
+        <span class="ro">E<sub>n</sub>/E₁ <b data-out="ratio">–</b></span><span class="ro">nodes <b data-out="nodes">–</b></span>
+      </div>
+      <div class="ctrls">
+        <label class="ctrl"><span>quantum number n</span><input type="range" min="1" max="8" value="1" step="1" data-k="n"><output></output></label>
+        <label class="ctrl"><span>well width a (Å)</span><input type="range" min="0.5" max="10" value="1" step="0.1" data-k="a"><output></output></label>
+      </div>
+      <div class="readouts"><div class="seg" data-seg="view"><button data-v="psi" aria-pressed="true">ψ (signed)</button><button data-v="p2" aria-pressed="false">|ψ|²</button><button data-v="both" aria-pressed="false">Both</button></div></div>
+      <figcaption>Gold is \(\psi>0\), cyan is \(\psi<0\). Count the sign changes: \(n-1\) of them, every time. The ladder on the left is drawn to scale — the gaps widen as \(n^2\), which is why the \(n=1\to2\) jump dwarfs everything you learned about equally spaced levels.</figcaption>
+    </figure>
+
+    <div class="check" data-ck="m2c2">
+      <p class="q"><b>Checkpoint</b>An electron is in a 1 Å infinite well. Find \(E_1\) in eV, and say what \(E_3\) is without recomputing.</p>
+      <div class="row"><button class="btn sm" data-ck-show>Reveal</button></div>
+      <div class="a">Use \(\dfrac{\hbar^2}{2m_e}=3.81\ \mathrm{eV\,\AA^2}\) — worth memorising.<br><br>\(E_1=\dfrac{\pi^2\hbar^2}{2m_ea^2}=\pi^2\times3.81/1^2=\mathbf{37.6\ eV}\).<br><br>\(E_3=9E_1=\mathbf{338\ eV}\), because \(E_n\propto n^2\). Note the scale: confining an electron to atomic dimensions costs tens of eV, which is exactly the scale of atomic binding energies.
+      <div class="row" style="margin-top:.6rem"><button class="btn sm" data-ck-hit>Got it</button><button class="btn sm" data-ck-miss>Not yet</button></div></div>
+    </div>
+  </section>
+
+  <section class="unit" id="u8">
+    <div class="uh"><span class="n">Unit 8</span><h3>The free particle: wave packets, phase and group velocity</h3></div>
+    <div class="carry">
+      <div class="old"><h5>You carry over</h5><p>\(v=\nu\lambda=\omega/k\) for a travelling wave, and beats between two close frequencies.</p></div>
+      <div class="new"><h5>New ground</h5><ul>
+        <li>The free particle has <b>no</b> normalisable stationary states</li>
+        <li>\(v_{\rm phase}=\tfrac12 v_{\rm classical}\) — an apparent disaster</li>
+        <li>Wave packets, and \(v_{\rm group}\) rescuing it exactly</li>
+      </ul></div>
+    </div>
+    <p>With \(V=0\) the TISE gives \(\psi_k=Ae^{ikx}\), so</p>
+    <div class="fx"><span class="lbl">Free-particle solutions</span>
+      $$\Psi_k(x,t)=A\,e^{i\left(kx-\frac{\hbar k^2}{2m}t\right)},\qquad E=\frac{\hbar^2k^2}{2m},\qquad p=\hbar k$$
+      <p class="why">\(k>0\) moves right, \(k<0\) moves left. But \(\int_{-\infty}^{\infty}|A|^2dx=\infty\): <b>a plane wave cannot be normalised</b>, so it is not a physical state. It is a useful basis function, nothing more.</p>
+    </div>
+    <div class="fx"><span class="lbl">The velocity paradox</span>
+      $$v_{\rm phase}=\frac{\omega}{k}=\frac{\hbar k}{2m}=\sqrt{\frac{E}{2m}},\qquad v_{\rm classical}=\sqrt{\frac{2E}{m}}=2\,v_{\rm phase}$$
+      <p class="why">The wave crests travel at <b>half</b> the speed of the particle they are supposed to describe. The resolution is that no single \(k\) is a particle: build a packet.</p>
+    </div>
+    <div class="ladder" data-lad="qm-group">
+      <header><span class="lbl">Derive</span><b>Group velocity, and why it is the particle's velocity</b><span class="pill">5 marks</span></header>
+      <div class="rung"><span class="steplbl">Step 1 · superpose a band of \(k\)</span>$$\Psi(x,t)=\frac{1}{\sqrt{2\pi}}\int_{-\infty}^{\infty}\phi(k)\,e^{i(kx-\omega(k)t)}dk,\qquad \omega(k)=\frac{\hbar k^2}{2m}$$ with \(\phi(k)\) the Fourier transform of \(\Psi(x,0)\). Now the state <i>is</i> normalisable.</div>
+      <div class="rung"><span class="steplbl">Step 2 · narrow band around \(k_0\)</span>If \(\phi(k)\) is sharply peaked at \(k_0\), expand $$\omega(k)\approx\omega_0+\omega_0'\,(k-k_0),\qquad \omega_0'=\left.\frac{d\omega}{dk}\right|_{k_0}$$</div>
+      <div class="rung"><span class="steplbl">Step 3 · factor the integral</span>Substituting and letting \(s=k-k_0\): $$\Psi(x,t)\approx e^{i(k_0x-\omega_0 t)}\cdot\frac{1}{\sqrt{2\pi}}\int\phi(k_0+s)\,e^{is(x-\omega_0't)}ds$$ The first factor is a <b>carrier</b> travelling at \(\omega_0/k_0=v_{\rm phase}\); the integral is an <b>envelope</b> depending on \(x-\omega_0't\).</div>
+      <div class="rung"><span class="steplbl">Step 4 · read the envelope speed</span>$$v_{\rm group}=\left.\frac{d\omega}{dk}\right|_{k_0}=\frac{\hbar k_0}{m}=\frac{p_0}{m}=v_{\rm classical}=2v_{\rm phase}$$ The bump — where the particle actually is — moves at the classical speed. The ripples inside it move at half that, sliding backwards through the envelope.</div>
+      <footer><button class="btn sm" data-lad-next>Next step ›</button><button class="btn sm" data-lad-all>Show all</button></footer>
+    </div>
+
+    <figure class="simwrap" data-sim="packet">
+      <header><span class="lbl">Bench 07</span><b>Envelope and ripples move at different speeds</b></header>
+      <canvas></canvas>
+      <div class="readouts">
+        <span class="ro">v<sub>group</sub> <b data-out="vg">–</b></span><span class="ro">v<sub>phase</sub> <b data-out="vp">–</b></span>
+        <span class="ro">ratio <b data-out="ratio">–</b></span><span class="ro">width <b data-out="w">–</b></span>
+      </div>
+      <div class="ctrls">
+        <label class="ctrl"><span>mean wavenumber k₀</span><input type="range" min="2" max="12" value="6" step="0.2" data-k="k"><output></output></label>
+        <label class="ctrl"><span>packet width</span><input type="range" min="0.4" max="3" value="1.2" step="0.05" data-k="s"><output></output></label>
+      </div>
+      <div class="readouts"><div class="seg" data-seg="spread"><button data-v="off" aria-pressed="true">Ignore spreading</button><button data-v="on" aria-pressed="false">Let it spread</button></div></div>
+      <figcaption>Track one gold crest and the whole bump at the same time: the crest overtakes the bump at exactly twice its speed. Turn on spreading and the packet also widens — because its components have different speeds, a free particle's position becomes less and less well known.</figcaption>
+    </figure>
+  </section>
+
+  <section class="unit" id="u9">
+    <div class="uh"><span class="n">Unit 9</span><h3>Conservation of probability and the current density</h3></div>
+    <div class="carry">
+      <div class="old"><h5>You carry over</h5><p>The continuity equation from fluids or from charge conservation: \(\partial\rho/\partial t+\nabla\!\cdot\!\vec J=0\) means "what leaves a region had to flow across its boundary".</p></div>
+      <div class="new"><h5>New ground</h5><ul>
+        <li>Probability obeys exactly that equation</li>
+        <li>An explicit formula for \(J\), built out of \(\Psi\)</li>
+        <li>\(dP_{ab}/dt=J(a)-J(b)\) — the version you use in scattering</li>
+      </ul></div>
+    </div>
+    <div class="ladder" data-lad="qm-cont">
+      <header><span class="lbl">Derive</span><b>The equation of continuity for probability</b><span class="pill">5 marks</span></header>
+      <div class="rung"><span class="steplbl">Step 1 · start where the last proof ended</span>From Unit 3, Step 4: $$\frac{\partial}{\partial t}|\Psi|^2=\frac{\partial}{\partial x}\left[\frac{i\hbar}{2m}\left(\Psi^*\frac{\partial\Psi}{\partial x}-\frac{\partial\Psi^*}{\partial x}\Psi\right)\right]$$</div>
+      <div class="rung"><span class="steplbl">Step 2 · name the pieces</span>Put \(\rho=|\Psi|^2\) and define $$J\equiv\frac{i\hbar}{2m}\left(\Psi\frac{\partial\Psi^*}{\partial x}-\Psi^*\frac{\partial\Psi}{\partial x}\right)=\frac{\hbar}{m}\,\mathrm{Im}\!\left(\Psi^*\frac{\partial\Psi}{\partial x}\right)$$ (the sign is chosen so that \(J>0\) means flow to the right).</div>
+      <div class="rung"><span class="steplbl">Step 3 · the continuity equation</span>$$\boxed{\frac{\partial\rho}{\partial t}+\frac{\partial J}{\partial x}=0}\qquad\text{3D: }\ \frac{\partial\rho}{\partial t}+\vec\nabla\!\cdot\!\vec J=0$$</div>
+      <div class="rung"><span class="steplbl">Step 4 · integrate over a region</span>$$\frac{dP_{ab}}{dt}=J(a,t)-J(b,t)$$ The probability in \([a,b]\) changes only by flow in at \(a\) and out at \(b\). Probability is not created or destroyed, only transported — which is Unit 3's result stated locally.</div>
+      <footer><button class="btn sm" data-lad-next>Next step ›</button><button class="btn sm" data-lad-all>Show all</button></footer>
+    </div>
+    <p class="note"><b>Two quick consequences.</b> For a real \(\psi\) (any bound state you can choose real), \(J=0\) everywhere — a bound state carries no net flow. For a plane wave \(Ae^{ikx}\), \(J=|A|^2\hbar k/m=|A|^2 v\): density times velocity, exactly as a flux should be. That second result is what you use to define \(R\) and \(T\) in Units 10 and 11.</p>
+
+    <figure class="simwrap" data-sim="current">
+      <header><span class="lbl">Bench 08</span><b>ρ and J on a moving packet</b></header>
+      <canvas></canvas>
+      <div class="readouts">
+        <span class="ro">∫ρ dx <b data-out="norm">–</b></span><span class="ro">J at cursor <b data-out="J">–</b></span>
+        <span class="ro">peak J <b data-out="Jm">–</b></span>
+      </div>
+      <div class="ctrls">
+        <label class="ctrl"><span>time</span><input type="range" min="0" max="100" value="30" step="0.5" data-k="t"><output></output></label>
+        <label class="ctrl"><span>momentum ħk</span><input type="range" min="-8" max="8" value="5" step="0.2" data-k="k"><output></output></label>
+      </div>
+      <figcaption>The upper curve is \(\rho=|\Psi|^2\); the lower is the current \(J\). Reverse the momentum and \(J\) flips sign while \(\rho\) does not — density has no direction, flux does. The area under \(\rho\) stays exactly 1 no matter where the packet is.</figcaption>
+    </figure>
+  </section>
+
+  <section class="unit" id="u10">
+    <div class="uh"><span class="n">Unit 10</span><h3>The potential step</h3></div>
+    <div class="carry">
+      <div class="old"><h5>You carry over</h5><p>Reflection and transmission of a wave at a boundary — a pulse on a light string meeting a heavy one is partly reflected.</p></div>
+      <div class="new"><h5>New ground</h5><ul>
+        <li>Matching \(\psi\) and \(\psi'\) at the boundary — the whole method</li>
+        <li>\(R\) and \(T\) defined from <b>currents</b>, not amplitudes</li>
+        <li>Reflection even when \(E>V_0\); penetration even when \(E&lt;V_0\)</li>
+      </ul></div>
+    </div>
+    <div class="fx"><span class="lbl">Boundary conditions — memorise the reason, not just the rule</span>
+      <p class="why" style="margin-top:0">At any point where \(V\) is finite, \(\psi\) is continuous (otherwise \(\rho\) is ill-defined) and \(\psi'\) is continuous (integrate the TISE across an infinitesimal interval: a finite \(V\) contributes nothing). \(\psi'\) is allowed to jump only where \(V\) is infinite or a delta function; across \(\alpha\delta(x-x_0)\), \(\Delta\psi'=\frac{2m\alpha}{\hbar^2}\psi(x_0)\).</p>
+    </div>
+    <div class="ladder" data-lad="qm-step">
+      <header><span class="lbl">Derive</span><b>Step with \(E>V_0\): reflection and transmission</b><span class="pill">6 marks</span></header>
+      <div class="rung"><span class="steplbl">Step 1 · write the two regions</span>\(V=0\) for \(x<0\), \(V=V_0\) for \(x\ge0\); \(k_1=\sqrt{2mE}/\hbar\), \(k_2=\sqrt{2m(E-V_0)}/\hbar\). $$\psi=\begin{cases}Ae^{ik_1x}+Be^{-ik_1x},&x<0\\ Ce^{ik_2x},&x\ge0\end{cases}$$ No \(e^{-ik_2x}\) on the right: nothing is coming back from \(+\infty\).</div>
+      <div class="rung"><span class="steplbl">Step 2 · match at \(x=0\)</span>$$A+B=C\quad\text{(continuity of }\psi)$$ $$k_1(A-B)=k_2C\quad\text{(continuity of }\psi')$$</div>
+      <div class="rung"><span class="steplbl">Step 3 · solve the pair</span>$$\frac{B}{A}=\frac{k_1-k_2}{k_1+k_2},\qquad \frac{C}{A}=\frac{2k_1}{k_1+k_2}$$</div>
+      <div class="rung"><span class="steplbl">Step 4 · turn amplitudes into probabilities — carefully</span>\(R\) and \(T\) are ratios of <b>currents</b>, and the transmitted wave travels at a different speed: $$R=\frac{|B|^2}{|A|^2}=\left(\frac{k_1-k_2}{k_1+k_2}\right)^2,\qquad T=\frac{k_2|C|^2}{k_1|A|^2}=\frac{4k_1k_2}{(k_1+k_2)^2}$$ Writing \(K=k_2/k_1=\sqrt{1-V_0/E}\): \(R=\left(\frac{1-K}{1+K}\right)^2\), \(T=\frac{4K}{(1+K)^2}\), and \(R+T=1\) exactly.</div>
+      <div class="rung"><span class="steplbl">Step 5 · the case \(E&lt;V_0\)</span>Now \(k_2\to i\kappa\) with \(\kappa=\sqrt{2m(V_0-E)}/\hbar\), and the right-hand solution is \(Ce^{-\kappa x}\) (the growing exponential is discarded). Then $$\frac{B}{A}=\frac{k_1-i\kappa}{k_1+i\kappa}\;\Longrightarrow\;R=\left|\frac{B}{A}\right|^2=1,\qquad T=0$$ Total reflection — yet \(\psi\ne0\) inside, decaying with penetration depth \(\delta=1/\kappa\). No contradiction: a real exponential carries \(J=0\).</div>
+      <footer><button class="btn sm" data-lad-next>Next step ›</button><button class="btn sm" data-lad-all>Show all</button></footer>
+    </div>
+    <div class="trap"><span class="ic">Trap</span><p>\(T\ne|C/A|^2\). You must weight by the wave numbers, \(T=(k_2/k_1)|C/A|^2\), because transmission is a ratio of <b>fluxes</b> and the transmitted particle moves more slowly. Forget the \(k_2/k_1\) and \(R+T\) will not equal 1 — which is how the examiner spots it.</p></div>
+    <p class="note"><b>The classical comparison, worth stating explicitly.</b> Classically a particle with \(E>V_0\) always continues (it just slows down) and one with \(E&lt;V_0\) always turns back at exactly \(x=0\). Quantum mechanically the first is <b>partly reflected</b>, and the second <b>enters the forbidden region</b> before turning back. Both are pure wave behaviour, with no classical analogue for a particle.</p>
+
+    <figure class="simwrap" data-sim="step">
+      <header><span class="lbl">Bench 09</span><b>Scattering off a step</b></header>
+      <canvas></canvas>
+      <div class="readouts">
+        <span class="ro">E/V₀ <b data-out="eps">–</b></span><span class="ro">R <b data-out="R">–</b></span>
+        <span class="ro">T <b data-out="T">–</b></span><span class="ro">R+T <b data-out="sum">–</b></span>
+        <span class="ro">δ = 1/κ <b data-out="pen">–</b></span>
+      </div>
+      <div class="ctrls">
+        <label class="ctrl"><span>E / V₀</span><input type="range" min="0.05" max="4" value="0.5" step="0.01" data-k="eps"><output></output></label>
+      </div>
+      <figcaption>Below \(E=V_0\) the wave decays into the step instead of stopping dead at it, and \(R=1\) exactly. Cross \(E=V_0\) and transmission switches on — but \(R\) does not fall to zero until \(E\gg V_0\). The curve on the right is \(R(E)\) and \(T(E)\); note that classically it would be a step function.</figcaption>
+    </figure>
+  </section>
+
+  <section class="unit" id="u11">
+    <div class="uh"><span class="n">Unit 11</span><h3>The potential barrier and tunnelling</h3></div>
+    <div class="carry">
+      <div class="old"><h5>You carry over</h5><p>The step, from the unit above. A barrier is two steps back to back — three regions instead of two, four matching conditions instead of two.</p></div>
+      <div class="new"><h5>New ground</h5><ul>
+        <li>\(T\) for \(E>V_0\), with <b>resonances</b> where the barrier goes transparent</li>
+        <li>\(T\) for \(E&lt;V_0\): <b>tunnelling</b>, forbidden classically</li>
+        <li>The exponential law \(T\sim e^{-2\kappa a}\), and what it explains</li>
+      </ul></div>
+    </div>
+    <div class="fx"><span class="lbl">Above the barrier: \(E>V_0\)</span>
+      $$T=\left[1+\frac{V_0^2}{4E(E-V_0)}\sin^2(k_2a)\right]^{-1},\qquad k_2=\frac{\sqrt{2m(E-V_0)}}{\hbar}$$
+      <p class="why"><b>Resonance:</b> whenever \(k_2a=n\pi\) — that is, whenever the barrier width is a whole number of half-wavelengths inside — \(\sin^2=0\) and \(T=1\): the barrier becomes perfectly transparent. The reflections from the two faces cancel, exactly like a non-reflecting optical coating. This is the <b>Ramsauer–Townsend effect</b> in noble-gas scattering.</p>
+    </div>
+    <div class="ladder" data-lad="qm-tunnel">
+      <header><span class="lbl">Derive</span><b>Tunnelling: from the barrier formula in one substitution</b><span class="pill">6 marks</span></header>
+      <div class="rung"><span class="steplbl">Step 1 · the analytic continuation</span>For \(E&lt;V_0\) the inside wave number becomes imaginary: put \(k_2\to i\kappa\), \(\kappa=\sqrt{2m(V_0-E)}/\hbar\). Then \(\sin(k_2a)\to\sin(i\kappa a)=i\sinh(\kappa a)\), so \(\sin^2\to-\sinh^2\), and \(E-V_0\to-(V_0-E)\). Both sign flips cancel in the fraction.</div>
+      <div class="rung"><span class="steplbl">Step 2 · the tunnelling formula</span>$$\boxed{T=\left[1+\frac{V_0^2}{4E(V_0-E)}\sinh^2(\kappa a)\right]^{-1}}$$ Non-zero for every finite \(a\): the particle can be found on the far side of a barrier it could never climb.</div>
+      <div class="rung"><span class="steplbl">Step 3 · thick or high barrier</span>If \(\kappa a\gg1\), \(\sinh(\kappa a)\approx\tfrac12 e^{\kappa a}\) and the 1 is negligible: $$T\approx16\,\varepsilon(1-\varepsilon)\,e^{-2\kappa a},\qquad \varepsilon=\frac{E}{V_0}$$ $$T\approx\frac{16E}{V_0}\!\left(1-\frac{E}{V_0}\right)\exp\!\left[-\frac{2a}{\hbar}\sqrt{2m(V_0-E)}\right]$$</div>
+      <div class="rung"><span class="steplbl">Step 4 · what the exponential means</span>\(T\) depends <b>exponentially</b> on \(a\sqrt{V_0-E}\), so small changes in width or height change it by orders of magnitude. That extreme sensitivity is precisely what makes the <b>scanning tunnelling microscope</b> able to resolve single atoms, and it is why \(\alpha\)-decay half-lives span from microseconds to \(10^{17}\) years for a barrier that changes by only a few MeV (the Gamow theory). Also: the tunnel diode, and the \(23\,\)GHz inversion of the ammonia molecule.</div>
+      <footer><button class="btn sm" data-lad-next>Next step ›</button><button class="btn sm" data-lad-all>Show all</button></footer>
+    </div>
+
+    <figure class="simwrap" data-sim="barrier">
+      <header><span class="lbl">Bench 10</span><b>Tunnelling, and the resonances above the barrier</b></header>
+      <canvas></canvas>
+      <div class="readouts">
+        <span class="ro">E/V₀ <b data-out="eps">–</b></span><span class="ro">T <b data-out="T">–</b></span>
+        <span class="ro">R <b data-out="R">–</b></span><span class="ro">κa or k₂a <b data-out="ka">–</b></span>
+        <span class="ro">thick-barrier T <b data-out="approx">–</b></span>
+      </div>
+      <div class="ctrls">
+        <label class="ctrl"><span>E / V₀</span><input type="range" min="0.05" max="4" value="0.5" step="0.01" data-k="eps"><output></output></label>
+        <label class="ctrl"><span>barrier width a (Å)</span><input type="range" min="0.3" max="6" value="1" step="0.05" data-k="a"><output></output></label>
+        <label class="ctrl"><span>barrier height V₀ (eV)</span><input type="range" min="1" max="40" value="10" step="0.5" data-k="V"><output></output></label>
+      </div>
+      <figcaption>Below \(E=V_0\) the wave inside decays instead of oscillating, and \(T\) collapses exponentially — a factor of five in width costs about four orders of magnitude. Above \(E=V_0\), widen the barrier to about 3 Å and the resonances \(k_2a=n\pi\) move into view, each one touching \(T=1\) exactly. Compare the exact \(T\) with the thick-barrier approximation: it only becomes good once \(\kappa a\gg1\).</figcaption>
+    </figure>
+
+    <div class="check" data-ck="m2c3">
+      <p class="q"><b>Checkpoint</b>An electron of 5 eV meets a 10 eV barrier 1 Å wide. Find \(T\). Then say what happens to \(T\) if the barrier is 5 Å wide.</p>
+      <div class="row"><button class="btn sm" data-ck-show>Reveal</button></div>
+      <div class="a">\(\kappa=\dfrac{\sqrt{2m(V_0-E)}}{\hbar}\). With \(\dfrac{\hbar^2}{2m_e}=3.81\ \mathrm{eV\,\AA^2}\): \(\kappa=\sqrt{5/3.81}=1.15\ \mathrm{\AA^{-1}}\), so \(\kappa a=1.15\).<br><br>\(\varepsilon=0.5\), so \(4\varepsilon(1-\varepsilon)=1\) and \(T=\left[1+\sinh^2(1.15)\right]^{-1}=\left[1+2.02\right]^{-1}\approx\mathbf{0.33}\).<br><br>At \(a=5\,\)Å, \(\kappa a=5.75\), \(\sinh^2\approx2.4\times10^4\), so \(T\approx\mathbf{4\times10^{-5}}\). <strong>Five times the width, roughly eight thousand times less transmission</strong> — that is the exponential at work.
+      <div class="row" style="margin-top:.6rem"><button class="btn sm" data-ck-hit>Got it</button><button class="btn sm" data-ck-miss>Not yet</button></div></div>
+    </div>
+  </section>
+</article>
+</div>
+</section>
+
+<!-- ══════════════════════ DRILL ══════════════════════ -->
+<section id="view-drill" class="view m2">
+<div class="wrap">
+  <div style="padding:1.6rem 0 .4rem">
+    <div class="eyebrow">Retrieval practice</div>
+    <h2>Drill</h2>
+    <p class="lede">Answer before you look. Rate your confidence <i>first</i> — being confidently wrong is the thing worth finding, and this is the only place you will find it.</p>
+  </div>
+
+  <div class="seg" id="drillmode" style="margin:1rem 0">
+    <button data-v="mixed" aria-pressed="true">Mixed (interleaved)</button>
+    <button data-v="m1" aria-pressed="false">I · Wave function</button>
+    <button data-v="m2" aria-pressed="false">II · TISE</button>
+    <button data-v="num" aria-pressed="false">Numericals only</button>
+    <button data-v="weak" aria-pressed="false">Weak spots</button>
+  </div>
+  <div class="row" style="justify-content:space-between;margin-bottom:.4rem">
+    <div class="progline"><span id="dscore">0 / 0</span><span class="dots" id="ddots"></span></div>
+    <button class="btn sm" id="drestart">Restart set</button>
+  </div>
+
+  <div id="qhost"></div>
+
+  <hr class="rule">
+
+  <h3>Brain dump — free recall</h3>
+  <p class="dimtx" style="font-size:.9rem">Ten minutes, blank paper, no notes. Write everything you know about the topic. Then open the checklist and mark what you missed. This single exercise outperforms an hour of re-reading, and what you miss is tonight's actual to-do list.</p>
+  <div class="row" style="margin:.8rem 0">
+    <select id="bdtopic" class="numin" style="width:auto;max-width:100%">
+      <option value="m1">Module I · The wave function</option>
+      <option value="m2" selected>Module II · Time-independent SE</option>
+    </select>
+    <button class="btn pri" id="bdstart">Start 10 min</button>
+    <span class="tclock" id="bdclock" style="font-size:1.3rem">10:00</span>
+  </div>
+  <div id="bdlist" class="qcard" style="display:none"></div>
+
+  <hr class="rule">
+
+  <h3>Essay bench</h3>
+  <p class="dimtx" style="font-size:.9rem">Long-answer questions with the marking skeleton the examiner is looking for. Write your answer, reveal the skeleton, and check line by line — every missing line is a mark.</p>
+  <div id="essayhost"></div>
+</div>
+</section>
+
+<!-- ══════════════════════ TOOLKIT ══════════════════════ -->
+<section id="view-toolkit" class="view m3">
+<div class="wrap">
+  <div style="padding:1.6rem 0 .4rem">
+    <div class="eyebrow">The mathematics you are assumed to already have</div>
+    <h2>Toolkit</h2>
+    <p class="lede">Nothing here is examined on its own, and every question needs some of it. If a derivation stalls, it is almost always one of these lines you are missing — not the physics.</p>
+    <div class="fringe"><i></i></div>
+  </div>
+
+  <h3 style="margin-top:1.4rem">Constants, in the units you'll actually use</h3>
+  <div class="scroll"><table class="tbl"><tbody>
+    <tr><td>\(\hbar\)</td><td>\(1.0546\times10^{-34}\) J·s \(=6.582\times10^{-16}\) eV·s</td></tr>
+    <tr><td>\(\hbar^2/2m_e\)</td><td><b>3.81 eV·Å²</b> — the single most useful number in this course</td></tr>
+    <tr><td>\(\hbar c\)</td><td>197.3 eV·nm \(=1973\) eV·Å</td></tr>
+    <tr><td>\(m_e\)</td><td>\(9.109\times10^{-31}\) kg \(=0.511\) MeV/c²</td></tr>
+    <tr><td>1 eV</td><td>\(1.602\times10^{-19}\) J</td></tr>
+    <tr><td>1 Å</td><td>\(10^{-10}\) m</td></tr>
+    <tr><td>Electron in a 1 Å box</td><td>\(E_1=\pi^2\times3.81=37.6\) eV — memorise this as a scale check</td></tr>
+    <tr><td>Barrier decay constant</td><td>\(\kappa=\sqrt{(V_0-E)/3.81}\ \mathrm{\AA^{-1}}\) with energies in eV</td></tr>
+  </tbody></table></div>
+
+  <h3 style="margin-top:2rem">The seven integrals that keep appearing</h3>
+  <div class="scroll"><table class="tbl"><thead><tr><th>Integral</th><th>Result</th><th>Where it turns up</th></tr></thead><tbody>
+    <tr><td>\(\displaystyle\int_0^a\sin^2\frac{n\pi x}{a}dx\)</td><td>\(a/2\)</td><td>Normalising the infinite well</td></tr>
+    <tr><td>\(\displaystyle\int_0^a\sin\frac{m\pi x}{a}\sin\frac{n\pi x}{a}dx\)</td><td>\(\frac{a}{2}\delta_{mn}\)</td><td>Orthonormality; extracting \(c_n\)</td></tr>
+    <tr><td>\(\displaystyle\int_0^a x\sin^2\frac{n\pi x}{a}dx\)</td><td>\(a^2/4\)</td><td>\(\langle x\rangle=a/2\) in the well</td></tr>
+    <tr><td>\(\displaystyle\int_0^a x^2\sin^2\frac{n\pi x}{a}dx\)</td><td>\(a^3\left(\frac13-\frac{1}{2n^2\pi^2}\right)\)</td><td>\(\langle x^2\rangle\), hence \(\sigma_x\) in the well</td></tr>
+    <tr><td>\(\displaystyle\int_{-\infty}^{\infty}e^{-\alpha x^2}dx\)</td><td>\(\sqrt{\pi/\alpha}\)</td><td>Normalising any Gaussian packet</td></tr>
+    <tr><td>\(\displaystyle\int_{-\infty}^{\infty}x^2e^{-\alpha x^2}dx\)</td><td>\(\frac12\sqrt{\pi/\alpha^3}\)</td><td>\(\sigma_x\) of a Gaussian</td></tr>
+    <tr><td>\(\displaystyle\int_0^{\infty}x^ne^{-\alpha x}dx\)</td><td>\(n!/\alpha^{n+1}\)</td><td>Exponential trial functions</td></tr>
+  </tbody></table></div>
+  <p class="note">Odd integrand over a symmetric range is <b>zero</b> — that one observation kills half the integrals you are asked to do. Always check parity before integrating.</p>
+
+  <h3 style="margin-top:2rem">Moves you are expected to make without comment</h3>
+  <div class="cards" style="margin-top:.7rem">
+    <div class="card"><h4>Integration by parts, boundary term dropped</h4><p>\(\int u\,dv=[uv]-\int v\,du\), and \([uv]_{-\infty}^{\infty}=0\) because a normalisable \(\Psi\) and \(\partial_x\Psi\) vanish at infinity. Used twice in the momentum derivation alone.</p></div>
+    <div class="card"><h4>Take the complex conjugate of the equation</h4><p>Conjugating the Schrödinger equation flips \(i\to-i\) and leaves \(V\) alone <i>because \(V\) is real</i>. Say that out loud — it is a mark.</p></div>
+    <div class="card"><h4>Euler, both ways</h4><p>\(e^{i\theta}=\cos\theta+i\sin\theta\); \(|e^{i\theta}|=1\); \(\sin\theta=\frac{e^{i\theta}-e^{-i\theta}}{2i}\). Converting between \(A\sin kx+B\cos kx\) and \(Ce^{ikx}+De^{-ikx}\) is free.</p></div>
+    <div class="card"><h4>Imaginary argument identities</h4><p>\(\sin(i\theta)=i\sinh\theta\), \(\cos(i\theta)=\cosh\theta\). This one substitution converts the barrier formula into the tunnelling formula.</p></div>
+    <div class="card"><h4>\(|z|^2=zz^*\), never \(z^2\)</h4><p>For \(z=\frac{k_1-i\kappa}{k_1+i\kappa}\), \(|z|^2=\frac{k_1^2+\kappa^2}{k_1^2+\kappa^2}=1\). Squaring instead of conjugating is the classic way to lose the \(R=1\) result.</p></div>
+    <div class="card"><h4>Separation of variables</h4><p>Assume \(F(x)G(t)\), divide by \(FG\), argue each side is constant. The constant always turns out to be the conserved quantity — here, the energy.</p></div>
+  </div>
+
+  <h3 style="margin-top:2rem">Fourier pair, in the convention this course uses</h3>
+  <div class="fx"><span class="lbl">Position ↔ momentum</span>
+    $$\Psi(x,0)=\frac{1}{\sqrt{2\pi}}\int_{-\infty}^{\infty}\phi(k)e^{ikx}dk\quad\Longleftrightarrow\quad \phi(k)=\frac{1}{\sqrt{2\pi}}\int_{-\infty}^{\infty}\Psi(x,0)e^{-ikx}dx$$
+    <p class="why">\(|\phi(k)|^2dk\) is the probability of finding momentum in \([\hbar k,\hbar(k+dk)]\). Narrow in \(x\) ⇒ wide in \(k\): the uncertainty principle is a property of this pair, not of any apparatus.</p>
+  </div>
+
+  <h3 style="margin-top:2rem">Delta function, for the odd question that needs it</h3>
+  <ul class="tick">
+    <li>\(\int f(x)\delta(x-a)dx=f(a)\)</li>
+    <li>\(\delta(cx)=\frac{1}{|c|}\delta(x)\)</li>
+    <li>Across \(V=\alpha\delta(x-x_0)\): \(\psi\) stays continuous but \(\Delta\psi'=\frac{2m\alpha}{\hbar^2}\psi(x_0)\)</li>
+  </ul>
+</div>
+</section>
+
+<!-- ══════════════════════ SHEET ══════════════════════ -->
+<section id="view-sheet" class="view m2">
+<div class="wrap sheet">
+  <div class="timerbar noprint">
+    <span class="tclock" id="sclock">10:00</span>
+    <div class="tsegs" id="ssegs"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <button class="btn sm" id="sstart">Start</button>
+    <button class="btn sm" id="sprint">Print</button>
+  </div>
+
+  <div style="padding:1.2rem 0 .3rem">
+    <div class="eyebrow">Read in this order · 10 minutes · nothing else</div>
+    <h2 style="margin:.3rem 0">The crunch sheet</h2>
+    <p class="dimtx" style="font-size:.88rem">Ordered by marks. If you only get through the first two blocks you have covered 20 of the 30 marks these two modules carry.</p>
+  </div>
+
+  <div class="sblock m2">
+    <div class="row" style="justify-content:space-between"><h3>Module II core — bound states</h3><span class="pill">0:00 – 4:00</span></div>
+    <div class="sgrid">
+      <div class="si"><span class="t">TDSE</span>\(i\hbar\partial_t\Psi=-\frac{\hbar^2}{2m}\partial_x^2\Psi+V\Psi\)</div>
+      <div class="si"><span class="t">Separation</span>\(\Psi=\psi(x)\phi(t)\), \(\phi=e^{-iEt/\hbar}\)</div>
+      <div class="si"><span class="t">TISE</span>\(-\frac{\hbar^2}{2m}\psi''+V\psi=E\psi\), i.e. \(\hat H\psi=E\psi\)</div>
+      <div class="si"><span class="t">Stationary ⇒</span>\(|\Psi|^2=|\psi|^2\) fixed; \(\langle p\rangle=0\); \(\sigma_H=0\)</div>
+      <div class="si"><span class="t">General solution</span>\(\Psi=\sum_n c_n\psi_n e^{-iE_nt/\hbar}\)</div>
+      <div class="si"><span class="t">Coefficients</span>\(c_n=\int\psi_n^*\Psi(x,0)dx\); \(\sum|c_n|^2=1\)</div>
+      <div class="si"><span class="t">Energy statistics</span>\(P(E_n)=|c_n|^2\); \(\langle H\rangle=\sum|c_n|^2E_n\)</div>
+      <div class="si"><span class="t">Beat period</span>\(T=2\pi\hbar/(E_2-E_1)\)</div>
+      <div class="si"><span class="t">Well: \(k\)</span>\(k_n=n\pi/a\), \(n=1,2,3\dots\)</div>
+      <div class="si"><span class="t">Well: energies</span>\(E_n=\dfrac{n^2\pi^2\hbar^2}{2ma^2}\)</div>
+      <div class="si"><span class="t">Well: states</span>\(\psi_n=\sqrt{2/a}\,\sin(n\pi x/a)\)</div>
+      <div class="si"><span class="t">Well: numbers</span>\(\hbar^2/2m_e=3.81\) eV·Å²; \(E_1(1\,\text{Å})=37.6\) eV</div>
+      <div class="si"><span class="t">Nodes / parity</span>\(n-1\) interior nodes; alternately even/odd about \(a/2\)</div>
+      <div class="si"><span class="t">Six theorems</span>\(E\) real · \(\psi\) real · parity if \(V\) even · \(E>V_{\min}\) · non-degenerate · node theorem</div>
+      <div class="si"><span class="t">Free particle</span>\(\Psi_k=Ae^{i(kx-\hbar k^2t/2m)}\), not normalisable</div>
+      <div class="si"><span class="t">Velocities</span>\(v_{\rm ph}=\hbar k/2m\); \(v_{\rm gr}=\hbar k_0/m=2v_{\rm ph}=v_{\rm cl}\)</div>
+      <div class="si"><span class="t">Packet</span>\(\Psi=\frac{1}{\sqrt{2\pi}}\int\phi(k)e^{i(kx-\omega t)}dk\), \(\omega=\hbar k^2/2m\)</div>
+    </div>
+  </div>
+
+  <div class="sblock m2">
+    <div class="row" style="justify-content:space-between"><h3>Module II — scattering</h3><span class="pill">4:00 – 6:00</span></div>
+    <div class="sgrid">
+      <div class="si"><span class="t">Continuity</span>\(\partial_t\rho+\partial_xJ=0\), \(\rho=|\Psi|^2\)</div>
+      <div class="si"><span class="t">Current</span>\(J=\frac{\hbar}{m}\mathrm{Im}\!\left(\Psi^*\partial_x\Psi\right)\); \(dP_{ab}/dt=J(a)-J(b)\)</div>
+      <div class="si"><span class="t">Plane wave</span>\(J=|A|^2\hbar k/m\); real \(\psi\) ⇒ \(J=0\)</div>
+      <div class="si"><span class="t">Matching</span>\(\psi\) and \(\psi'\) continuous where \(V\) is finite</div>
+      <div class="si"><span class="t">Delta potential</span>\(\Delta\psi'=\frac{2m\alpha}{\hbar^2}\psi(x_0)\)</div>
+      <div class="si"><span class="t">Step, \(E>V_0\)</span>\(\frac BA=\frac{k_1-k_2}{k_1+k_2}\), \(\frac CA=\frac{2k_1}{k_1+k_2}\)</div>
+      <div class="si"><span class="t">Step: R, T</span>\(R=\left(\frac{1-K}{1+K}\right)^2\), \(T=\frac{4K}{(1+K)^2}\), \(K=\sqrt{1-V_0/E}\)</div>
+      <div class="si"><span class="t">Flux weighting</span>\(T=\frac{k_2}{k_1}\left|\frac CA\right|^2\) — never \(|C/A|^2\)</div>
+      <div class="si"><span class="t">Step, \(E&lt;V_0\)</span>\(R=1\), \(T=0\), but \(\psi\propto e^{-\kappa x}\) inside</div>
+      <div class="si"><span class="t">Penetration depth</span>\(\delta=1/\kappa\), \(\kappa=\sqrt{2m(V_0-E)}/\hbar\)</div>
+      <div class="si"><span class="t">Barrier, \(E>V_0\)</span>\(T=\left[1+\frac{V_0^2\sin^2(k_2a)}{4E(E-V_0)}\right]^{-1}\)</div>
+      <div class="si"><span class="t">Resonance</span>\(k_2a=n\pi\Rightarrow T=1\) (Ramsauer–Townsend)</div>
+      <div class="si"><span class="t">Tunnelling</span>\(T=\left[1+\frac{V_0^2\sinh^2(\kappa a)}{4E(V_0-E)}\right]^{-1}\)</div>
+      <div class="si"><span class="t">Thick barrier</span>\(T\approx16\varepsilon(1-\varepsilon)e^{-2\kappa a}\), \(\varepsilon=E/V_0\)</div>
+      <div class="si"><span class="t">Applications</span>α-decay (Gamow) · STM · tunnel diode · NH₃ inversion</div>
+      <div class="si"><span class="t">Always check</span>\(R+T=1\)</div>
+    </div>
+  </div>
+
+  <div class="sblock m1">
+    <div class="row" style="justify-content:space-between"><h3>Module I — the wave function</h3><span class="pill">6:00 – 7:30</span></div>
+    <div class="sgrid">
+      <div class="si"><span class="t">Born rule</span>\(P_{ab}=\int_a^b|\Psi|^2dx\); \(|\Psi|^2\) is a <b>density</b></div>
+      <div class="si"><span class="t">Normalisation</span>\(\int|\Psi|^2dx=1\); fixes \(|A|\), not the phase</div>
+      <div class="si"><span class="t">Preserved because</span>\(V\) real ⇒ boundary term at \(\pm\infty\) vanishes</div>
+      <div class="si"><span class="t">Variance</span>\(\sigma^2=\langle j^2\rangle-\langle j\rangle^2\ge0\)</div>
+      <div class="si"><span class="t">Continuous</span>\(\langle x\rangle=\int x\rho\,dx\), \(\rho=|\Psi|^2\)</div>
+      <div class="si"><span class="t">Momentum</span>\(\langle p\rangle=\int\Psi^*(-i\hbar\partial_x)\Psi\,dx\)</div>
+      <div class="si"><span class="t">Operators</span>\(\hat x=x\), \(\hat p=-i\hbar\partial_x\), \(\hat T=-\frac{\hbar^2}{2m}\partial_x^2\)</div>
+      <div class="si"><span class="t">Any observable</span>\(\langle Q\rangle=\int\Psi^*Q(x,-i\hbar\partial_x)\Psi\,dx\)</div>
+      <div class="si"><span class="t">Ehrenfest</span>\(\frac{d\langle x\rangle}{dt}=\frac{\langle p\rangle}{m}\), \(\frac{d\langle p\rangle}{dt}=-\langle\partial_xV\rangle\)</div>
+      <div class="si"><span class="t">Uncertainty</span>\(\sigma_x\sigma_p\ge\hbar/2\), equality only for a Gaussian</div>
+      <div class="si"><span class="t">Measurement</span>collapse; realist / orthodox / agnostic; Bell rules out local hidden variables</div>
+      <div class="si"><span class="t">Two dynamics</span>unitary Schrödinger evolution, then non-unitary collapse</div>
+    </div>
+  </div>
+
+  <div class="sblock m1">
+    <div class="row" style="justify-content:space-between"><h3>Ten traps that eat marks</h3><span class="pill">7:30 – 10:00</span></div>
+    <ol style="padding-left:1.2rem;margin:.5rem 0 0;font-size:.87rem;line-height:1.75">
+      <li>\(|\Psi|^2\) is a probability <b>density</b>, not a probability — always integrate over an interval.</li>
+      <li>\(\langle x\rangle\) is an <b>ensemble</b> average over identically prepared systems, not repeated measurements on one particle, and not a trajectory.</li>
+      <li>Normalisation fixes \(|A|\) only; the overall phase \(e^{i\theta}\) is unobservable and never determined.</li>
+      <li>The proof that normalisation survives needs \(V\) <b>real</b> — say so when you use it.</li>
+      <li>A stationary state is not a particle at rest: \(\langle p\rangle=0\) but \(\langle p^2\rangle\ne0\).</li>
+      <li>\(|c_n|^2\) is the probability of measuring the <b>energy</b> \(E_n\), not of finding the particle anywhere.</li>
+      <li>In the infinite well \(n\) starts at <b>1</b>; \(n=0\) gives \(\psi\equiv0\), and \(E_1\ne0\) is the zero-point energy.</li>
+      <li>\(T=(k_2/k_1)|C/A|^2\). Drop the ratio of wave numbers and \(R+T\ne1\).</li>
+      <li>For \(E&lt;V_0\) at a step, \(R=1\) <b>and</b> \(\psi\ne0\) inside — no contradiction, because a real exponential carries zero current.</li>
+      <li>Phase velocity is not the particle's velocity; group velocity is, and \(v_{\rm gr}=2v_{\rm ph}\) for a free particle.</li>
+    </ol>
+  </div>
+
+  <div class="sblock m2">
+    <h3>Last 60 seconds</h3>
+    <ul class="tick" style="margin:.4rem 0 0">
+      <li>For any derivation: state the assumption first (\(V\) time-independent, \(V\) real, normalisable, \(D\gg\)…), then work. Those lines carry marks by themselves.</li>
+      <li>Draw the potential and sketch \(\psi\) before solving — region by region, with the boundary conditions marked.</li>
+      <li>Box the final result. Check limits: does \(T\to1\) as \(V_0\to0\)? Does \(E_n\to\) classical as \(n\to\infty\)?</li>
+      <li>Energies in eV, lengths in Å, and \(\hbar^2/2m_e=3.81\) eV·Å² keeps every number in this course on one line.</li>
+    </ul>
+  </div>
+</div>
+</section>
+
+
+<nav class="tabbar" id="tabbar">
+  <button data-go="bench" aria-selected="true"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Bench</button>
+  <button data-go="learn"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M20 18v3H6.5A2.5 2.5 0 0 1 4 18.5"/></svg>Learn</button>
+  <button data-go="drill"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Drill</button>
+  <button data-go="toolkit"><svg viewBox="0 0 24 24"><path d="M4 7h7M4 12h10M4 17h5"/><path d="M17.5 5v14M15 8.5 17.5 5 20 8.5"/></svg>Toolkit</button>
+  <button data-go="sheet"><svg viewBox="0 0 24 24"><path d="M5 3h14v18H5z"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/></svg>Sheet</button>
+</nav>
+</div>
+
+<template id="qbank">
+<!-- ══ MODULE I ══ -->
+<div class="qi" data-mod="m1" data-type="mcq" data-topic="Born rule">
+  <div class="qt">The quantity \(|\Psi(x,t)|^2\) is:</div>
+  <div class="qo" data-ok>a probability density — probability per unit length, which must be integrated to give a probability</div>
+  <div class="qo">the probability that the particle is exactly at \(x\)</div>
+  <div class="qo">the amplitude of the wave at \(x\)</div>
+  <div class="qo">always less than or equal to 1</div>
+  <div class="qe">Because \(x\) is continuous, the probability of any single exact value is zero. \(|\Psi|^2\) has dimensions of \(\mathrm{length}^{-1}\) in 1D and can exceed 1; only \(\int_a^b|\Psi|^2dx\) is a probability.</div>
+</div>
+<div class="qi" data-mod="m1" data-type="mcq" data-topic="Normalization">
+  <div class="qt">Normalising a wave function determines:</div>
+  <div class="qo" data-ok>the modulus \(|A|\) only — the overall phase \(e^{i\theta}\) remains free and unobservable</div>
+  <div class="qo">both the modulus and the phase of \(A\)</div>
+  <div class="qo">the energy of the state</div>
+  <div class="qo">nothing, since \(A\Psi\) is not a solution when \(\Psi\) is</div>
+  <div class="qe">The Schrödinger equation is linear and homogeneous, so \(A\Psi\) is a solution for any complex \(A\). Imposing \(\int|\Psi|^2=1\) fixes \(|A|\); multiplying by any \(e^{i\theta}\) leaves \(|\Psi|^2\) — and hence every prediction — unchanged.</div>
+</div>
+<div class="qi" data-mod="m1" data-type="mcq" data-topic="Normalization">
+  <div class="qt">The proof that \(\frac{d}{dt}\int|\Psi|^2dx=0\) requires which assumption about the potential?</div>
+  <div class="qo" data-ok>\(V\) must be real</div>
+  <div class="qo">\(V\) must be time-independent</div>
+  <div class="qo">\(V\) must be an even function</div>
+  <div class="qo">\(V\) must vanish at infinity</div>
+  <div class="qe">The \(V\)-terms from \(\partial_t\Psi\) and \(\partial_t\Psi^*\) cancel only if \(V^*=V\). A complex potential deliberately breaks this — it is how absorption is modelled, at the cost of losing probability.</div>
+</div>
+<div class="qi" data-mod="m1" data-type="mcq" data-topic="Expectation values">
+  <div class="qt">\(\langle x\rangle\) means:</div>
+  <div class="qo" data-ok>the average over many identically prepared systems, each measured once</div>
+  <div class="qo">the average of repeated measurements on a single particle</div>
+  <div class="qo">the position where the particle most probably is</div>
+  <div class="qo">the time average of the particle's position</div>
+  <div class="qe">A measurement collapses the state, so repeating it on the same particle just returns the same value. It is an <strong>ensemble</strong> average. (The most probable position is the mode, a different statistic.)</div>
+</div>
+<div class="qi" data-mod="m1" data-type="mcq" data-topic="Uncertainty">
+  <div class="qt">Which statement about \(\sigma_x\sigma_p\ge\hbar/2\) is correct?</div>
+  <div class="qo" data-ok>It is a property of the state itself, following from Fourier analysis plus \(p=\hbar k\)</div>
+  <div class="qo">It says a position measurement necessarily disturbs the momentum</div>
+  <div class="qo">It sets a limit on how good an instrument can be</div>
+  <div class="qo">It applies only to electrons</div>
+  <div class="qe">Localised in \(x\) ⇒ broad in \(k\) is a theorem about Fourier transforms, true of any wave. De Broglie converts the \(k\)-spread into a momentum spread. The \(\sigma\)'s are standard deviations over an ensemble, not instrument errors.</div>
+</div>
+<div class="qi" data-mod="m1" data-type="num" data-topic="Normalization" data-ans="0.0908" data-tol="0.004" data-unit="">
+  <div class="qt">For the ground state of an infinite well of width \(a\), find the probability of locating the particle in the first quarter, \(0\le x\le a/4\). (Give a decimal.)</div>
+  <div class="qe">\(P=\dfrac{2}{a}\displaystyle\int_0^{a/4}\sin^2\!\frac{\pi x}{a}dx=\frac{2}{a}\left[\frac{x}{2}-\frac{a}{4\pi}\sin\frac{2\pi x}{a}\right]_0^{a/4}\)<br><br>\(=\dfrac{2}{a}\left(\dfrac{a}{8}-\dfrac{a}{4\pi}\right)=\dfrac14-\dfrac{1}{2\pi}=0.250-0.159=\) <strong>0.091</strong>.<br><br>Less than the classical \(0.25\), because the ground-state density is pushed toward the middle of the well.</div>
+</div>
+<div class="qi" data-mod="m1" data-type="num" data-topic="Uncertainty" data-ans="1.055e-24" data-tol="6e-26" data-unit="kg m/s">
+  <div class="qt">An electron is localised to \(\sigma_x=0.5\) Å. What is the minimum possible \(\sigma_p\)? (SI units, scientific notation.)</div>
+  <div class="qe">\(\sigma_p\ge\dfrac{\hbar}{2\sigma_x}=\dfrac{1.055\times10^{-34}}{2\times0.5\times10^{-10}}=\) <strong>\(1.06\times10^{-24}\) kg m s\(^{-1}\)</strong>.<br><br>Which corresponds to \(E\sim\sigma_p^2/2m\approx3.8\) eV — atomic scale, as it must be.</div>
+</div>
+<div class="qi" data-mod="m1" data-type="recall" data-topic="Normalization">
+  <div class="qt">Show that if \(\Psi\) is normalised at \(t=0\) it stays normalised for all later times.</div>
+  <div class="qe">① \(\dfrac{d}{dt}\displaystyle\int|\Psi|^2dx=\int\partial_t(\Psi^*\Psi)dx=\int\left(\Psi^*\partial_t\Psi+\Psi\,\partial_t\Psi^*\right)dx\).<br><br>② From the Schrödinger equation and its complex conjugate (<strong>\(V\) real</strong>), \(\partial_t\Psi=\frac{i\hbar}{2m}\partial_x^2\Psi-\frac{i}{\hbar}V\Psi\) and \(\partial_t\Psi^*=-\frac{i\hbar}{2m}\partial_x^2\Psi^*+\frac{i}{\hbar}V\Psi^*\); the \(V\) terms cancel.<br><br>③ What is left is a perfect \(x\)-derivative: \(\partial_t|\Psi|^2=\partial_x\!\left[\frac{i\hbar}{2m}\left(\Psi^*\partial_x\Psi-\Psi\,\partial_x\Psi^*\right)\right]\).<br><br>④ Integrating, \(\frac{d}{dt}\int|\Psi|^2dx=\left[\;\cdot\;\right]_{-\infty}^{+\infty}=0\), since a normalisable \(\Psi\) and \(\partial_x\Psi\) vanish at infinity. <strong>Hence the norm is constant.</strong> The bracket is the probability current \(J\).</div>
+</div>
+<div class="qi" data-mod="m1" data-type="recall" data-topic="Operators">
+  <div class="qt">Starting from \(\langle x\rangle\), derive the momentum operator.</div>
+  <div class="qe">① \(\dfrac{d\langle x\rangle}{dt}=\displaystyle\int x\,\partial_t|\Psi|^2dx=\frac{i\hbar}{2m}\int x\,\partial_x\!\left(\Psi^*\partial_x\Psi-\Psi\partial_x\Psi^*\right)dx\).<br><br>② Integrate by parts (boundary term dies): \(=-\frac{i\hbar}{2m}\displaystyle\int\left(\Psi^*\partial_x\Psi-\Psi\partial_x\Psi^*\right)dx\).<br><br>③ Parts again on the second term gives \(\int\Psi\partial_x\Psi^*dx=-\int\Psi^*\partial_x\Psi\,dx\), so \(\dfrac{d\langle x\rangle}{dt}=-\dfrac{i\hbar}{m}\displaystyle\int\Psi^*\partial_x\Psi\,dx\).<br><br>④ With \(\langle p\rangle\equiv m\,d\langle x\rangle/dt\): \(\langle p\rangle=\int\Psi^*\left(-i\hbar\partial_x\right)\Psi\,dx\), hence <strong>\(\hat p=-i\hbar\,\partial/\partial x\)</strong>, and generally \(\hat Q=Q(x,-i\hbar\partial_x)\).</div>
+</div>
+
+<!-- ══ MODULE II ══ -->
+<div class="qi" data-mod="m2" data-type="mcq" data-topic="Stationary states">
+  <div class="qt">Why is the probability density of a separable solution \(\psi(x)e^{-iEt/\hbar}\) independent of time?</div>
+  <div class="qo" data-ok>The time factor has modulus 1, so it cancels against its own conjugate in \(\Psi^*\Psi\)</div>
+  <div class="qo">Because \(\psi\) is real</div>
+  <div class="qo">Because \(E=0\) for such states</div>
+  <div class="qo">Because the particle is at rest</div>
+  <div class="qe">\(|e^{-iEt/\hbar}|^2=1\). Nothing else is assumed — \(\psi\) may be complex, and the particle is certainly not at rest (\(\langle p^2\rangle\ne0\), only \(\langle p\rangle=0\)).</div>
+</div>
+<div class="qi" data-mod="m2" data-type="mcq" data-topic="Stationary states">
+  <div class="qt">For a stationary state, the variance of the total energy is:</div>
+  <div class="qo" data-ok>exactly zero — every measurement returns \(E\)</div>
+  <div class="qo">\(\hbar/2\)</div>
+  <div class="qo">non-zero but small</div>
+  <div class="qo">undefined</div>
+  <div class="qe">\(\langle H\rangle=E\) and \(\langle H^2\rangle=E^2\) because \(\hat H\psi=E\psi\), so \(\sigma_H^2=E^2-E^2=0\). This is precisely what "the state has energy \(E\)" means.</div>
+</div>
+<div class="qi" data-mod="m2" data-type="mcq" data-topic="Superposition">
+  <div class="qt">In \(\Psi=\sum_nc_n\psi_ne^{-iE_nt/\hbar}\), the quantity \(|c_n|^2\) is:</div>
+  <div class="qo" data-ok>the probability that a measurement of the energy yields \(E_n\)</div>
+  <div class="qo">the probability of finding the particle in state \(n\)'s region of space</div>
+  <div class="qo">the fraction of particles that are in level \(n\)</div>
+  <div class="qo">time-dependent, since \(e^{-iE_nt/\hbar}\) changes</div>
+  <div class="qe">\(|c_n|^2\) is an energy probability, and it is constant in time because \(|e^{-iE_nt/\hbar}|=1\). Hence \(\langle H\rangle=\sum|c_n|^2E_n\) is conserved.</div>
+</div>
+<div class="qi" data-mod="m2" data-type="mcq" data-topic="Infinite well">
+  <div class="qt">In the infinite square well, why is \(n=0\) excluded?</div>
+  <div class="qo" data-ok>It gives \(\psi\equiv0\), which is not a state — and \(E_1\ne0\) is required by the uncertainty principle anyway</div>
+  <div class="qo">Because energy cannot be zero in any system</div>
+  <div class="qo">Because \(\sin(0)\) is undefined</div>
+  <div class="qo">It is allowed, and gives the ground state</div>
+  <div class="qe">\(k=0\) makes \(\psi=A\sin(0\cdot x)=0\) everywhere, so there is no particle. Physically, \(E=0\) would mean \(p=0\) exactly for a particle confined to width \(a\), violating \(\sigma_x\sigma_p\ge\hbar/2\). The non-zero \(E_1\) is the zero-point energy.</div>
+</div>
+<div class="qi" data-mod="m2" data-type="mcq" data-topic="Infinite well">
+  <div class="qt">The \(n\)-th stationary state of the infinite well has how many nodes strictly inside the well?</div>
+  <div class="qo" data-ok>\(n-1\)</div>
+  <div class="qo">\(n\)</div>
+  <div class="qo">\(n+1\)</div>
+  <div class="qo">\(2n\)</div>
+  <div class="qe">The node theorem: the ground state has none, and each higher level adds one. The walls are not counted as interior nodes. It is the fastest check on any sketch you draw.</div>
+</div>
+<div class="qi" data-mod="m2" data-type="mcq" data-topic="Free particle">
+  <div class="qt">A single free-particle plane wave \(Ae^{i(kx-\omega t)}\) is not a physical state because:</div>
+  <div class="qo" data-ok>\(\int|\Psi|^2dx\) diverges — it cannot be normalised</div>
+  <div class="qo">it does not satisfy the Schrödinger equation</div>
+  <div class="qo">its energy is negative</div>
+  <div class="qo">it violates the uncertainty principle</div>
+  <div class="qe">It solves the equation perfectly well and is an indispensable basis function, but with \(|\Psi|^2=|A|^2\) everywhere the integral is infinite. Physical states are wave packets — superpositions over a band of \(k\).</div>
+</div>
+<div class="qi" data-mod="m2" data-type="mcq" data-topic="Free particle">
+  <div class="qt">For a free-particle wave packet, the relation between the speeds is:</div>
+  <div class="qo" data-ok>\(v_{\rm group}=2v_{\rm phase}\), and \(v_{\rm group}\) is the classical particle speed</div>
+  <div class="qo">\(v_{\rm phase}=2v_{\rm group}\)</div>
+  <div class="qo">they are equal</div>
+  <div class="qo">\(v_{\rm phase}\) is the particle speed</div>
+  <div class="qe">\(\omega=\hbar k^2/2m\), so \(v_{\rm ph}=\omega/k=\hbar k/2m\) but \(v_{\rm gr}=d\omega/dk=\hbar k/m=p/m\). The crests move at half the speed of the bump and slide backwards through it.</div>
+</div>
+<div class="qi" data-mod="m2" data-type="mcq" data-topic="Probability current">
+  <div class="qt">For any real wave function \(\psi(x)\), the probability current is:</div>
+  <div class="qo" data-ok>zero everywhere</div>
+  <div class="qo">equal to \(|\psi|^2\)</div>
+  <div class="qo">proportional to \(\psi'\)</div>
+  <div class="qo">infinite</div>
+  <div class="qe">\(J=\frac{\hbar}{m}\mathrm{Im}(\psi^*\partial_x\psi)\), and for real \(\psi\) the argument is real, so its imaginary part vanishes. Bound states — which can always be chosen real — carry no net flow, which is exactly what "stationary" should mean.</div>
+</div>
+<div class="qi" data-mod="m2" data-type="mcq" data-topic="Potential step">
+  <div class="qt">A particle with \(E&lt;V_0\) hits a potential step. Which is true?</div>
+  <div class="qo" data-ok>\(R=1\), yet \(\psi\ne0\) inside the step, decaying as \(e^{-\kappa x}\)</div>
+  <div class="qo">\(R=1\) and \(\psi=0\) beyond \(x=0\)</div>
+  <div class="qo">\(R&lt;1\), since some particles get through</div>
+  <div class="qo">\(R\) depends on the width of the step</div>
+  <div class="qe">Everything is reflected eventually, so \(R=1\) exactly — but the wave penetrates a depth \(\delta=1/\kappa\) first. There is no contradiction: a real decaying exponential carries zero current, so nothing is transmitted.</div>
+</div>
+<div class="qi" data-mod="m2" data-type="mcq" data-topic="Potential step">
+  <div class="qt">The transmission coefficient at a step is \(T=\frac{k_2}{k_1}\left|\frac{C}{A}\right|^2\) rather than \(\left|\frac{C}{A}\right|^2\) because:</div>
+  <div class="qo" data-ok>\(R\) and \(T\) are ratios of probability currents, and the transmitted wave moves at a different speed</div>
+  <div class="qo">of a normalisation convention</div>
+  <div class="qo">the transmitted wave has a different amplitude</div>
+  <div class="qo">energy must be conserved</div>
+  <div class="qe">\(J=|A|^2\hbar k/m\), so the flux carries a factor of \(k\). Omit it and \(R+T\ne1\) — which is the quickest way for an examiner to spot the error.</div>
+</div>
+<div class="qi" data-mod="m2" data-type="mcq" data-topic="Barrier">
+  <div class="qt">Above a rectangular barrier (\(E>V_0\)), perfect transmission \(T=1\) occurs when:</div>
+  <div class="qo" data-ok>\(k_2a=n\pi\) — a whole number of half-wavelengths fits inside the barrier</div>
+  <div class="qo">\(E=V_0\)</div>
+  <div class="qo">\(a\to0\) only</div>
+  <div class="qo">never; \(T&lt;1\) always</div>
+  <div class="qe">Then \(\sin^2(k_2a)=0\) and \(T=1\): the reflections from the two faces interfere destructively, exactly like an anti-reflection coating. This is the Ramsauer–Townsend effect.</div>
+</div>
+<div class="qi" data-mod="m2" data-type="num" data-topic="Infinite well" data-ans="9.4" data-tol="0.3" data-unit="eV">
+  <div class="qt">Find the ground-state energy of an electron in an infinite well of width 2 Å. (eV)</div>
+  <div class="qe">\(E_1=\dfrac{\pi^2\hbar^2}{2m_ea^2}=\dfrac{\pi^2\times3.81\ \mathrm{eV\,\AA^2}}{(2\ \mathrm{\AA})^2}=\dfrac{37.6}{4}=\) <strong>9.4 eV</strong>.<br><br>Doubling the width quarters the energy, since \(E\propto1/a^2\).</div>
+</div>
+<div class="qi" data-mod="m2" data-type="num" data-topic="Superposition" data-ans="3.67e-17" data-tol="4e-18" data-unit="s">
+  <div class="qt">An electron in a 1 Å infinite well is in \(\frac{1}{\sqrt2}(\psi_1+\psi_2)\). How long does one full oscillation of \(|\Psi|^2\) take? (s)</div>
+  <div class="qe">\(E_1=37.6\) eV, \(E_2=4E_1=150.4\) eV, so \(\Delta E=112.8\) eV.<br><br>\(T=\dfrac{2\pi\hbar}{\Delta E}=\dfrac{2\pi\times6.582\times10^{-16}\ \mathrm{eV\,s}}{112.8\ \mathrm{eV}}=\) <strong>\(3.7\times10^{-17}\) s</strong>.<br><br>Femtosecond-scale motion — which is why electronic dynamics needs attosecond pulses to watch.</div>
+</div>
+<div class="qi" data-mod="m2" data-type="num" data-topic="Tunnelling" data-ans="0.33" data-tol="0.03" data-unit="">
+  <div class="qt">A 5 eV electron meets a 10 eV barrier of width 1 Å. Find the transmission coefficient.</div>
+  <div class="qe">\(\kappa=\sqrt{\dfrac{V_0-E}{3.81}}=\sqrt{\dfrac{5}{3.81}}=1.15\ \mathrm{\AA^{-1}}\Rightarrow\kappa a=1.15\).<br><br>\(\varepsilon=E/V_0=0.5\), so \(4\varepsilon(1-\varepsilon)=1\) and<br>\(T=\left[1+\sinh^2(1.15)\right]^{-1}=\left[1+2.02\right]^{-1}=\) <strong>0.33</strong>.<br><br>A third of the electrons pass through a barrier none of them could climb.</div>
+</div>
+<div class="qi" data-mod="m2" data-type="num" data-topic="Potential step" data-ans="0.029" data-tol="0.004" data-unit="">
+  <div class="qt">A particle with \(E=2V_0\) is incident on a step of height \(V_0\). Find \(R\).</div>
+  <div class="qe">\(K=\sqrt{1-V_0/E}=\sqrt{1-0.5}=0.707\).<br><br>\(R=\left(\dfrac{1-K}{1+K}\right)^2=\left(\dfrac{0.293}{1.707}\right)^2=(0.1716)^2=\) <strong>0.029</strong>, so \(T=0.971\).<br><br>Classically \(R\) would be zero: 3% of the particles bounce off a step they have more than enough energy to climb.</div>
+</div>
+<div class="qi" data-mod="m2" data-type="num" data-topic="Barrier" data-ans="14.4" data-tol="0.5" data-unit="eV">
+  <div class="qt">Electrons cross a 5 eV barrier of width 2 Å. At what energy does the <b>first</b> transmission resonance occur? (eV)</div>
+  <div class="qe">Resonance needs \(k_2a=\pi\), so \(k_2=\pi/2=1.571\ \mathrm{\AA^{-1}}\).<br><br>\(E-V_0=3.81\,k_2^2=3.81\times2.467=9.40\) eV.<br><br>\(E=5+9.40=\) <strong>14.4 eV</strong>, where \(T=1\) exactly.</div>
+</div>
+<div class="qi" data-mod="m2" data-type="num" data-topic="Potential step" data-ans="0.98" data-tol="0.06" data-unit="Å">
+  <div class="qt">A 1 eV electron meets a 5 eV step. How far does the wave function penetrate (the depth at which it falls to \(1/e\))? (Å)</div>
+  <div class="qe">\(\kappa=\sqrt{\dfrac{V_0-E}{3.81}}=\sqrt{\dfrac{4}{3.81}}=1.025\ \mathrm{\AA^{-1}}\).<br><br>\(\delta=1/\kappa=\) <strong>0.98 Å</strong> — about one atomic diameter, which is exactly why scanning tunnelling microscopy works at that stand-off distance.</div>
+</div>
+<div class="qi" data-mod="m2" data-type="recall" data-topic="Stationary states">
+  <div class="qt">Derive the time-independent Schrödinger equation by separation of variables, and state what the separation constant means.</div>
+  <div class="qe">① Take \(V=V(x)\) and try \(\Psi=\psi(x)\phi(t)\).<br>② Substituting and dividing by \(\psi\phi\): \(i\hbar\frac{1}{\phi}\frac{d\phi}{dt}=-\frac{\hbar^2}{2m}\frac{1}{\psi}\frac{d^2\psi}{dx^2}+V(x)\).<br>③ LHS depends only on \(t\), RHS only on \(x\); both must equal a constant, \(E\).<br>④ Time part: \(d\phi/dt=-\frac{iE}{\hbar}\phi\Rightarrow\phi=e^{-iEt/\hbar}\).<br>⑤ Space part: \(-\frac{\hbar^2}{2m}\psi''+V\psi=E\psi\), i.e. \(\hat H\psi=E\psi\).<br><br><strong>The constant is the total energy</strong>: for such a state \(\langle H\rangle=E\) and \(\sigma_H=0\), so \(E\) is the definite value every energy measurement returns. The general solution is \(\Psi=\sum_nc_n\psi_ne^{-iE_nt/\hbar}\).</div>
+</div>
+<div class="qi" data-mod="m2" data-type="recall" data-topic="Infinite well">
+  <div class="qt">Solve the infinite square well completely: energies, normalised eigenfunctions, and the general solution.</div>
+  <div class="qe">① Inside, \(\psi''=-k^2\psi\) with \(k=\sqrt{2mE}/\hbar\); outside \(\psi=0\).<br>② \(\psi=A\sin kx+B\cos kx\).<br>③ \(\psi(0)=0\Rightarrow B=0\); \(\psi(a)=0\Rightarrow ka=n\pi\), \(n=1,2,3,\dots\)<br>④ \(E_n=\dfrac{n^2\pi^2\hbar^2}{2ma^2}\).<br>⑤ Normalising with \(\int_0^a\sin^2(n\pi x/a)dx=a/2\) gives \(A=\sqrt{2/a}\), so \(\psi_n=\sqrt{\frac2a}\sin\frac{n\pi x}{a}\).<br>⑥ \(\Psi(x,t)=\sum_nc_n\sqrt{\frac2a}\sin\frac{n\pi x}{a}e^{-iE_nt/\hbar}\), with \(c_n=\sqrt{\frac2a}\int_0^a\sin\frac{n\pi x}{a}\Psi(x,0)dx\).<br><br>Mention: orthonormal, complete, alternately even/odd about \(a/2\), \(n-1\) nodes, and \(E_1\ne0\) is the zero-point energy.</div>
+</div>
+<div class="qi" data-mod="m2" data-type="recall" data-topic="Probability current">
+  <div class="qt">Derive the equation of continuity for probability and interpret it.</div>
+  <div class="qe">From \(\partial_t|\Psi|^2=\partial_x\!\left[\frac{i\hbar}{2m}\left(\Psi^*\partial_x\Psi-\Psi\partial_x\Psi^*\right)\right]\), define \(\rho=|\Psi|^2\) and<br>\(J=\frac{i\hbar}{2m}\left(\Psi\partial_x\Psi^*-\Psi^*\partial_x\Psi\right)=\frac{\hbar}{m}\mathrm{Im}\!\left(\Psi^*\partial_x\Psi\right)\).<br><br>Then <strong>\(\partial_t\rho+\partial_xJ=0\)</strong> (in 3D, \(\partial_t\rho+\nabla\!\cdot\!\vec J=0\)).<br><br>Integrating over \([a,b]\): \(\dfrac{dP_{ab}}{dt}=J(a)-J(b)\) — probability changes only by flowing across the boundaries, never by being created or destroyed. For a plane wave \(J=|A|^2\hbar k/m=\rho v\), the form used to define \(R\) and \(T\).</div>
+</div>
+<div class="qi" data-mod="m2" data-type="recall" data-topic="Tunnelling">
+  <div class="qt">Obtain the transmission coefficient for a rectangular barrier with \(E&lt;V_0\), and give the thick-barrier limit.</div>
+  <div class="qe">① Three regions; \(\psi_1=Ae^{ik_1x}+Be^{-ik_1x}\), \(\psi_2=Ce^{\kappa x}+De^{-\kappa x}\), \(\psi_3=Fe^{ik_1x}\), with \(k_1=\sqrt{2mE}/\hbar\), \(\kappa=\sqrt{2m(V_0-E)}/\hbar\).<br>② Match \(\psi,\psi'\) at \(x=0\) and \(x=a\) — four equations.<br>③ Eliminating \(C,D\): \(T=\left[1+\dfrac{V_0^2}{4E(V_0-E)}\sinh^2(\kappa a)\right]^{-1}\).<br>④ (Equivalently, substitute \(k_2\to i\kappa\) in the \(E>V_0\) result, using \(\sin(i\theta)=i\sinh\theta\).)<br>⑤ For \(\kappa a\gg1\), \(\sinh(\kappa a)\approx\frac12e^{\kappa a}\), so <strong>\(T\approx16\varepsilon(1-\varepsilon)e^{-2\kappa a}\)</strong> with \(\varepsilon=E/V_0\).<br><br>Non-zero \(T\) for \(E&lt;V_0\) is classically impossible; the exponential dependence on \(a\sqrt{V_0-E}\) explains α-decay lifetimes and the atomic resolution of the STM.</div>
+</div>
+</template>
+
+<template id="essaybank">
+  <div class="ei" data-mod="m2" data-marks="10">
+    <div class="qt">Set up and solve the Schrödinger equation for a particle in a one-dimensional infinite square well. Obtain the energy eigenvalues and normalised eigenfunctions, and discuss their main properties.</div>
+    <div class="qe"><strong>Skeleton — one mark per line:</strong><br>① Sketch the potential; state \(\psi=0\) outside because \(V=\infty\).<br>② TISE inside: \(\psi''=-k^2\psi\), \(k=\sqrt{2mE}/\hbar\).<br>③ General solution \(\psi=A\sin kx+B\cos kx\).<br>④ Continuity at \(x=0\) ⇒ \(B=0\).<br>⑤ Continuity at \(x=a\) ⇒ \(ka=n\pi\), \(n=1,2,3,\dots\); explain why \(n=0\) and \(A=0\) are rejected.<br>⑥ \(E_n=n^2\pi^2\hbar^2/2ma^2\) — quantisation from the boundary conditions alone.<br>⑦ Normalisation \(\int_0^a\sin^2=a/2\) ⇒ \(\psi_n=\sqrt{2/a}\sin(n\pi x/a)\).<br>⑧ Properties: orthonormal \(\int\psi_m^*\psi_n=\delta_{mn}\); complete; \(n-1\) nodes; alternate parity about \(a/2\); levels spread as \(n^2\).<br>⑨ Zero-point energy \(E_1\ne0\) and its uncertainty-principle justification.<br>⑩ General state \(\Psi=\sum c_n\psi_ne^{-iE_nt/\hbar}\) with \(c_n=\int\psi_n^*\Psi(x,0)dx\); numerical scale \(E_1=37.6\) eV for an electron in 1 Å.</div>
+  </div>
+  <div class="ei" data-mod="m2" data-marks="10">
+    <div class="qt">Discuss the scattering of a particle by a one-dimensional rectangular potential barrier. Derive the transmission coefficient for both \(E>V_0\) and \(E&lt;V_0\), and explain the physical significance of tunnelling.</div>
+    <div class="qe"><strong>Skeleton:</strong><br>① Define the potential and the three regions; write the general solution in each, with no left-moving wave beyond the barrier.<br>② State the matching conditions: \(\psi\) and \(\psi'\) continuous at \(x=0\) and \(x=a\) (four equations, five unknowns, one overall scale).<br>③ Define \(R\) and \(T\) as ratios of probability <b>currents</b>.<br>④ For \(E>V_0\): \(T=\left[1+\frac{V_0^2}{4E(E-V_0)}\sin^2 k_2a\right]^{-1}\).<br>⑤ Resonances at \(k_2a=n\pi\) giving \(T=1\); relate to an anti-reflection coating and to Ramsauer–Townsend.<br>⑥ For \(E&lt;V_0\): substitute \(k_2\to i\kappa\), use \(\sin(i\theta)=i\sinh\theta\).<br>⑦ \(T=\left[1+\frac{V_0^2}{4E(V_0-E)}\sinh^2\kappa a\right]^{-1}\).<br>⑧ Thick barrier: \(T\approx16\varepsilon(1-\varepsilon)e^{-2\kappa a}\).<br>⑨ Physical meaning: non-zero probability of crossing a classically forbidden region; exponential sensitivity to width and height.<br>⑩ Applications: α-decay (Gamow), scanning tunnelling microscope, tunnel diode, ammonia inversion. Check \(R+T=1\).</div>
+  </div>
+  <div class="ei" data-mod="m2" data-marks="8">
+    <div class="qt">What are stationary states? Obtain them by separation of variables and establish their principal properties.</div>
+    <div class="qe"><strong>Skeleton:</strong><br>① Definition: solutions of the form \(\Psi=\psi(x)e^{-iEt/\hbar}\), arising when \(V\) is time-independent.<br>② The separation: substitute, divide by \(\psi\phi\), argue both sides equal a constant \(E\).<br>③ \(\phi(t)=e^{-iEt/\hbar}\); \(\hat H\psi=E\psi\).<br>④ Property 1 — \(|\Psi|^2=|\psi|^2\) is time-independent, hence so is every expectation value; \(\langle p\rangle=0\).<br>⑤ Property 2 — \(\langle H\rangle=E\), \(\langle H^2\rangle=E^2\), \(\sigma_H=0\): a definite total energy.<br>⑥ Property 3 — the general solution is \(\sum_nc_n\psi_ne^{-iE_nt/\hbar}\); each term carries its own phase rate.<br>⑦ Property 4 — \(P(E_n)=|c_n|^2\), \(\sum|c_n|^2=1\), \(\langle H\rangle=\sum|c_n|^2E_n\), all constant in time.<br>⑧ Note that a superposition is <i>not</i> stationary: the cross term oscillates at \((E_2-E_1)/\hbar\). Mention the general 1D theorems (\(E\) real, \(\psi\) real, parity, \(E>V_{\min}\), non-degeneracy, node theorem).</div>
+  </div>
+  <div class="ei" data-mod="m1" data-marks="8">
+    <div class="qt">State Born's interpretation of the wave function. Show that the normalisation of a wave function is preserved in time, and hence obtain the equation of continuity for probability.</div>
+    <div class="qe"><strong>Skeleton:</strong><br>① Born's rule: \(|\Psi(x,t)|^2\) is a probability <b>density</b>; \(P_{ab}=\int_a^b|\Psi|^2dx\); note it is a density, not a probability.<br>② Normalisation \(\int|\Psi|^2dx=1\); linearity allows \(A\Psi\); \(|A|\) fixed, phase free.<br>③ \(\frac{d}{dt}\int|\Psi|^2dx=\int\partial_t(\Psi^*\Psi)dx\).<br>④ Product rule, then substitute the Schrödinger equation and its conjugate; state explicitly that \(V\) must be <b>real</b> for the \(V\) terms to cancel.<br>⑤ Show the integrand is a perfect \(x\)-derivative.<br>⑥ Boundary terms vanish because \(\Psi,\partial_x\Psi\to0\) at \(\pm\infty\); conclude the norm is constant.<br>⑦ Identify the discarded bracket as \(J=\frac{\hbar}{m}\mathrm{Im}(\Psi^*\partial_x\Psi)\), giving \(\partial_t\rho+\partial_xJ=0\).<br>⑧ Interpret: \(dP_{ab}/dt=J(a)-J(b)\); probability is transported, not created; \(J=\rho v\) for a plane wave.</div>
+  </div>
+</template>
+
+<template id="bdlists">
+  <div data-mod="m1">The time-dependent Schrödinger equation, written from memory|Born's rule and why \(|\Psi|^2\) is a density not a probability|The three positions on measurement, and what Bell's theorem settled|Collapse, and the two kinds of time evolution|\(\langle j\rangle\), \(\langle f(j)\rangle\), and \(\sigma^2=\langle j^2\rangle-\langle j\rangle^2\) with its proof|Why \(\langle j^2\rangle\ge\langle j\rangle^2\), and when equality holds|The continuous versions: \(\rho(x)\), \(\langle x\rangle\), \(\sigma_x\)|The normalisation condition, and what it does and does not fix|The full proof that normalisation is preserved (and where \(V\) real is used)|Square-integrability as the condition for a physical state|\(d\langle x\rangle/dt\) and the derivation of \(\hat p=-i\hbar\partial_x\)|The operator recipe \(\hat Q=Q(x,-i\hbar\partial_x)\) and \(\hat T\)|\(\sigma_x\sigma_p\ge\hbar/2\), its Fourier origin, and what it is not|The ensemble meaning of every expectation value</div>
+  <div data-mod="m2">Separation of variables, all six steps to \(\hat H\psi=E\psi\)|Why \(\phi(t)=e^{-iEt/\hbar}\) makes the density static|The four properties of stationary states|\(P(E_n)=|c_n|^2\), \(\sum|c_n|^2=1\), \(\langle H\rangle=\sum|c_n|^2E_n\)|Why a superposition of two stationary states oscillates, and at what frequency|The six general theorems for 1D potentials|The infinite well solved end to end, with normalisation|\(E_n\propto n^2\), nodes \(=n-1\), parity, orthonormality, completeness|Zero-point energy and its uncertainty-principle justification|Free-particle solutions and why they are not normalisable|\(v_{\rm phase}=\hbar k/2m\) versus \(v_{\rm group}=\hbar k_0/m\)|Wave packets and the Fourier pair \(\Psi(x,0)\leftrightarrow\phi(k)\)|The continuity equation and the explicit form of \(J\)|\(J=0\) for real \(\psi\); \(J=\rho v\) for a plane wave|Boundary conditions on \(\psi\) and \(\psi'\), and the delta-function exception|Step, \(E>V_0\): amplitudes, then \(R\) and \(T\) from currents|Step, \(E&lt;V_0\): \(R=1\) with penetration depth \(1/\kappa\)|Barrier above: \(T\) with \(\sin^2\), and resonance at \(k_2a=n\pi\)|Barrier below: \(T\) with \(\sinh^2\), and the thick-barrier exponential|Four physical applications of tunnelling</div>
+</template>
+
+<script>
+window.MathJax = {
+  tex:{ inlineMath:[['\\(','\\)']], displayMath:[['$$','$$'],['\\[','\\]']] },
+  svg:{ fontCache:'local', scale:0.98 },
+  options:{ skipHtmlTags:['script','noscript','style','textarea','pre','code'] },
+  startup:{ typeset:false }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js" async></script>
+<script>
+(function(){
+"use strict";
+const $=(s,r)=>(r||document).querySelector(s), $$=(s,r)=>Array.from((r||document).querySelectorAll(s));
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- storage ---------- */
+const KEY='zof-optics-v1';
+let S={checks:{},qs:{},exam:null,seen:{}};
+try{ const raw=localStorage.getItem(KEY); if(raw) S=Object.assign(S,JSON.parse(raw)); }catch(e){}
+let saveT=0;
+function save(){ clearTimeout(saveT); saveT=setTimeout(()=>{ try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){} },250); }
+
+/* ---------- MathJax helper ---------- */
+let mjReady=false;
+function MJ(el){
+  if(!window.MathJax||!MathJax.typesetPromise) return;
+  try{ MathJax.typesetPromise(el?[el]:undefined).catch(()=>{}); }catch(e){}
+}
+function whenMJ(fn,tries){
+  tries=tries||0;
+  if(window.MathJax&&MathJax.startup&&MathJax.startup.promise){ MathJax.startup.promise.then(()=>{mjReady=true;fn();}).catch(()=>fn()); }
+  else if(tries<120) setTimeout(()=>whenMJ(fn,tries+1),250);
+}
+
+/* ---------- colour helpers ---------- */
+function wl2rgb(w){
+  let r=0,g=0,b=0;
+  if(w>=380&&w<440){r=-(w-440)/60;b=1;}
+  else if(w<490){g=(w-440)/50;b=1;}
+  else if(w<510){g=1;b=-(w-510)/20;}
+  else if(w<580){r=(w-510)/70;g=1;}
+  else if(w<645){r=1;g=-(w-645)/65;}
+  else if(w<=780){r=1;}
+  let f=1;
+  if(w>700)f=0.3+0.7*(780-w)/80; else if(w<420)f=0.3+0.7*(w-380)/40;
+  const q=x=>clamp(Math.round(255*Math.pow(Math.max(0,x)*f,0.85)),0,255);
+  return [q(r),q(g),q(b)];
+}
+const ACC={m1:'#FF6B6B',m2:'#FFC94D',m3:'#5CE08A',m4:'#8A7CF0'};
+const MODS=[
+ {id:'m1',roman:'I',name:'The Wave Function',marks:10,units:'Units 1–5 · Griffiths §1.1–1.6'},
+ {id:'m2',roman:'II',name:'Time-Independent SE',marks:20,units:'Units 6–11 · bound states + scattering'}
+];
+
+/* ---------- theme ---------- */
+const HOST_THEME=document.documentElement.getAttribute('data-theme');
+const THEME_ORDER=['auto','light','dark'];
+const THEME_ICON={
+  auto:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><path d="M12 3.6a8.4 8.4 0 0 1 0 16.8z" fill="currentColor" stroke="none"/></svg>',
+  light:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.4v2.3M12 19.3v2.3M4.3 4.3l1.6 1.6M18.1 18.1l1.6 1.6M2.4 12h2.3M19.3 12h2.3M4.3 19.7l1.6-1.6M18.1 5.9l1.6-1.6"/></svg>',
+  dark:'<svg viewBox="0 0 24 24"><path d="M20.5 14.6A8.6 8.6 0 0 1 9.4 3.5a8.6 8.6 0 1 0 11.1 11.1z"/></svg>'
+};
+const THEME_NAME={auto:'Match device',light:'Light',dark:'Dark'};
+function applyTheme(t,persist){
+  if(THEME_ORDER.indexOf(t)<0) t='auto';
+  const r=document.documentElement;
+  const eff=(t==='auto')?HOST_THEME:t;
+  if(eff) r.setAttribute('data-theme',eff); else r.removeAttribute('data-theme');
+  if(persist!==false){ S.theme=t; save(); }
+  readPalette();
+  $$('[data-theme-btn]').forEach(b=>{
+    b.innerHTML=THEME_ICON[t]+'<span class="lbl">'+THEME_NAME[t]+'</span>';
+    b.title='Theme: '+THEME_NAME[t]+' — tap to change';
+    b.setAttribute('aria-label','Theme: '+THEME_NAME[t]+'. Tap to change.');
+  });
+  if(typeof RIGS!=='undefined') drawAll();
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-theme-btn]'); if(!b)return;
+  const i=THEME_ORDER.indexOf(S.theme||'auto');
+  applyTheme(THEME_ORDER[(i+1)%THEME_ORDER.length]);
+});
+(function(){ const mq=window.matchMedia&&matchMedia('(prefers-color-scheme:dark)');
+  if(mq&&mq.addEventListener) mq.addEventListener('change',()=>{ readPalette(); drawAll(); });
+})();
+
+/* ---------- navigation ---------- */
+let curView='bench', curMod='m2';
+function go(view,mod){
+  curView=view;
+  $$('.view').forEach(v=>v.classList.toggle('on', v.id==='view-'+view));
+  $$('#tabbar button,#railnav button').forEach(b=>b.setAttribute('aria-selected', String(b.dataset.go===view)));
+  if(mod) setMod(mod);
+  window.scrollTo({top:0,behavior:RM?'auto':'smooth'});
+  if(view==='learn') requestAnimationFrame(()=>{ typesetMod(curMod); drawAll(); });
+  if(view==='drill'||view==='lab'||view==='sheet') requestAnimationFrame(()=>{ MJ($('#view-'+view)); });
+}
+function setMod(m){
+  curMod=m;
+  $$('.mod').forEach(a=>a.classList.toggle('on', a.id==='mod-'+m));
+  $$('.modtab').forEach(b=>b.setAttribute('aria-selected', String(b.dataset.mod===m)));
+  typesetMod(m); drawAll();
+}
+const typeset={};
+function typesetMod(m){ const el=$('#mod-'+m); if(!el||typeset[m])return; typeset[m]=1; MJ(el); }
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-go]'); if(b){ go(b.dataset.go, b.dataset.mod); return; }
+  const m=e.target.closest('[data-mod]');
+  if(m&&(m.classList.contains('modtab')||m.classList.contains('mlink'))){ if(curView!=='learn')go('learn'); setMod(m.dataset.mod); }
+});
+
+/* ---------- countdown ---------- */
+function defaultExam(){ const d=new Date(); d.setDate(d.getDate()+1); d.setHours(9,30,0,0); return d.getTime(); }
+function examTime(){ return S.exam||defaultExam(); }
+function tickCountdown(){
+  const ms=examTime()-Date.now();
+  const n=$('#cdnum'), u=$('#cdunit'); if(!n)return;
+  if(ms<=0){ n.textContent='NOW'; u.textContent='go get it'; return; }
+  const h=ms/3600000;
+  if(h>=1.5){ n.textContent=h.toFixed(1); u.textContent='hours to the paper'; }
+  else { n.textContent=Math.round(ms/60000); u.textContent='minutes to the paper'; }
+}
+$('#setexam').addEventListener('click',()=>{
+  const cur=new Date(examTime());
+  const pad=x=>String(x).padStart(2,'0');
+  const def=cur.getFullYear()+'-'+pad(cur.getMonth()+1)+'-'+pad(cur.getDate())+' '+pad(cur.getHours())+':'+pad(cur.getMinutes());
+  const v=prompt('Exam date and time (YYYY-MM-DD HH:MM)',def);
+  if(!v)return;
+  const t=Date.parse(v.replace(' ','T'));
+  if(isNaN(t)){ alert('Could not read that. Use 2026-09-09 09:30'); return; }
+  S.exam=t; save(); tickCountdown();
+});
+$('#resetprog').addEventListener('click',()=>{
+  if(!confirm('Clear all checkpoint and drill progress on this device?'))return;
+  S.checks={};S.qs={};save();
+  $$('.check').forEach(c=>c.classList.remove('open'));
+  refreshProgress();
+});
+
+/* ---------- ladders ---------- */
+function initLadders(){
+  $$('.ladder').forEach(l=>{
+    const rungs=$$('.rung',l);
+    rungs.forEach((r,i)=>{ if(i>0) r.classList.add('hid'); });
+    const next=$('[data-lad-next]',l), all=$('[data-lad-all]',l);
+    const upd=()=>{ const hidden=$$('.rung.hid',l).length; next.textContent = hidden?('Next step ›  ('+hidden+' left)'):'All steps shown';
+      next.disabled=!hidden; all.disabled=!hidden; };
+    next.addEventListener('click',()=>{ const h=$('.rung.hid',l); if(h){h.classList.remove('hid'); MJ(h);} upd(); });
+    all.addEventListener('click',()=>{ $$('.rung.hid',l).forEach(r=>r.classList.remove('hid')); MJ(l); upd(); });
+    upd();
+  });
+}
+
+/* ---------- checkpoints ---------- */
+function initChecks(){
+  $$('.check').forEach(c=>{
+    const id=c.dataset.ck;
+    if(S.checks[id]) c.classList.add('open');
+    $('[data-ck-show]',c).addEventListener('click',()=>{ c.classList.add('open'); MJ(c); });
+    $('[data-ck-hit]',c).addEventListener('click',()=>{ S.checks[id]=1; save(); flash(c,'#5CE08A'); refreshProgress(); });
+    $('[data-ck-miss]',c).addEventListener('click',()=>{ S.checks[id]=0; save(); flash(c,'#FF6B6B'); refreshProgress(); });
+  });
+}
+function flash(el,col){
+  const old=el.style.borderColor; el.style.borderColor=col;
+  setTimeout(()=>{el.style.borderColor=old;},700);
+}
+
+/* ---------- progress ---------- */
+let QBANK=[];
+function modStats(m){
+  const cIds=$$('.check').map(c=>c.dataset.ck).filter(id=>id.indexOf(m)===0);
+  const qIds=QBANK.filter(q=>q.mod===m).map(q=>q.id);
+  const tot=cIds.length+qIds.length;
+  let done=0;
+  cIds.forEach(id=>{ if(S.checks[id]===1)done++; });
+  qIds.forEach(id=>{ if(S.qs[id]&&S.qs[id]>0)done++; });
+  return {done,tot,pct:tot?Math.round(100*done/tot):0};
+}
+function refreshProgress(){
+  let d=0,t=0;
+  MODS.forEach(m=>{
+    const st=modStats(m.id); d+=st.done; t+=st.tot;
+    const bar=$('#bar-'+m.id); if(bar) bar.style.width=st.pct+'%';
+    const lbl=$('#pct-'+m.id); if(lbl) lbl.textContent=st.pct+'%';
+  });
+  const pct=t?Math.round(100*d/t):0;
+  const tp=$('#toppill'); if(tp) tp.innerHTML='<b>'+pct+'%</b> ready';
+  const rp=$('#railprog'); if(rp) rp.textContent=d+' of '+t+' items cleared';
+}
+function buildPlan(){
+  const host=$('#plan'); if(!host)return;
+  host.innerHTML='';
+  MODS.forEach(m=>{
+    const b=document.createElement('button');
+    b.className='planrow '+m.id; b.dataset.go='learn'; b.dataset.mod=m.id;
+    b.innerHTML='<span class="rn">'+m.roman+'</span>'+
+      '<span class="nm"><b>'+m.name+'</b><small>'+m.units+'</small></span>'+
+      '<span class="mk">'+m.marks+' marks<i id="pct-'+m.id+'">0%</i></span>'+
+      '<span class="bar"><i id="bar-'+m.id+'" style="width:0%"></i></span>';
+    host.appendChild(b);
+  });
+}
+
+/* ═══════════════════ SIM FRAMEWORK ═══════════════════ */
+const SIMS={}, RIGS=[];
+let NARROW=false, FS=1;
+const P={screenRGB:[10,12,18]};
+function hex2rgb(h){ h=(h||'').trim().replace('#',''); if(h.length===3) h=h.split('').map(x=>x+x).join('');
+  const n=parseInt(h,16); return isNaN(n)?[10,12,18]:[(n>>16)&255,(n>>8)&255,n&255]; }
+function readPalette(){
+  /* stageRGB filled below */
+  const cs=getComputedStyle(document.documentElement), g=k=>cs.getPropertyValue(k).trim();
+  P.ink=g('--ink')||'#E9EBF3'; P.dim=g('--dim')||'#98A1B8'; P.faint=g('--faint')||'#5E6880';
+  P.rule=g('--rule')||'#242B3D'; P.stage=g('--bench')||'#0E1119'; P.panel=g('--panel')||'#141826';
+  P.screen=g('--screen')||'#0A0C12';
+  P.inkRGB=g('--ink-rgb')||'233,235,243'; P.redRGB=g('--red-rgb')||'255,107,107';
+  P.yellowRGB=g('--yellow-rgb')||'255,201,77'; P.greenRGB=g('--green-rgb')||'92,224,138';
+  P.violetRGB=g('--violet-rgb')||'138,124,240'; P.blueRGB=g('--blue-rgb')||'79,168,245';
+  P.dark=g('--is-dark')==='1';
+  P.screenRGB=hex2rgb(P.screen); P.stageRGB=hex2rgb(P.stage);
+}
+const _rgba=(t,a)=>(a===undefined||a==='')?'rgb('+t+')':'rgba('+t+','+a+')';
+const C={
+  ink:a=>_rgba(P.inkRGB,a), red:a=>_rgba(P.redRGB,a), yellow:a=>_rgba(P.yellowRGB,a),
+  green:a=>_rgba(P.greenRGB,a), violet:a=>_rgba(P.violetRGB,a), blue:a=>_rgba(P.blueRGB,a),
+  rule:a=>a===undefined?P.rule:_rgba(P.inkRGB,a),
+  dim:()=>P.dim, faint:()=>P.faint, stage:()=>P.stage, panel:()=>P.panel, screen:()=>P.screen
+};
+readPalette();
+function syncInput(inp){
+  const o=inp.parentElement.querySelector('output');
+  if(o) o.textContent=fmtCtl(inp.dataset.k,inp.value);
+  const mn=parseFloat(inp.min), mx=parseFloat(inp.max);
+  const f=(mx>mn)?(parseFloat(inp.value)-mn)/(mx-mn):0;
+  inp.style.setProperty('--p', (isFinite(f)?f:0).toFixed(4));
+}
+function initSims(){
+  $$('.simwrap').forEach(fig=>{
+    const name=fig.dataset.sim, fn=SIMS[name]; if(!fn) return;
+    const cv=$('canvas',fig), ctx=cv.getContext('2d');
+    const s={}, inputs={};
+    const rig={fig,cv,ctx,s,fn,name,W:0,H:0};
+    const out=(k,v)=>{ const el=fig.querySelector('[data-out="'+k+'"]'); if(el) el.textContent=v; };
+    const setV=(k,v)=>{
+      const inp=inputs[k];
+      if(!inp){ s[k]=v; draw(rig); return; }
+      const mn=parseFloat(inp.min), mx=parseFloat(inp.max), st=parseFloat(inp.step)||0.01;
+      v=clamp(v,mn,mx); v=parseFloat((Math.round(v/st)*st).toFixed(6));
+      inp.value=v; s[k]=parseFloat(inp.value); syncInput(inp); draw(rig);
+    };
+    const api={out, set:setV, redraw:()=>draw(rig), fig};
+    rig.api=api;
+    $$('input[data-k]',fig).forEach(inp=>{
+      inputs[inp.dataset.k]=inp;
+      s[inp.dataset.k]=parseFloat(inp.value);
+      syncInput(inp);
+      inp.addEventListener('input',()=>{ s[inp.dataset.k]=parseFloat(inp.value); syncInput(inp); draw(rig); });
+    });
+    $$('[data-seg]',fig).forEach(seg=>{
+      const key=seg.dataset.seg;
+      const on=$('[aria-pressed="true"]',seg);
+      s[key]= on? on.dataset.v : ($('button',seg)||{dataset:{}}).dataset.v;
+      seg.addEventListener('click',e=>{
+        const b=e.target.closest('button'); if(!b)return;
+        $$('button',seg).forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+        s[key]=b.dataset.v;
+        if(fn.onseg) fn.onseg(s,key,b.dataset.v,api);
+        draw(rig);
+      });
+    });
+    const drag=fn.drag;
+    if(drag){
+      cv.classList.add('grab');
+      const hd=$('header',fig);
+      if(hd){ const h=document.createElement('span'); h.className='draghint'; h.textContent='drag ⇄'; hd.appendChild(h); }
+    }
+    const apply=(ev,dragging)=>{
+      const r=cv.getBoundingClientRect();
+      s._px=ev.clientX-r.left; s._py=ev.clientY-r.top;
+      if(drag&&dragging){ const u=clamp(s._px/r.width,0,1); setV(drag.k, drag.min+(drag.max-drag.min)*u); }
+      else draw(rig);
+    };
+    cv.addEventListener('pointerdown',ev=>{ s._down=true;
+      try{cv.setPointerCapture(ev.pointerId);}catch(e){} apply(ev,true); });
+    cv.addEventListener('pointermove',ev=>{
+      if(s._down) apply(ev,true); else if(ev.pointerType==='mouse') apply(ev,false); });
+    cv.addEventListener('pointerup',()=>{ s._down=false; });
+    cv.addEventListener('pointercancel',()=>{ s._down=false; });
+    cv.addEventListener('pointerleave',()=>{ if(!s._down){ s._px=undefined; draw(rig); } });
+    if(fn.init) fn.init(s,api);
+    RIGS.push(rig);
+    new ResizeObserver(()=>size(rig)).observe(fig);
+    size(rig);
+  });
+  if(RIGS.some(r=>r.fn.anim)&&!RM) requestAnimationFrame(loop);
+}
+function fmtCtl(k,v){
+  const n=parseFloat(v);
+  if(k==='lam') return n+' nm';
+  if(k==='th') return n+'°';
+  return (Math.abs(n)>=100||Number.isInteger(n))?String(n):n.toFixed(2);
+}
+function size(rig){
+  const w=rig.fig.clientWidth||320;
+  const nw=w<560;
+  const arv=(nw&&rig.fn.arN)?rig.fn.arN:(rig.fn.ar||0.58);
+  const h=Math.round(clamp(w*arv, nw?250:220, nw?620:430));
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  rig.cv.width=Math.round(w*dpr); rig.cv.height=Math.round(h*dpr);
+  rig.cv.style.height=h+'px';
+  rig.ctx.setTransform(dpr,0,0,dpr,0,0);
+  rig.W=w; rig.H=h; draw(rig);
+}
+function draw(rig,t){
+  const {ctx,W,H}=rig; if(!W)return;
+  NARROW=W<560; FS=NARROW?1.16:1;
+  ctx.save(); ctx.clearRect(0,0,W,H);
+  ctx.fillStyle=C.stage(); ctx.fillRect(0,0,W,H);
+  try{ rig.fn(ctx,W,H,rig.s,rig.api,t||0); }catch(e){ ctx.fillStyle=C.red(); ctx.font='12px monospace'; ctx.fillText('sim error: '+e.message,10,20); }
+  ctx.restore();
+}
+function drawAll(){ RIGS.forEach(r=>{ if(r.fig.offsetParent!==null) draw(r); }); }
+function loop(ts){
+  RIGS.forEach(r=>{ if(r.fn.anim && r.fig.offsetParent!==null) draw(r,ts/1000); });
+  requestAnimationFrame(loop);
+}
+/* small drawing helpers */
+function line(c,x1,y1,x2,y2,col,w,dash){ c.save(); c.beginPath(); if(dash)c.setLineDash(dash); c.strokeStyle=col||C.rule(); c.lineWidth=w||1; c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke(); c.restore(); }
+function txt(c,s,x,y,col,size,align,font){ c.save(); c.fillStyle=col||C.dim();
+  c.font=((size||11)*FS).toFixed(1)+'px '+(font||'"IBM Plex Mono",monospace');
+  c.textAlign=align||'left'; c.textBaseline='middle'; c.fillText(s,x,y); c.restore(); }
+function arrow(c,x1,y1,x2,y2,col,w){
+  line(c,x1,y1,x2,y2,col,w||1.4);
+  const a=Math.atan2(y2-y1,x2-x1), L=6;
+  c.save(); c.fillStyle=col; c.beginPath(); c.moveTo(x2,y2);
+  c.lineTo(x2-L*Math.cos(a-0.4),y2-L*Math.sin(a-0.4));
+  c.lineTo(x2-L*Math.cos(a+0.4),y2-L*Math.sin(a+0.4)); c.closePath(); c.fill(); c.restore();
+}
+
+/* raster helper: fn(x01,y01)->[r,g,b] over a rect, drawn at reduced res */
+function raster(c,x0,y0,w,h,fn,q){
+  q=q||2;
+  const rw=Math.max(2,Math.round(w/q)), rh=Math.max(2,Math.round(h/q));
+  const tmp=document.createElement('canvas'); tmp.width=rw; tmp.height=rh;
+  const tc=tmp.getContext('2d'), img=tc.createImageData(rw,rh);
+  for(let j=0;j<rh;j++)for(let i=0;i<rw;i++){
+    const p=fn(i/(rw-1),j/(rh-1)); const k=(j*rw+i)*4;
+    img.data[k]=p[0]; img.data[k+1]=p[1]; img.data[k+2]=p[2]; img.data[k+3]=255;
+  }
+  tc.putImageData(img,0,0);
+  c.save(); c.imageSmoothingEnabled=true; c.drawImage(tmp,x0,y0,w,h); c.restore();
+}
+/* ── the sign / phase convention used in every plot ── */
+const TAU=Math.PI*2;
+function phaseHue(th){
+  let t=((th%TAU)+TAU)%TAU;
+  return (t<=Math.PI ? 38+146*t/Math.PI : 184+214*(t-Math.PI)/Math.PI)%360;
+}
+function phaseCol(th,a){
+  return 'hsla('+phaseHue(th).toFixed(0)+',78%,'+(P.dark?63:42)+'%,'+(a===undefined?1:a)+')';
+}
+const signCol=v=>v>=0?C.yellow():C.blue();
+/* draw y=f(x) over [i0,i1] px, colouring each segment by the sign of the value */
+function signedCurve(c,x0,x1,base,fx,scale,lw){
+  const N=Math.max(60,Math.round(x1-x0));
+  let px=null,py=null,ps=null;
+  for(let i=0;i<=N;i++){
+    const X=x0+(x1-x0)*i/N, v=fx(i/N), Y=base-v*scale, sg=v>=0;
+    if(px!==null){
+      c.beginPath(); c.moveTo(px,py); c.lineTo(X,Y);
+      c.strokeStyle=sg&&ps?C.yellow():(!sg&&!ps?C.blue():(sg?C.yellow():C.blue()));
+      c.lineWidth=lw||2; c.stroke();
+    }
+    px=X; py=Y; ps=sg;
+  }
+}
+function axis(c,x0,x1,y,lab){ line(c,x0,y,x1,y,C.rule(),1); if(lab) txt(c,lab,x1-2,y-9,C.faint(),9,'right'); }
+/* deterministic sampler so dots accumulate instead of reshuffling */
+function lcg(seed){ let s=seed>>>0; return ()=>((s=(1664525*s+1013904223)>>>0)/4294967296); }
+
+/* ═══════════════════ 01 BORN — one particle at a time ═══════════════════ */
+SIMS.born=function(c,W,H,s,api){
+  const both=(s.mode==='both'), d=s.d, n=Math.round(s.n);
+  const prof=x=>{ const env=Math.exp(-x*x/1.9);
+    return both? env*Math.pow(Math.cos(Math.PI*d*x),2) : env; };
+  const key=(both?'b':'o')+d.toFixed(2);
+  if(s._key!==key){ s._key=key; s._pts=[]; s._r=lcg(20240917); }
+  const pts=s._pts, rnd=s._r;
+  while(pts.length<n){
+    let x,y,guard=0;
+    do{ x=(rnd()*2-1)*2.6; y=rnd(); guard++; }while(y>prof(x)&&guard<60);
+    pts.push([x,rnd()]);
+  }
+  const yScr=H*0.06, hScr=H*(NARROW?0.34:0.40);
+  const X=u=>W*0.06+W*0.88*(u+2.6)/5.2;
+  c.fillStyle=C.screen(); c.fillRect(W*0.06,yScr,W*0.88,hScr);
+  c.strokeStyle=C.rule(); c.strokeRect(W*0.06+.5,yScr+.5,W*0.88-1,hScr-1);
+  const col=P.dark?'rgba(255,214,150,':'rgba(255,200,120,';
+  for(let i=0;i<n&&i<pts.length;i++){
+    const p=pts[i];
+    c.fillStyle=col+(0.30+0.5*Math.min(1,400/Math.max(60,n)))+')';
+    c.beginPath(); c.arc(X(p[0]),yScr+6+p[1]*(hScr-12),1.5,0,TAU); c.fill();
+  }
+  txt(c,'detector screen — each dot is one whole particle',W*0.06+6,yScr-9,C.dim(),10);
+  // profile + histogram
+  const gy=yScr+hScr+(NARROW?26:22), gh=H-gy-H*0.10;
+  axis(c,W*0.06,W*0.94,gy+gh);
+  const BINS=48, hist=new Array(BINS).fill(0);
+  for(let i=0;i<n&&i<pts.length;i++){ const b=Math.floor((pts[i][0]+2.6)/5.2*BINS); if(b>=0&&b<BINS)hist[b]++; }
+  const hmax=Math.max(1,...hist);
+  c.fillStyle=C.yellow(.30);
+  for(let b=0;b<BINS;b++){ const w=W*0.88/BINS, x=W*0.06+b*w;
+    c.fillRect(x+.5,gy+gh-gh*hist[b]/hmax,w-1,gh*hist[b]/hmax); }
+  c.beginPath();
+  for(let i=0;i<=160;i++){ const u=-2.6+5.2*i/160, Y=gy+gh-gh*prof(u)*0.94;
+    i?c.lineTo(X(u),Y):c.moveTo(X(u),Y); }
+  c.strokeStyle=C.blue(); c.lineWidth=2; c.stroke();
+  txt(c,'|Ψ|² (curve) versus the histogram of arrivals (bars)',W*0.06,gy-8,C.dim(),10);
+  api.out('n',n);
+  api.out('rate',n<40?'nothing wavelike yet':(n<400?'pattern emerging':'statistics of |Ψ|²'));
+  api.out('mode',both?'both slits — amplitudes add':'one slit — no interference');
+};
+SIMS.born.ar=0.62; SIMS.born.arN=0.95; SIMS.born.drag={k:'n',min:0,max:4000};
+
+/* ═══════════════════ 02 STATS ═══════════════════ */
+SIMS.stats=function(c,W,H,s,api){
+  const t=(s.sk+1)/2, p=1+7*(1-t), sc=s.w;
+  const X0=0, X1=14, N=600;
+  const f=x=>x<=0?0:Math.pow(x/sc,p)*Math.exp(-x/sc);
+  const xs=[],ys=[]; let Z=0;
+  for(let i=0;i<=N;i++){ const x=X0+(X1-X0)*i/N, v=f(x); xs.push(x); ys.push(v); Z+=v; }
+  Z*=(X1-X0)/N;
+  let mean=0,x2=0,cum=0,med=X0,mode=X0,ymax=0;
+  for(let i=0;i<=N;i++){ const w=(X1-X0)/N, r=ys[i]/Z;
+    mean+=xs[i]*r*w; x2+=xs[i]*xs[i]*r*w;
+    if(ys[i]>ymax){ymax=ys[i];mode=xs[i];}
+  }
+  for(let i=0;i<=N;i++){ cum+=ys[i]/Z*(X1-X0)/N; if(cum>=0.5){med=xs[i];break;} }
+  const sig=Math.sqrt(Math.max(0,x2-mean*mean));
+  const gx=W*0.08, gw=W*0.86, gy=H*0.13, gh=H*0.68;
+  axis(c,gx,gx+gw,gy+gh);
+  const PX=x=>gx+gw*(x-X0)/(X1-X0);
+  c.beginPath(); c.moveTo(PX(X0),gy+gh);
+  for(let i=0;i<=N;i++) c.lineTo(PX(xs[i]),gy+gh-gh*ys[i]/ymax*0.94);
+  c.lineTo(PX(X1),gy+gh); c.closePath();
+  c.fillStyle=C.yellow(.22); c.fill(); c.strokeStyle=C.yellow(); c.lineWidth=2; c.stroke();
+  const mark=(x,col,lab,dy,side)=>{ line(c,PX(x),gy,PX(x),gy+gh,col,1.5,[4,3]);
+    txt(c,lab,PX(x)+(side?5:-5),gy+6+dy,col,10,side?'left':'right'); };
+  mark(mode,C.violet(),'mode',0,0); mark(med,C.green(),'median',0,1); mark(mean,C.blue(),'⟨x⟩',18,1);
+  line(c,PX(mean-sig),gy+gh+10,PX(mean+sig),gy+gh+10,C.blue(),2);
+  line(c,PX(mean-sig),gy+gh+6,PX(mean-sig),gy+gh+14,C.blue(),2);
+  line(c,PX(mean+sig),gy+gh+6,PX(mean+sig),gy+gh+14,C.blue(),2);
+  txt(c,'±σ',PX(mean)+2,gy+gh+22,C.blue(),10,'center');
+  txt(c,'ρ(x), normalised',gx,gy-8,C.dim(),10);
+  api.out('mean',mean.toFixed(2)); api.out('med',med.toFixed(2));
+  api.out('mode',mode.toFixed(2)); api.out('sig',sig.toFixed(3));
+  api.out('x2',x2.toFixed(2)+'  >  ⟨x⟩²='+(mean*mean).toFixed(2));
+};
+SIMS.stats.ar=0.5; SIMS.stats.arN=0.8; SIMS.stats.drag={k:'sk',min:-1,max:1};
+
+/* ═══════════════════ 03 NORMALIZE ═══════════════════ */
+SIMS.normalize=function(c,W,H,s,api){
+  const w=s.w, A=s.A, sh=s.shape;
+  let f,X0,X1,Aexact,label;
+  if(sh==='gauss'){ X0=-4;X1=4; f=x=>Math.exp(-x*x/(2*w*w));
+    Aexact=1/Math.sqrt(w*Math.sqrt(Math.PI)); label='A = (w√π)^(−1/2)'; }
+  else if(sh==='tri'){ X0=-4;X1=4; f=x=>Math.max(0,1-Math.abs(x)/w);
+    Aexact=Math.sqrt(3/(2*w)); label='A = √(3/2w)'; }
+  else { X0=0;X1=4; f=x=>(x>=0&&x<=w)?Math.sin(Math.PI*x/w):0;
+    Aexact=Math.sqrt(2/w); label='A = √(2/w)'; }
+  const N=800; let I=0,mean=0,x2=0;
+  for(let i=0;i<=N;i++){ const x=X0+(X1-X0)*i/N, d=(X1-X0)/N, v=A*f(x), r=v*v;
+    I+=r*d; mean+=x*r*d; x2+=x*x*r*d; }
+  mean/=(I||1); x2/=(I||1);
+  const sig=Math.sqrt(Math.max(0,x2-mean*mean));
+  const gx=W*0.08, gw=W*0.86, gy=H*0.10, gh=H*0.62, base=gy+gh*0.62;
+  axis(c,gx,gx+gw,base);
+  const PX=x=>gx+gw*(x-X0)/(X1-X0);
+  const scale=gh*0.34/Math.max(0.35,A);
+  c.beginPath(); c.moveTo(PX(X0),base);
+  for(let i=0;i<=N;i+=2){ const x=X0+(X1-X0)*i/N; c.lineTo(PX(x),base-A*A*f(x)*f(x)*scale*0.9); }
+  c.lineTo(PX(X1),base); c.closePath();
+  c.fillStyle=I>0.985&&I<1.015?C.green(.28):C.yellow(.18); c.fill();
+  signedCurve(c,PX(X0),PX(X1),base,u=>A*f(X0+(X1-X0)*u),scale,2.2);
+  txt(c,'ψ(x) — the curve;  |ψ|² — the shaded area',gx,gy+4,C.dim(),10);
+  const ok=Math.abs(I-1)<0.015;
+  txt(c,(ok?'✓ normalised':'area = '+I.toFixed(3)+' — not 1 yet'),gx,base+gh*0.30,ok?C.green():C.red(),12);
+  txt(c,label+'  =  '+Aexact.toFixed(3),gx,base+gh*0.30+18,C.dim(),11);
+  api.out('I',I.toFixed(4)); api.out('A',A.toFixed(3)+'   (exact '+Aexact.toFixed(3)+')');
+  api.out('mean',mean.toFixed(3)); api.out('sig',sig.toFixed(3));
+};
+SIMS.normalize.ar=0.52; SIMS.normalize.arN=0.85; SIMS.normalize.drag={k:'A',min:0.2,max:2.5};
+
+/* ═══════════════════ 04 UNCERTAINTY ═══════════════════ */
+SIMS.uncertain=function(c,W,H,s,api){
+  const sx=s.s, k0=s.k, box=(s.shape==='box');
+  const env=x=>box?(Math.abs(x)<=sx*1.81?Math.cos(Math.PI*x/(3.62*sx)):0):Math.exp(-x*x/(4*sx*sx));
+  const X0=-9,X1=9,N=500,dx=(X1-X0)/N;
+  let n0=0,m1=0,m2=0;
+  for(let i=0;i<=N;i++){ const x=X0+dx*i, r=env(x)*env(x); n0+=r*dx; m1+=x*r*dx; m2+=x*x*r*dx; }
+  const mx=m1/n0, sxx=Math.sqrt(Math.max(0,m2/n0-mx*mx));
+  const K0=-2,K1=14,NK=260,dk=(K1-K0)/NK, pk=[];
+  let nk=0,k1m=0,k2m=0;
+  for(let j=0;j<=NK;j++){ const k=K0+dk*j; let re=0,im=0;
+    for(let i=0;i<=N;i+=2){ const x=X0+dx*i, e=env(x);
+      re+=e*Math.cos((k-k0)*x)*dx*2; im+=e*Math.sin((k-k0)*x)*dx*2; }
+    const v=re*re+im*im; pk.push(v); nk+=v*dk; k1m+=k*v*dk; k2m+=k*k*v*dk; }
+  const km=k1m/nk, sk=Math.sqrt(Math.max(0,k2m/nk-km*km));
+  const half=NARROW?H*0.46:H*0.5;
+  const draw=(y0,h,xs,f,fmax,col,lab,ticks)=>{
+    const gx=W*0.09,gw=W*0.86;
+    axis(c,gx,gx+gw,y0+h);
+    c.beginPath(); c.moveTo(gx,y0+h);
+    for(let i=0;i<xs;i++){ const X=gx+gw*i/(xs-1); c.lineTo(X,y0+h-h*f(i)/fmax*0.9); }
+    c.lineTo(gx+gw,y0+h); c.closePath(); c.fillStyle=col(.22); c.fill();
+    c.strokeStyle=col(); c.lineWidth=2; c.stroke();
+    txt(c,lab,gx,y0-2,C.dim(),10);
+    return {gx,gw};
+  };
+  const A=draw(NARROW?H*0.10:H*0.12,half*0.62,N+1,i=>{const x=X0+dx*i;return env(x)*env(x);},1.0001*Math.max(...Array.from({length:N+1},(_,i)=>{const x=X0+dx*i;return env(x)*env(x);})),C.yellow,'|Ψ(x)|²   —  position');
+  const B=draw((NARROW?H*0.10:H*0.12)+half*0.62+(NARROW?42:36),half*0.62,NK+1,j=>pk[j],Math.max(...pk),C.blue,'|φ(k)|²   —  momentum');
+  const prod=sxx*sk;
+  api.out('sx',sxx.toFixed(3)+' Å');
+  api.out('sp',sk.toFixed(3)+' ħ/Å');
+  api.out('prod',prod.toFixed(3)+' ħ');
+  api.out('floor',(prod<0.53?'= ħ/2 · minimum':'> ħ/2 by ×'+(prod/0.5).toFixed(2)));
+};
+SIMS.uncertain.ar=0.62; SIMS.uncertain.arN=1.0; SIMS.uncertain.drag={k:'s',min:0.2,max:4};
+
+/* ═══════════════════ 05 STATIONARY vs SUPERPOSITION ═══════════════════ */
+SIMS.super=function(c,W,H,s,api,t){
+  const c2=s.c, c1=Math.sqrt(Math.max(0,1-c2*c2)), n2=Math.round(s.n2);
+  const E1=1, E2=n2*n2, dE=E2-E1;
+  const tt=(t||0)*1.5;
+  const psi=(x,n)=>Math.SQRT2*Math.sin(n*Math.PI*x);
+  const lx=W*(NARROW?0.16:0.13), lw=W*(NARROW?0.16:0.12);
+  const ly=H*0.10, lh=H*0.74;
+  txt(c,'E / E₁',lx-6,ly-10,C.faint(),10);
+  for(let n=1;n<=5;n++){
+    const E=n*n, Y=ly+lh-lh*E/26;
+    const on=(n===1&&c1>0.01)||(n===n2&&c2>0.01);
+    line(c,lx,Y,lx+lw,Y,on?C.yellow():C.rule(),on?2.4:1);
+    txt(c,'n='+n,lx-8,Y,on?C.ink():C.faint(),10,'right');
+    if(on){ const amp=(n===1?c1:c2);
+      c.fillStyle=C.yellow(.5); c.fillRect(lx+lw+4,Y-4,W*0.05*amp*amp,8); }
+  }
+  const gx=W*(NARROW?0.40:0.34), gw=W*(NARROW?0.55:0.60);
+  const base=H*0.50, sc=H*0.34;
+  axis(c,gx,gx+gw,base);
+  line(c,gx,base-sc*1.15,gx,base,C.rule(),1);
+  line(c,gx+gw,base-sc*1.15,gx+gw,base,C.rule(),1);
+  const rho=u=>{ const a=c1*psi(u,1), b=c2*psi(u,n2);
+    return a*a+b*b+2*a*b*Math.cos(dE*tt); };
+  c.beginPath(); c.moveTo(gx,base);
+  for(let i=0;i<=180;i++){ const u=i/180; c.lineTo(gx+gw*u,base-rho(u)*sc*0.42); }
+  c.lineTo(gx+gw,base); c.closePath();
+  c.fillStyle=C.yellow(.26); c.fill(); c.strokeStyle=C.yellow(); c.lineWidth=2.2; c.stroke();
+  txt(c,'|Ψ(x,t)|²',gx,base-sc*1.15-4,C.dim(),10);
+  const ry=base+H*0.26;
+  c.beginPath();
+  for(let i=0;i<=180;i++){ const u=i/180;
+    const re=c1*psi(u,1)*Math.cos(E1*tt)+c2*psi(u,n2)*Math.cos(E2*tt);
+    i?c.lineTo(gx+gw*u,ry-re*sc*0.20):c.moveTo(gx+gw*u,ry-re*sc*0.20); }
+  c.strokeStyle=phaseCol(-E1*tt); c.lineWidth=1.8; c.stroke();
+  axis(c,gx,gx+gw,ry);
+  txt(c,'Re Ψ — colour is the phase',gx,ry+H*0.12,C.faint(),10);
+  const pure=c2<0.01;
+  api.out('state',pure?'pure ψ₁ — stationary':'superposition — evolving');
+  api.out('H',(c1*c1*E1+c2*c2*E2).toFixed(2)+' E₁');
+  api.out('sig',(Math.abs(c1*c2)*dE).toFixed(2)+' E₁');
+  api.out('T',pure?'—':'2πħ/'+dE.toFixed(0)+'E₁');
+};
+SIMS.super.anim=true; SIMS.super.ar=0.56; SIMS.super.arN=0.95; SIMS.super.drag={k:'c',min:0,max:1};
+
+/* ═══════════════════ 06 INFINITE WELL ═══════════════════ */
+SIMS.well=function(c,W,H,s,api){
+  const n=Math.round(s.n), a=s.a, view=s.view;
+  const E1=Math.PI*Math.PI*3.81/(a*a), En=n*n*E1;
+  const lx=W*(NARROW?0.13:0.10), lw=W*(NARROW?0.16:0.11), ly=H*0.10, lh=H*0.76;
+  txt(c,'E (eV)',lx-4,ly-10,C.faint(),10);
+  for(let k=1;k<=8;k++){
+    const Y=ly+lh-lh*(k*k)/68;
+    const on=(k===n);
+    line(c,lx,Y,lx+lw,Y,on?C.yellow():C.rule(),on?2.6:1);
+    if(on||k<=4||k===8) txt(c,(k*k*E1).toFixed(k*k*E1>100?0:1),lx+lw+5,Y,on?C.yellow():C.faint(),9);
+    txt(c,String(k),lx-7,Y,on?C.ink():C.faint(),9,'right');
+  }
+  const gx=W*(NARROW?0.42:0.36), gw=W*(NARROW?0.52:0.58);
+  const base=H*0.52, sc=H*0.30;
+  c.fillStyle=C.violet(.10); c.fillRect(gx,H*0.10,gw,H*0.76);
+  line(c,gx,H*0.10,gx,H*0.86,C.violet(),2.5); line(c,gx+gw,H*0.10,gx+gw,H*0.86,C.violet(),2.5);
+  line(c,gx,H*0.86,gx+gw,H*0.86,C.violet(),2.5);
+  axis(c,gx,gx+gw,base);
+  txt(c,'0',gx,H*0.90,C.faint(),10,'center'); txt(c,'a',gx+gw,H*0.90,C.faint(),10,'center');
+  const psi=u=>Math.SQRT2*Math.sin(n*Math.PI*u);
+  if(view==='psi'||view==='both') signedCurve(c,gx,gx+gw,base,u=>psi(u),sc*0.55,2.4);
+  if(view==='p2'||view==='both'){
+    c.beginPath(); c.moveTo(gx,base);
+    for(let i=0;i<=200;i++){ const u=i/200; c.lineTo(gx+gw*u,base-psi(u)*psi(u)*sc*(view==='both'?0.30:0.55)); }
+    c.lineTo(gx+gw,base); c.closePath();
+    c.fillStyle=C.green(.30); c.fill(); c.strokeStyle=C.green(); c.lineWidth=1.8; c.stroke();
+  }
+  for(let m=1;m<n;m++){ const X=gx+gw*m/n;
+    c.fillStyle=C.red(); c.beginPath(); c.arc(X,base,3,0,TAU); c.fill(); }
+  txt(c,view==='p2'?'|ψₙ|²':(view==='psi'?'ψₙ  (gold + / cyan −)':'ψₙ and |ψₙ|²'),gx,H*0.14,C.dim(),10);
+  api.out('n',n); api.out('E',En.toFixed(En>100?0:2)+' eV');
+  api.out('ratio',n*n+' × E₁'); api.out('nodes',(n-1)+' interior');
+};
+SIMS.well.ar=0.55; SIMS.well.arN=0.95; SIMS.well.drag={k:'n',min:1,max:8};
+
+/* ═══════════════════ 07 WAVE PACKET ═══════════════════ */
+SIMS.packet=function(c,W,H,s,api,t){
+  const k0=s.k, s0=s.s, spread=(s.spread==='on');
+  const tt=((t||0)*0.55)%12;
+  const sig=spread?s0*Math.sqrt(1+Math.pow(tt/(2*s0*s0),2)):s0;
+  const vg=k0, vp=k0/2;
+  const X0=-10,X1=10;
+  const xc=((vg*tt+10)%20)-10;
+  const gx=W*0.06, gw=W*0.88, base=H*(NARROW?0.44:0.50), sc=H*(NARROW?0.26:0.30);
+  axis(c,gx,gx+gw,base);
+  const PX=x=>gx+gw*(x-X0)/(X1-X0);
+  const envf=x=>Math.exp(-Math.pow(x-xc,2)/(4*sig*sig))*Math.sqrt(s0/sig);
+  c.beginPath();
+  for(let i=0;i<=240;i++){ const x=X0+(X1-X0)*i/240; i?c.lineTo(PX(x),base-envf(x)*sc):c.moveTo(PX(x),base-envf(x)*sc); }
+  c.strokeStyle=C.green(.75); c.lineWidth=1.4; c.setLineDash([5,4]); c.stroke(); c.setLineDash([]);
+  c.beginPath();
+  for(let i=0;i<=240;i++){ const x=X0+(X1-X0)*i/240; c.lineTo(PX(x),base+envf(x)*sc); }
+  c.strokeStyle=C.green(.35); c.lineWidth=1; c.setLineDash([5,4]); c.stroke(); c.setLineDash([]);
+  signedCurve(c,PX(X0),PX(X1),base,u=>{ const x=X0+(X1-X0)*u;
+    return envf(x)*Math.cos(k0*(x-vp*tt)); },sc,2);
+  const lab=(x,y,col,s2)=>{ const right=PX(x)<W*0.68;
+    txt(c,s2,PX(x)+(right?9:-9),y,col,10,right?'left':'right'); };
+  c.fillStyle=C.green(); c.beginPath(); c.arc(PX(xc),base-envf(xc)*sc-9,4.5,0,TAU); c.fill();
+  lab(xc,base-envf(xc)*sc-9,C.green(),'envelope · v_group');
+  const ph=(((k0*(xc-vp*tt))%TAU)+TAU)%TAU;
+  const cph=xc-ph/k0;
+  c.fillStyle=C.yellow(); c.beginPath(); c.arc(PX(cph),base+sc*0.66,4,0,TAU); c.fill();
+  lab(cph,base+sc*0.66,C.yellow(),'a crest · v_phase');
+  txt(c,'Re Ψ(x,t)   ·   gold + / cyan −',gx,H*0.09,C.dim(),10);
+  api.out('vg',vg.toFixed(2)+' (ħk₀/m)');
+  api.out('vp',vp.toFixed(2)+' (ħk₀/2m)');
+  api.out('ratio','v_g / v_p = 2.00');
+  api.out('w',sig.toFixed(2)+(spread?'  (was '+s0.toFixed(2)+')':''));
+};
+SIMS.packet.anim=true; SIMS.packet.ar=0.5; SIMS.packet.arN=0.8; SIMS.packet.drag={k:'k',min:2,max:12};
+
+/* ═══════════════════ 08 PROBABILITY CURRENT ═══════════════════ */
+SIMS.current=function(c,W,H,s,api){
+  const k=s.k, tt=s.t/10, s0=1.2;
+  const xc=-6+ (k>=0? tt*Math.abs(k)*0.9 : 12-tt*Math.abs(k)*0.9);
+  const X0=-10,X1=10,N=400,dx=(X1-X0)/N;
+  const rho=x=>Math.exp(-Math.pow(x-xc,2)/(2*s0*s0))/(s0*Math.sqrt(TAU));
+  let norm=0; for(let i=0;i<=N;i++) norm+=rho(X0+dx*i)*dx;
+  const gx=W*0.07, gw=W*0.87;
+  const PX=x=>gx+gw*(x-X0)/(X1-X0);
+  const y1=H*(NARROW?0.30:0.34), h1=H*0.20;
+  axis(c,gx,gx+gw,y1);
+  c.beginPath(); c.moveTo(gx,y1);
+  for(let i=0;i<=N;i++){ const x=X0+dx*i; c.lineTo(PX(x),y1-rho(x)*h1*2.6); }
+  c.lineTo(gx+gw,y1); c.closePath(); c.fillStyle=C.yellow(.28); c.fill();
+  c.strokeStyle=C.yellow(); c.lineWidth=2; c.stroke();
+  txt(c,'ρ = |Ψ|²   (always ≥ 0)',gx,H*0.09,C.dim(),10);
+  const y2=H*(NARROW?0.78:0.76), h2=H*0.18;
+  axis(c,gx,gx+gw,y2);
+  signedCurve(c,gx,gx+gw,y2,u=>rho(X0+(X1-X0)*u)*k,h2*2.6/Math.max(1,Math.abs(k)),2.2);
+  txt(c,'J = ρ·(ħk/m)   — sign is direction',gx,y2-h2*1.5,C.dim(),10);
+  txt(c,k>=0?'flowing right →':'← flowing left',gx+gw,y2+h2*0.8,k>=0?C.yellow():C.blue(),11,'right');
+  const cur=(s._px!==undefined)?X0+(X1-X0)*clamp((s._px-gx)/gw,0,1):xc;
+  line(c,PX(cur),y1-h1*2.6,PX(cur),y2+h2,C.rule(),1,[3,3]);
+  api.out('norm',norm.toFixed(4));
+  api.out('J',(rho(cur)*k).toFixed(4));
+  api.out('Jm',(rho(xc)*k).toFixed(4));
+};
+SIMS.current.ar=0.5; SIMS.current.arN=0.85; SIMS.current.drag={k:'t',min:0,max:100};
+
+/* ═══════════════════ 09 POTENTIAL STEP ═══════════════════ */
+SIMS.step=function(c,W,H,s,api){
+  const e=s.eps;
+  const k1=Math.sqrt(e), k2=e>1?Math.sqrt(e-1):0, kap=e<1?Math.sqrt(1-e):0;
+  let R,T,reI,reR;
+  if(e>1){ const r=(k1-k2)/(k1+k2), tt=2*k1/(k1+k2);
+    R=r*r; T=4*k1*k2/Math.pow(k1+k2,2);
+    reI=x=>Math.cos(10*k1*x)+r*Math.cos(-10*k1*x);
+    reR=x=>tt*Math.cos(10*k2*x); }
+  else { const den=k1*k1+kap*kap;
+    const rr=(k1*k1-kap*kap)/den, ri=(-2*k1*kap)/den;
+    R=1; T=0;
+    const tr=2*k1*k1/den, ti=-2*k1*kap/den;
+    reI=x=>Math.cos(10*k1*x)+rr*Math.cos(10*k1*x)+ri*Math.sin(10*k1*x);
+    reR=x=>tr*Math.exp(-10*kap*x); }
+  const gx=W*0.06, gw=NARROW?W*0.88:W*0.50, base=H*(NARROW?0.32:0.50), sc=H*(NARROW?0.16:0.22);
+  const mid=gx+gw*0.42;
+  c.fillStyle=C.violet(.12); c.fillRect(mid,H*0.12,gx+gw-mid,H*(NARROW?0.44:0.76)-H*0.12);
+  line(c,gx,H*(NARROW?0.56:0.88),mid,H*(NARROW?0.56:0.88),C.violet(),2);
+  line(c,mid,H*(NARROW?0.56:0.88),mid,H*0.12,C.violet(),2);
+  line(c,mid,H*0.12,gx+gw,H*0.12,C.violet(),2);
+  txt(c,'V₀',mid+6,H*0.16,C.violet(),10);
+  axis(c,gx,gx+gw,base);
+  const eLine=H*(NARROW?0.56:0.88)-(H*(NARROW?0.44:0.76))*Math.min(e,3)/3;
+  line(c,gx,eLine,gx+gw,eLine,C.green(),1.4,[5,4]);
+  txt(c,'E',gx+2,eLine-8,C.green(),10);
+  let envL,envR;
+  if(e>1){ const r=(k1-k2)/(k1+k2), tt2=2*k1/(k1+k2);
+    envL=x=>Math.sqrt(1+r*r+2*r*Math.cos(20*k1*x)); envR=()=>Math.abs(tt2); }
+  else { const den=k1*k1+kap*kap, rr=(k1*k1-kap*kap)/den, ri=(-2*k1*kap)/den, tr=2*k1*k1/den, ti=-2*k1*kap/den;
+    envL=x=>Math.sqrt(1+1+2*(rr*Math.cos(20*k1*x)-ri*Math.sin(20*k1*x)));
+    envR=x=>Math.hypot(tr,ti)*Math.exp(-10*kap*x); }
+  const dash=(x0,x1,f,off)=>{ c.save(); c.setLineDash([5,4]); c.strokeStyle=C.green(.8); c.lineWidth=1.3;
+    c.beginPath(); for(let i=0;i<=120;i++){ const u=i/120, X=x0+(x1-x0)*u, v=f(off+u);
+      i?c.lineTo(X,base-v*sc*0.45):c.moveTo(X,base-v*sc*0.45); } c.stroke(); c.restore(); };
+  dash(gx,mid,envL,-1); dash(mid,gx+gw,envR,0);
+  signedCurve(c,gx,mid,base,u=>reI(-1+u),sc*0.45,2);
+  signedCurve(c,mid,gx+gw,base,u=>reR(u*1.0),sc*0.45,2);
+  txt(c,'Re ψ   ·   dashed = |ψ|',gx,H*0.10,C.dim(),10);
+  const px=NARROW?W*0.10:W*0.62, pw=NARROW?W*0.84:W*0.33;
+  const py=NARROW?H*0.66:H*0.20, ph=NARROW?H*0.24:H*0.52;
+  axis(c,px,px+pw,py+ph);
+  line(c,px,py,px,py+ph,C.rule(),1);
+  const curve=(f,col)=>{ c.beginPath();
+    for(let i=0;i<=140;i++){ const E=0.02+4*i/140; const X=px+pw*i/140, Y=py+ph-ph*f(E);
+      i?c.lineTo(X,Y):c.moveTo(X,Y); }
+    c.strokeStyle=col; c.lineWidth=2; c.stroke(); };
+  const Rf=E=>{ if(E<=1)return 1; const K=Math.sqrt(1-1/E); return Math.pow((1-K)/(1+K),2); };
+  curve(Rf,C.red()); curve(E=>1-Rf(E),C.green());
+  txt(c,'R',px+pw*0.06,py+ph*0.10,C.red(),11); txt(c,'T',px+pw*0.75,py+ph*0.14,C.green(),11);
+  const cX=px+pw*clamp(e/4,0,1);
+  line(c,cX,py,cX,py+ph,C.yellow(),1.4);
+  txt(c,'E/V₀ →',px+pw,py+ph+14,C.faint(),9,'right');
+  txt(c,'1',px+pw/4,py+ph+14,C.faint(),9,'center');
+  api.out('eps',e.toFixed(2));
+  api.out('R',R.toFixed(4)); api.out('T',T.toFixed(4));
+  api.out('sum',(R+T).toFixed(4));
+  api.out('pen',e<1?(1/(Math.sqrt(1-e))).toFixed(2)+' /√(2mV₀)/ħ':'—');
+};
+SIMS.step.ar=0.6; SIMS.step.arN=1.15; SIMS.step.drag={k:'eps',min:0.05,max:4};
+
+/* ═══════════════════ 10 BARRIER & TUNNELLING ═══════════════════ */
+SIMS.barrier=function(c,W,H,s,api){
+  const e=s.eps, a=s.a, V=s.V;
+  const Tof=(E)=>{ if(Math.abs(E-1)<1e-6) return 1/(1+V*a*a/(4*3.81));
+    if(E>1){ const k2=Math.sqrt((E-1)*V/3.81); const S=Math.sin(k2*a);
+      return 1/(1+S*S/(4*E*(E-1))); }
+    const ka=Math.sqrt((1-E)*V/3.81)*a; const S=Math.sinh(ka);
+    return 1/(1+S*S/(4*E*(1-E))); };
+  const T=Tof(e), kap=Math.sqrt(Math.abs(1-e)*V/3.81);
+  const gx=W*0.06, gw=NARROW?W*0.88:W*0.46, base=H*(NARROW?0.30:0.46), sc=H*(NARROW?0.13:0.18);
+  const b0=gx+gw*0.38, b1=gx+gw*0.38+gw*0.24;
+  const floorY=H*(NARROW?0.52:0.80), topY=H*0.12;
+  c.fillStyle=C.violet(.14); c.fillRect(b0,topY,b1-b0,floorY-topY);
+  line(c,gx,floorY,b0,floorY,C.violet(),2); line(c,b0,floorY,b0,topY,C.violet(),2);
+  line(c,b0,topY,b1,topY,C.violet(),2); line(c,b1,topY,b1,floorY,C.violet(),2);
+  line(c,b1,floorY,gx+gw,floorY,C.violet(),2);
+  txt(c,'V₀ = '+V.toFixed(0)+' eV',b0+4,topY+12,C.violet(),10);
+  txt(c,'a = '+a.toFixed(2)+' Å',(b0+b1)/2,floorY+14,C.violet(),10,'center');
+  const eY=floorY-(floorY-topY)*Math.min(e,3)/3;
+  line(c,gx,eY,gx+gw,eY,C.green(),1.4,[5,4]); txt(c,'E',gx+2,eY-8,C.green(),10);
+  axis(c,gx,gx+gw,base);
+  const A=Math.sqrt(T), rr=Math.sqrt(Math.max(0,1-T));
+  signedCurve(c,gx,b0,base,u=>(1+rr)*Math.cos(16*(u-1)),sc*0.42,2);
+  c.save(); c.setLineDash([5,4]); c.strokeStyle=C.green(.8); c.lineWidth=1.3; c.beginPath();
+  for(let i=0;i<=120;i++){ const u=i/120, X=gx+(b0-gx)*u;
+    const v=Math.sqrt(1+rr*rr+2*rr*Math.cos(32*(u-1)));
+    i?c.lineTo(X,base-v*sc*0.42):c.moveTo(X,base-v*sc*0.42); }
+  c.stroke(); c.restore();
+  if(e<1){ c.beginPath();
+    for(let i=0;i<=60;i++){ const u=i/60, X=b0+(b1-b0)*u;
+      const v=(1+rr)*Math.exp(-kap*a*u); i?c.lineTo(X,base-v*sc*0.42):c.moveTo(X,base-v*sc*0.42); }
+    c.strokeStyle=C.yellow(); c.lineWidth=2.2; c.stroke();
+    txt(c,'decays as e−κx',(b0+b1)/2,base-sc*0.32,C.yellow(),10,'center');
+  } else signedCurve(c,b0,b1,base,u=>((1+A)/2)*Math.cos(4*Math.PI*u*Math.max(1,kap*a/Math.PI)),sc*0.42,2);
+  signedCurve(c,b1,gx+gw,base,u=>A*Math.cos(16*u),sc*0.42,2);
+  txt(c,'Re ψ   ·   dashed = |ψ|',gx,H*0.09,C.dim(),10);
+  const px=NARROW?W*0.10:W*0.58, pw=NARROW?W*0.84:W*0.37;
+  const py=NARROW?H*0.62:H*0.16, ph=NARROW?H*0.26:H*0.56;
+  axis(c,px,px+pw,py+ph); line(c,px,py,px,py+ph,C.rule(),1);
+  line(c,px,py,px+pw,py,C.rule(),1,[2,4]); txt(c,'T=1',px-3,py,C.faint(),9,'right');
+  c.beginPath();
+  for(let i=0;i<=200;i++){ const E=0.02+4*i/200, X=px+pw*i/200, Y=py+ph-ph*Tof(E);
+    i?c.lineTo(X,Y):c.moveTo(X,Y); }
+  c.strokeStyle=C.green(); c.lineWidth=2; c.stroke();
+  const q=px+pw/4; line(c,q,py,q,py+ph,C.rule(),1,[3,3]); txt(c,'E=V₀',q+3,py+10,C.faint(),9);
+  const cX=px+pw*clamp(e/4,0,1);
+  line(c,cX,py,cX,py+ph,C.yellow(),1.4);
+  c.fillStyle=C.yellow(); c.beginPath(); c.arc(cX,py+ph-ph*T,4,0,TAU); c.fill();
+  txt(c,'T(E)',px+4,py+14,C.green(),11); txt(c,'E/V₀ →',px+pw,py+ph+14,C.faint(),9,'right');
+  api.out('eps',e.toFixed(2));
+  api.out('T',T<1e-4?T.toExponential(2):T.toFixed(4));
+  api.out('R',(1-T).toFixed(4));
+  api.out('ka',(e<1?'κa = ':'k₂a = ')+(kap*a).toFixed(2));
+  api.out('approx',e<1?(16*e*(1-e)*Math.exp(-2*kap*a)).toExponential(2):'—');
+};
+SIMS.barrier.ar=0.6; SIMS.barrier.arN=1.15; SIMS.barrier.drag={k:'eps',min:0.05,max:4};
+
+/* ═══════════════════ DRILL ENGINE ═══════════════════ */
+function parseBank(){
+  const t=$('#qbank'); if(!t)return;
+  $$('.qi',t.content).forEach((el,i)=>{
+    const opts=$$('.qo',el).map(o=>({html:o.innerHTML,ok:o.hasAttribute('data-ok')}));
+    QBANK.push({
+      id:(el.dataset.mod||'m0')+'-'+i,
+      mod:el.dataset.mod, type:el.dataset.type, topic:el.dataset.topic||'',
+      text:$('.qt',el).innerHTML, opts,
+      ans:el.dataset.ans?parseFloat(el.dataset.ans):null,
+      tol:el.dataset.tol?parseFloat(el.dataset.tol):0,
+      unit:el.dataset.unit||'',
+      expl:$('.qe',el).innerHTML
+    });
+  });
+}
+let Q={queue:[],i:0,right:0,conf:null,log:[]};
+function buildQueue(mode){
+  let list=QBANK.slice();
+  if(mode==='num') list=list.filter(q=>q.type==='num');
+  else if(mode==='weak') list=list.filter(q=>!(S.qs[q.id]>0));
+  else if(mode!=='mixed') list=list.filter(q=>q.mod===mode);
+  if(mode==='mixed'){
+    const byMod={}; list.forEach(q=>{ (byMod[q.mod]=byMod[q.mod]||[]).push(q); });
+    Object.values(byMod).forEach(a=>shuffle(a));
+    const order=['m2','m3','m4','m1'], out=[];
+    let more=true;
+    while(more){ more=false; order.forEach(m=>{ const a=byMod[m]; if(a&&a.length){ out.push(a.shift()); more=true; } }); }
+    list=out;
+  } else shuffle(list);
+  if(!list.length) list=QBANK.slice().sort(()=>Math.random()-0.5);
+  Q={queue:list,i:0,right:0,conf:null,log:[]};
+  renderQ();
+}
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function modName(m){ const x=MODS.find(o=>o.id===m); return x?(x.roman+' · '+x.name):''; }
+function renderQ(){
+  const host=$('#qhost'); if(!host)return;
+  const q=Q.queue[Q.i];
+  $('#dscore').textContent=Q.right+' / '+Q.log.length;
+  const dots=$('#ddots');
+  dots.innerHTML=Q.queue.slice(0,Math.min(24,Q.queue.length)).map((_,k)=>{
+    const r=Q.log[k]; return '<i class="'+(k===Q.i?'cur':(r===undefined?'':(r?'ok':'no')))+'"></i>'; }).join('');
+  if(!q){
+    const topics=[...new Set(Q.log.map((r,k)=>r?null:(Q.queue[k]&&Q.queue[k].topic)).filter(Boolean))];
+    const over=Q.log.filter((r,k)=>!r&&Q.confs&&Q.confs[k]==='sure').length;
+    host.innerHTML='<div class="qcard"><h3>Set finished — '+Q.right+' of '+Q.log.length+'</h3>'+
+      '<p class="dimtx" style="font-size:.92rem">'+(topics.length?('Re-read these before you sleep: <b style="color:var(--ink)">'+topics.join(' · ')+'</b>'):'Nothing missed. Run a different mode, or go interleaved.')+'</p>'+
+      (over?('<p class="dimtx" style="font-size:.9rem">You were <b style="color:var(--red)">certain and wrong '+over+' time'+(over>1?'s':'')+'</b>. Those are the ones that cost marks — start there.</p>'):'')+
+      '<div class="row"><button class="btn pri" id="qagain">Run another set</button></div></div>';
+    $('#qagain').addEventListener('click',()=>buildQueue(curDrill));
+    refreshProgress(); return;
+  }
+  let body='';
+  if(q.type==='mcq'){
+    body='<div class="opts">'+q.opts.map((o,k)=>'<button class="opt" data-k="'+k+'"><span class="k">'+'ABCD'[k]+'</span><span>'+o.html+'</span></button>').join('')+'</div>';
+  } else if(q.type==='num'){
+    body='<div class="row"><input class="numin" id="numans" inputmode="decimal" placeholder="answer"><span class="dimtx" style="font-family:var(--f-m);font-size:.85rem">'+q.unit+'</span><button class="btn" id="numgo">Check</button></div>';
+  } else {
+    body='<div class="row"><button class="btn" id="showmodel">Show the model answer</button></div>';
+  }
+  host.innerHTML='<div class="qcard">'+
+    '<div class="qmeta"><span class="tag acc">'+modName(q.mod)+'</span><span class="tag">'+q.topic+'</span><span class="tag">'+
+      (q.type==='mcq'?'concept':(q.type==='num'?'numerical':'derivation'))+'</span></div>'+
+    '<p class="qtext">'+q.text+'</p>'+
+    '<div class="conf" id="confrow"><span class="dimtx" style="font-size:.82rem;align-self:center">How sure are you?</span>'+
+      '<button class="btn sm" data-c="sure">Certain</button><button class="btn sm" data-c="think">Fairly</button><button class="btn sm" data-c="guess">Guessing</button></div>'+
+    '<div id="qbody" style="margin-top:.9rem">'+body+'</div>'+
+    '<div class="expl" id="qexpl">'+q.expl+'</div>'+
+    '<div class="row" id="qnav" style="margin-top:.9rem;display:none"><button class="btn pri" id="qnext">Next question ›</button></div>'+
+  '</div>';
+  MJ(host);
+  $('#confrow').addEventListener('click',e=>{ const b=e.target.closest('[data-c]'); if(!b)return;
+    Q.conf=b.dataset.c; $$('#confrow .btn').forEach(x=>x.classList.toggle('pri',x===b)); });
+  if(q.type==='mcq'){
+    $$('.opt',host).forEach(b=>b.addEventListener('click',()=>{
+      const k=+b.dataset.k, ok=q.opts[k].ok;
+      $$('.opt',host).forEach((x,j)=>{ x.disabled=true; if(q.opts[j].ok)x.classList.add('right'); });
+      if(!ok) b.classList.add('wrong');
+      finish(q,ok);
+    }));
+  } else if(q.type==='num'){
+    const go=()=>{ const v=parseFloat(($('#numans').value||'').replace(/[^0-9eE.\-+]/g,''));
+      const ok=isFinite(v)&&Math.abs(v-q.ans)<=Math.max(q.tol,Math.abs(q.ans)*0.02);
+      $('#numans').style.borderColor=ok?C.green():C.red(); $('#numgo').disabled=true; finish(q,ok); };
+    $('#numgo').addEventListener('click',go);
+    $('#numans').addEventListener('keydown',e=>{ if(e.key==='Enter')go(); });
+  } else {
+    $('#showmodel').addEventListener('click',()=>{
+      $('#qexpl').classList.add('on'); MJ($('#qexpl'));
+      $('#qbody').innerHTML='<div class="row"><span class="dimtx" style="font-size:.85rem;align-self:center">Did you get the key steps?</span>'+
+        '<button class="btn sm" id="selfok">Yes</button><button class="btn sm" id="selfno">Not really</button></div>';
+      $('#selfok').addEventListener('click',()=>finish(q,true));
+      $('#selfno').addEventListener('click',()=>finish(q,false));
+    });
+  }
+  $('#qnext').addEventListener('click',()=>{ Q.i++; renderQ(); });
+}
+function finish(q,ok){
+  Q.log.push(ok); (Q.confs=Q.confs||[]).push(Q.conf); Q.conf=null;
+  if(ok)Q.right++;
+  S.qs[q.id]=ok?1:-1; save();
+  $('#qexpl').classList.add('on'); MJ($('#qexpl'));
+  $('#qnav').style.display='flex';
+  $('#dscore').textContent=Q.right+' / '+Q.log.length;
+  const dots=$('#ddots');
+  dots.innerHTML=Q.queue.slice(0,Math.min(24,Q.queue.length)).map((_,k)=>{
+    const r=Q.log[k]; return '<i class="'+(k===Q.i+1?'cur':(r===undefined?'':(r?'ok':'no')))+'"></i>'; }).join('');
+  refreshProgress();
+}
+let curDrill='mixed';
+$('#drillmode').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  $$('#drillmode button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  curDrill=b.dataset.v; buildQueue(curDrill);
+});
+$('#drestart').addEventListener('click',()=>buildQueue(curDrill));
+
+/* ═══════════════════ BRAIN DUMP ═══════════════════ */
+let bdT=null,bdLeft=600;
+function bdRender(){ const m=Math.floor(bdLeft/60), s2=bdLeft%60;
+  $('#bdclock').textContent=m+':'+String(s2).padStart(2,'0'); }
+$('#bdstart').addEventListener('click',()=>{
+  if(bdT){ clearInterval(bdT); bdT=null; $('#bdstart').textContent='Start 10 min'; showBD(); return; }
+  bdLeft=600; bdRender(); $('#bdstart').textContent='Stop & check';
+  $('#bdlist').style.display='none';
+  bdT=setInterval(()=>{ bdLeft--; bdRender();
+    if(bdLeft<=0){ clearInterval(bdT); bdT=null; $('#bdstart').textContent='Start 10 min'; showBD(); } },1000);
+});
+function showBD(){
+  const m=$('#bdtopic').value;
+  const src=$$('#bdlists div').find(d=>d.dataset.mod===m);
+  if(!src)return;
+  const items=src.innerHTML.split('|');
+  const host=$('#bdlist');
+  host.style.display='block';
+  host.innerHTML='<h4 style="margin-bottom:.5rem">Did you write all of these?</h4>'+
+    '<p class="dimtx" style="font-size:.85rem;margin-bottom:.7rem">Tick what you recalled unaided. Everything unticked is what to reopen.</p>'+
+    '<div class="stack" style="gap:.15rem">'+items.map(t=>'<label class="bdcheck">'+
+      '<input type="checkbox"><span>'+t+'</span></label>').join('')+'</div>';
+  MJ(host);
+}
+
+/* ═══════════════════ ESSAY BENCH + AI MARKER ═══════════════════ */
+let sampler=null;
+function buildEssays(){
+  const t=$('#essaybank'), host=$('#essayhost'); if(!t||!host)return;
+  host.innerHTML='';
+  $$('.ei',t.content).forEach((el,i)=>{
+    const d=document.createElement('div'); d.className='qcard';
+    d.innerHTML='<div class="qmeta"><span class="tag acc">'+modName(el.dataset.mod)+'</span><span class="tag">'+el.dataset.marks+' marks</span></div>'+
+      '<p class="qtext">'+$('.qt',el).innerHTML+'</p>'+
+      '<textarea class="essay" placeholder="Write your answer here — or just the skeleton of points, which is what actually earns the marks."></textarea>'+
+      '<div class="row" style="margin-top:.7rem"><button class="btn" data-rev>Reveal the marking skeleton</button>'+
+      '<button class="btn ai" data-ai style="display:none">Mark my answer</button></div>'+
+      '<div class="expl">'+$('.qe',el).innerHTML+'</div><div class="aiout" style="display:none"></div>';
+    const skel=$('.qe',el).textContent;
+    const qtext=$('.qt',el).textContent;
+    $('[data-rev]',d).addEventListener('click',()=>{ const e=$('.expl',d); e.classList.add('on'); MJ(e); });
+    $('[data-ai]',d).addEventListener('click',async ()=>{
+      const ta=$('textarea',d), out=$('.aiout',d), btn=$('[data-ai]',d);
+      if(!ta.value.trim()){ ta.focus(); return; }
+      out.style.display='block'; out.textContent='Marking…'; btn.disabled=true;
+      try{
+        const {text}=await sampler(
+          'You are an examiner marking a BSc Physics (Quantum Mechanics I) answer out of '+el.dataset.marks+' marks.\n\n'+
+          'QUESTION:\n'+qtext+'\n\nOFFICIAL MARKING POINTS:\n'+skel+'\n\nSTUDENT ANSWER:\n'+ta.value.slice(0,6000)+
+          '\n\nReply in plain text, under 200 words, in exactly this shape:\nMARK: x/'+el.dataset.marks+
+          '\nHAVE: the marking points they covered, comma separated\nMISSING: the marking points they did not, comma separated\nFIX FIRST: one sentence naming the single most valuable thing to add.',
+          {modelTier:'default', onText:({text})=>{ out.textContent=text; }});
+        out.textContent=text;
+      }catch(e){
+        out.textContent = e && e.code==='not_granted' ? 'Marking needs your permission — reload and allow it, or use the skeleton above.'
+          : (e && e.code==='rate_limited' ? 'Too many requests just now. Wait a moment and try again.'
+          : 'Could not reach the marker. Use the skeleton above — it is the same checklist.');
+      } finally { btn.disabled=false; }
+    });
+    host.appendChild(d);
+  });
+  MJ(host);
+}
+function enableAI(){ $$('[data-ai]').forEach(b=>b.style.display=''); }
+
+/* ═══════════════════ SHEET TIMER ═══════════════════ */
+let shT=null,shLeft=600;
+function shRender(){ const m=Math.floor(shLeft/60), s2=shLeft%60;
+  $('#sclock').textContent=m+':'+String(s2).padStart(2,'0');
+  const done=Math.floor((600-shLeft)/60);
+  $$('#ssegs i').forEach((el,i)=>el.classList.toggle('on',i<done)); }
+$('#sstart').addEventListener('click',()=>{
+  if(shT){ clearInterval(shT); shT=null; $('#sstart').textContent='Start'; return; }
+  shLeft=600; shRender(); $('#sstart').textContent='Stop';
+  shT=setInterval(()=>{ shLeft--; shRender(); if(shLeft<=0){ clearInterval(shT); shT=null; $('#sstart').textContent='Start'; } },1000);
+});
+$('#sprint').addEventListener('click',()=>window.print());
+
+/* ═══════════════════ BOOT ═══════════════════ */
+applyTheme(S.theme||'auto',false);
+buildPlan();
+parseBank();
+initLadders();
+initChecks();
+initSims();
+buildEssays();
+buildQueue('mixed');
+refreshProgress();
+tickCountdown(); setInterval(tickCountdown,30000);
+shRender(); bdRender();
+whenMJ(()=>{ MJ($('#view-bench')); typesetMod(curMod); MJ($('#view-drill')); });
+setTimeout(()=>{ if(!mjReady){ const b=document.createElement('div');
+  b.style.cssText='position:fixed;bottom:72px;left:10px;right:10px;z-index:60;background:var(--panel2);border:1px solid var(--rule);border-radius:11px;padding:.7rem .9rem;font-size:.82rem;color:var(--dim);box-shadow:var(--shadow-lift)';
+  b.textContent='Formula typesetting is still loading (it needs the network once). Everything else works — formulas will appear as plain TeX until then.';
+  document.body.appendChild(b); setTimeout(()=>b.remove(),9000); } },9000);
+if(window.claude&&window.claude.use){
+  window.claude.use('sample').then(f=>{ if(f){ sampler=f; enableAI(); } }).catch(()=>{});
+}
+})();
+</script>

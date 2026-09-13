@@ -16,6 +16,9 @@ import '../widgets/analytics_view.dart';
 import '../widgets/glassy_nav_bar.dart';
 import '../widgets/repair_alignment_dialog.dart';
 import '../widgets/lazy_indexed_stack.dart';
+import '../models/tree_reader_models.dart';
+import '../services/global_state.dart';
+import 'tree_reader/tree_reader_screen.dart';
 
 
 class MainLayoutScreen extends StatefulWidget {
@@ -167,6 +170,23 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                     showRepairAlignmentFlow(this.context, _currentBook);
                   },
                 ),
+                ListTile(
+                  leading: const Icon(LucideIcons.layers, color: Color(0xFF10B981)),
+                  title: Text('Drop-down Tree Reader', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+                  subtitle: Text('Hierarchical Module ▸ Section ▸ Topic flow with step ladders and confidence self-checks', style: TextStyle(color: context.colors.textFaint, fontSize: 11)),
+                  trailing: const Icon(LucideIcons.chevronRight, size: 18),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => TreeReaderScreen(
+                          course: TreeCourse.fromBook(_currentBook),
+                        ),
+                      ),
+                    );
+                  },
+                ),
                 const SizedBox(height: 16),
               ],
             ),
@@ -280,13 +300,23 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     // nav for now — it's being reworked in a later development stage. The
     // ExamScreen + QP generation code is kept intact for when it returns.
     final List<WidgetBuilder> pageBuilders = [
-      (context) => BookDashboardScreen(
-        book: _currentBook,
-        onBookUpdated: _onBookUpdated,
-        activeModule: _activeModule,
-        activeSection: _activeSection,
-        initialModuleIdx: widget.initialModuleIdx,
-        initialSectionIdx: widget.initialSectionIdx,
+      (context) => ValueListenableBuilder<bool>(
+        valueListenable: GlobalState.dropdownReaderFlowNotifier,
+        builder: (context, useDropdownFlow, _) {
+          if (useDropdownFlow) {
+            return TreeReaderScreen(
+              course: TreeCourse.fromBook(_currentBook),
+            );
+          }
+          return BookDashboardScreen(
+            book: _currentBook,
+            onBookUpdated: _onBookUpdated,
+            activeModule: _activeModule,
+            activeSection: _activeSection,
+            initialModuleIdx: widget.initialModuleIdx,
+            initialSectionIdx: widget.initialSectionIdx,
+          );
+        },
       ),
       (context) => PracticeScreen(book: _currentBook),
       (context) => AnalyticsView(courseId: _currentBook.id),
@@ -400,27 +430,129 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         builders: pageBuilders,
       ),
       
-      bottomNavigationBar: GlassyNavBar(
-        currentIndex: _currentIndex,
-        blur: 14.0,
-        icons: const [
-          LucideIcons.map,
-          LucideIcons.dumbbell,
-          LucideIcons.barChart2,
-          LucideIcons.playCircle,
-        ],
-        tooltips: const [
-          'Path',
-          'Practice',
-          'Analytics',
-          'Videos',
-        ],
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+      bottomNavigationBar: ValueListenableBuilder<bool>(
+        valueListenable: GlobalState.dropdownReaderFlowNotifier,
+        builder: (context, useDropdownFlow, _) {
+          if (useDropdownFlow) {
+            return _buildHtmlTabbar(context);
+          }
+          return GlassyNavBar(
+            currentIndex: _currentIndex,
+            blur: 14.0,
+            icons: const [
+              LucideIcons.map,
+              LucideIcons.dumbbell,
+              LucideIcons.barChart2,
+              LucideIcons.playCircle,
+            ],
+            tooltips: const [
+              'Path',
+              'Practice',
+              'Analytics',
+              'Videos',
+            ],
+            onTap: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            activeColor: AppTheme.duoBlue,
+          );
         },
-        activeColor: AppTheme.duoBlue,
+      ),
+    );
+  }
+
+  Widget _buildHtmlTabbar(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = TreeCourse.fromBook(_currentBook).accentColor;
+
+    final items = const [
+      (icon: LucideIcons.bookOpen, label: 'LEARN'),
+      (icon: LucideIcons.target, label: 'DRILL'),
+      (icon: LucideIcons.barChart2, label: 'ANALYTICS'),
+      (icon: LucideIcons.fileText, label: 'SHEET'),
+    ];
+
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xE6161B22) : const Color(0xF2FAFBFD),
+            border: Border(
+              top: BorderSide(
+                color: isDark ? const Color(0xFF30363D) : const Color(0xFFD2DCEB),
+                width: 1.0,
+              ),
+            ),
+          ),
+          child: SafeArea(
+            top: false,
+            child: SizedBox(
+              height: 56,
+              child: Row(
+                children: List.generate(items.length, (index) {
+                  final item = items[index];
+                  final isSelected = _currentIndex == index;
+                  return Expanded(
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          _currentIndex = index;
+                        });
+                      },
+                      splashColor: Colors.transparent,
+                      highlightColor: isDark ? const Color(0xFF21262D) : const Color(0xFFEAEFF6),
+                      child: Stack(
+                        alignment: Alignment.topCenter,
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 220),
+                            curve: Curves.easeOutCubic,
+                            width: isSelected ? 36 : 0,
+                            height: 2.5,
+                            decoration: BoxDecoration(
+                              color: isSelected ? accent : Colors.transparent,
+                              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(2)),
+                            ),
+                          ),
+                          Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(height: 2),
+                                Icon(
+                                  item.icon,
+                                  size: 20,
+                                  color: isSelected
+                                      ? (isDark ? const Color(0xFFE6EDF3) : const Color(0xFF18202A))
+                                      : (isDark ? const Color(0xFF8B949E) : const Color(0xFF7E8E9F)),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  item.label,
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                    letterSpacing: 0.6,
+                                    color: isSelected
+                                        ? (isDark ? const Color(0xFFE6EDF3) : const Color(0xFF18202A))
+                                        : (isDark ? const Color(0xFF8B949E) : const Color(0xFF7E8E9F)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -482,6 +614,23 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
           
           const Spacer(),
           
+          // Drop-down Reader flow toggle
+          ValueListenableBuilder<bool>(
+            valueListenable: GlobalState.dropdownReaderFlowNotifier,
+            builder: (context, isDropdown, _) {
+              return _buildSidebarActionButton(
+                icon: LucideIcons.layers,
+                label: isDropdown ? 'Linear Slide Path' : 'Drop-down Reader',
+                subtitle: isDropdown ? 'Switch to carousel units' : 'Switch to hierarchical tree',
+                iconColor: const Color(0xFF10B981),
+                onTap: () {
+                  GlobalState.setDropdownReaderFlow(!isDropdown);
+                },
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+
           // Settings and Actions
           _buildSidebarActionButton(
             icon: LucideIcons.settings,

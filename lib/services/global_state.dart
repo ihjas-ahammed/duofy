@@ -53,6 +53,18 @@ class GlobalState {
   /// and content regeneration. Off by default.
   static final ValueNotifier<bool> developerModeNotifier = ValueNotifier<bool>(false);
 
+  /// Experimental Hierarchical Dropdown Reader Flow:
+  /// Changes reading flow from linear slide carousel to collapsible
+  /// multi-level drop-downs (Module ▸ Section ▸ Topic) with interactive
+  /// derivation ladders, self-checks, and cascading tick progress.
+  static final ValueNotifier<bool> dropdownReaderFlowNotifier = ValueNotifier<bool>(true);
+
+  static Future<void> setDropdownReaderFlow(bool enabled) async {
+    dropdownReaderFlowNotifier.value = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('experimental_dropdown_reader_flow', enabled);
+  }
+
   static Future<void> completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_complete', true);

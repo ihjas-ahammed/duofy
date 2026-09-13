@@ -279,7 +279,7 @@ class DatabaseService {
   /// Atomic-ish single-book write: write to a temp file then rename, so an
   /// interrupted write can never leave a half-written (corrupt) book file.
   Future<void> _writeBookFile(String forUid, Book book) async {
-    final dir = await _booksDir(forUid);
+    final Directory? dir = kIsWeb ? null : await _booksDir(forUid);
 
     // 1. Separate slides and save them to individual JSON files (with LaTeX fixing)
     for (final m in book.modules) {
@@ -295,7 +295,7 @@ class DatabaseService {
                   jsonEncode(fixedSlides.map((s) => s.toJson()).toList()),
                 );
               } else {
-                final slidesFile = File('${dir.path}/${book.id}_lesson_${l.id}_slides.json');
+                final slidesFile = File('${dir!.path}/${book.id}_lesson_${l.id}_slides.json');
                 final slidesJson = jsonEncode(fixedSlides.map((s) => s.toJson()).toList());
                 await slidesFile.writeAsString(slidesJson, flush: true);
               }
@@ -314,7 +314,7 @@ class DatabaseService {
       return;
     }
 
-    if (!await dir.exists()) {
+    if (!await dir!.exists()) {
       await dir.create(recursive: true);
     }
     final target = _bookFile(dir, book.id);

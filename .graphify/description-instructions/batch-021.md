@@ -1,4 +1,4 @@
-# Node Description Batch 22 of 61
+# Node Description Batch 22 of 68
 
 Graphify is running in assistant/skill mode (no API key). You are the host
 assistant (Claude Code / Codex / Gemini CLI). Read the prompt below and write
@@ -12,51 +12,60 @@ describing what it is or does. Use only the provided context.
 For a code symbol (kind=code-symbol — a function, class, or constant),
 describe what the function/symbol does based on its name, source location
 and neighbors — e.g. "Resolves the configured ontology profile from graphify.yaml.".
-Write every description in English (en). Do not switch languages.
+For an entity node (any other kind — e.g. a person, place, event, object),
+describe what the entity is and its role, grounded in its type, its
+relations (neighbors) and the provided citations/evidence — e.g.
+"Lady Carfax, a wealthy heiress who disappears en route to Lausanne.".
+Ground entity descriptions in the citations/evidence when present; do not
+speculate beyond the context, so a node with no supporting context may be
+left out of the reply.
+LANGUAGE: each entry has a `lang=` marker giving the language of its source.
+Write that entry's description in EXACTLY that language. Do not translate to
+a single common language — match each node's source language individually.
 No marketing language.
 Respond ONLY with a JSON object mapping each node id (as a string) to its
 one-sentence description — no prose, no markdown fences.
 
-- "platform_io_stub_directory": "Directory" | kind=code-symbol | source=lib/platform/io_stub.dart:L100 | neighbors=[io_stub.dart]
-- "platform_io_stub_exists": "exists()" | kind=code-symbol | source=lib/platform/io_stub.dart:L35 | neighbors=[io_stub.dart]
-- "platform_io_stub_existssync": "existsSync()" | kind=code-symbol | source=lib/platform/io_stub.dart:L36 | neighbors=[io_stub.dart]
-- "platform_io_stub_file": "File" | kind=code-symbol | source=lib/platform/io_stub.dart:L43 | neighbors=[io_stub.dart]
-- "platform_io_stub_filesystementity": "FileSystemEntity" | kind=code-symbol | source=lib/platform/io_stub.dart:L33 | neighbors=[io_stub.dart]
-- "platform_io_stub_filesystemexception": "FileSystemException" | kind=code-symbol | source=lib/platform/io_stub.dart:L151 | neighbors=[io_stub.dart]
-- "platform_io_stub_function": "Function()" | kind=code-symbol | source=lib/platform/io_stub.dart:L183 | neighbors=[io_stub.dart]
-- "platform_io_stub_httpexception": "HttpException" | kind=code-symbol | source=lib/platform/io_stub.dart:L168 | neighbors=[io_stub.dart]
-- "platform_io_stub_ioexception": "IOException" | kind=code-symbol | source=lib/platform/io_stub.dart:L159 | neighbors=[io_stub.dart]
-- "platform_io_stub_isdirectory": "isDirectory()" | kind=code-symbol | source=lib/platform/io_stub.dart:L39 | neighbors=[io_stub.dart]
-- "platform_io_stub_isfile": "isFile()" | kind=code-symbol | source=lib/platform/io_stub.dart:L40 | neighbors=[io_stub.dart]
-- "platform_io_stub_lastmodified": "lastModified()" | kind=code-symbol | source=lib/platform/io_stub.dart:L89 | neighbors=[io_stub.dart]
-- "platform_io_stub_length": "length()" | kind=code-symbol | source=lib/platform/io_stub.dart:L87 | neighbors=[io_stub.dart]
-- "platform_io_stub_lengthsync": "lengthSync()" | kind=code-symbol | source=lib/platform/io_stub.dart:L88 | neighbors=[io_stub.dart]
-- "platform_io_stub_platform": "Platform" | kind=code-symbol | source=lib/platform/io_stub.dart:L18 | neighbors=[io_stub.dart]
-- "platform_io_stub_process": "Process" | kind=code-symbol | source=lib/platform/io_stub.dart:L142 | neighbors=[io_stub.dart]
-- "platform_io_stub_processresult": "ProcessResult" | kind=code-symbol | source=lib/platform/io_stub.dart:L134 | neighbors=[io_stub.dart]
-- "platform_io_stub_readasbytes": "readAsBytes()" | kind=code-symbol | source=lib/platform/io_stub.dart:L66 | neighbors=[io_stub.dart]
-- "platform_io_stub_readasstring": "readAsString()" | kind=code-symbol | source=lib/platform/io_stub.dart:L68 | neighbors=[io_stub.dart]
-- "platform_io_stub_readasstringsync": "readAsStringSync()" | kind=code-symbol | source=lib/platform/io_stub.dart:L70 | neighbors=[io_stub.dart]
-- "platform_io_stub_rename": "rename()" | kind=code-symbol | source=lib/platform/io_stub.dart:L86 | neighbors=[io_stub.dart]
-- "platform_io_stub_run": "run()" | kind=code-symbol | source=lib/platform/io_stub.dart:L144 | neighbors=[io_stub.dart]
-- "platform_io_stub_socketexception": "SocketException" | kind=code-symbol | source=lib/platform/io_stub.dart:L161 | neighbors=[io_stub.dart]
-- "platform_io_stub_tostring": "toString()" | kind=code-symbol | source=lib/platform/io_stub.dart:L156 | neighbors=[io_stub.dart]
-- "platform_io_stub_websocket": "WebSocket" | kind=code-symbol | source=lib/platform/io_stub.dart:L177 | neighbors=[io_stub.dart]
-- "platform_io_stub_writeasbytes": "writeAsBytes()" | kind=code-symbol | source=lib/platform/io_stub.dart:L74 | neighbors=[io_stub.dart]
-- "platform_io_stub_writeasbytessync": "writeAsBytesSync()" | kind=code-symbol | source=lib/platform/io_stub.dart:L77 | neighbors=[io_stub.dart]
-- "platform_io_stub_writeasstring": "writeAsString()" | kind=code-symbol | source=lib/platform/io_stub.dart:L79 | neighbors=[io_stub.dart]
-- "platform_io_stub_writeasstringsync": "writeAsStringSync()" | kind=code-symbol | source=lib/platform/io_stub.dart:L82 | neighbors=[io_stub.dart]
-- "python_app_main": "main.py" | kind=code-symbol | source=python_app/main.py:L1 | neighbors=[5621c28 v26.8.8: Integrated SeriousPyth…]
-- "runner_flutter_window_flutterwindow": "FlutterWindow()" | kind=code-symbol | source=windows/runner/flutter_window.h:L12 | neighbors=[flutter_window.h]
-- "runner_flutter_window_messagehandler": "MessageHandler()" | kind=code-symbol | source=windows/runner/flutter_window.cpp:L50 | neighbors=[flutter_window.h]
-- "runner_flutter_window_oncreate": "OnCreate()" | kind=code-symbol | source=windows/runner/flutter_window.cpp:L12 | neighbors=[flutter_window.h]
-- "runner_flutter_window_ondestroy": "OnDestroy()" | kind=code-symbol | source=windows/runner/flutter_window.cpp:L42 | neighbors=[flutter_window.h]
-- "runner_main_main": "main()" | kind=code-symbol | source=linux/runner/main.cc:L5 | neighbors=[main.cpp]
-- "runner_main_wwinmain": "wWinMain()" | kind=code-symbol | source=windows/runner/main.cpp:L8 | neighbors=[main.cpp]
-- "runner_my_application_first_frame_cb": "first_frame_cb()" | kind=code-symbol | source=linux/runner/my_application.cc:L19 | neighbors=[my_application.h]
-- "runner_my_application_my_application_activate": "my_application_activate()" | kind=code-symbol | source=linux/runner/my_application.cc:L24 | neighbors=[my_application.h]
-- "runner_my_application_my_application_class_init": "my_application_class_init()" | kind=code-symbol | source=linux/runner/my_application.cc:L133 | neighbors=[my_application.h]
-- "runner_my_application_my_application_dispose": "my_application_dispose()" | kind=code-symbol | source=linux/runner/my_application.cc:L127 | neighbors=[my_application.h]
+- "models_app_models_getestimatedunitsforsection": "getEstimatedUnitsForSection()" | kind=code-symbol | source=lib/models/app_models.dart:L868 | neighbors=[app_models.dart] | lang=en
+- "models_app_models_hasprogrammingslidesorname": "hasProgrammingSlidesOrName()" | kind=code-symbol | source=lib/models/app_models.dart:L639 | neighbors=[app_models.dart] | lang=en
+- "models_app_models_interactivestep": "InteractiveStep" | kind=code-symbol | source=lib/models/app_models.dart:L1839 | neighbors=[app_models.dart] | lang=en
+- "models_app_models_isprogrammingcourse": "isProgrammingCourse()" | kind=code-symbol | source=lib/models/app_models.dart:L621 | neighbors=[app_models.dart] | lang=en
+- "models_app_models_lesson": "Lesson" | kind=code-symbol | source=lib/models/app_models.dart:L1672 | neighbors=[app_models.dart] | lang=en
+- "models_app_models_lessonformat": "LessonFormat" | kind=code-symbol | source=lib/models/app_models.dart:L139 | neighbors=[app_models.dart] | lang=en
+- "models_app_models_matchpair": "MatchPair" | kind=code-symbol | source=lib/models/app_models.dart:L2202 | neighbors=[app_models.dart] | lang=en
+- "models_app_models_module": "Module" | kind=code-symbol | source=lib/models/app_models.dart:L1314 | neighbors=[app_models.dart] | lang=en
+- "models_app_models_qpquestion": "QpQuestion" | kind=code-symbol | source=lib/models/app_models.dart:L1156 | neighbors=[app_models.dart] | lang=en
+- "models_app_models_qpsection": "QpSection" | kind=code-symbol | source=lib/models/app_models.dart:L1194 | neighbors=[app_models.dart] | lang=en
+- "models_app_models_questionpaper": "QuestionPaper" | kind=code-symbol | source=lib/models/app_models.dart:L1228 | neighbors=[app_models.dart] | lang=en
+- "models_app_models_quickreviewitem": "QuickReviewItem" | kind=code-symbol | source=lib/models/app_models.dart:L1293 | neighbors=[app_models.dart] | lang=en
+- "models_app_models_quizoption": "QuizOption" | kind=code-symbol | source=lib/models/app_models.dart:L2216 | neighbors=[app_models.dart] | lang=en
+- "models_app_models_section": "Section" | kind=code-symbol | source=lib/models/app_models.dart:L1393 | neighbors=[app_models.dart] | lang=en
+- "models_app_models_slide": "Slide" | kind=code-symbol | source=lib/models/app_models.dart:L1889 | neighbors=[app_models.dart] | lang=en
+- "models_app_models_slidetemplate": "SlideTemplate" | kind=code-symbol | source=lib/models/app_models.dart:L32 | neighbors=[app_models.dart] | lang=en
+- "models_app_models_str": "_str()" | kind=code-symbol | source=lib/models/app_models.dart:L3 | neighbors=[app_models.dart] | lang=en
+- "models_app_models_tree": "tree" | kind=code-symbol | source=lib/models/app_models.dart:L583 | neighbors=[app_models.dart] | lang=en
+- "models_app_models_trees": "trees" | kind=code-symbol | source=lib/models/app_models.dart:L580 | neighbors=[app_models.dart] | lang=en
+- "models_app_models_unit": "Unit" | kind=code-symbol | source=lib/models/app_models.dart:L1584 | neighbors=[app_models.dart] | lang=en
+- "models_app_models_updateid": "updateId()" | kind=code-symbol | source=lib/models/app_models.dart:L1101 | neighbors=[app_models.dart] | lang=en
+- "models_app_models_wordcount": "_wordCount()" | kind=code-symbol | source=lib/models/app_models.dart:L1759 | neighbors=[app_models.dart] | lang=en
+- "models_daily_goal_dailygoal": "DailyGoal" | kind=code-symbol | source=lib/models/daily_goal.dart:L4 | neighbors=[daily_goal.dart] | lang=en
+- "models_daily_goal_dailygoalupdateevent": "DailyGoalUpdateEvent" | kind=code-symbol | source=lib/models/daily_goal.dart:L117 | neighbors=[daily_goal.dart] | lang=en
+- "models_pyq_models_pyqexamattempt": "PyqExamAttempt" | kind=code-symbol | source=lib/models/pyq_models.dart:L103 | neighbors=[pyq_models.dart] | lang=en
+- "models_pyq_models_pyqitem": "PyqItem" | kind=code-symbol | source=lib/models/pyq_models.dart:L3 | neighbors=[pyq_models.dart] | lang=en
+- "models_pyq_models_pyqquestionanswer": "PyqQuestionAnswer" | kind=code-symbol | source=lib/models/pyq_models.dart:L57 | neighbors=[pyq_models.dart] | lang=en
+- "onboarding_onboarding_screen_dispose": "dispose()" | kind=code-symbol | source=lib/screens/onboarding/onboarding_screen.dart:L67 | neighbors=[onboarding_screen.dart] | lang=en
+- "onboarding_onboarding_screen_finish": "_finish()" | kind=code-symbol | source=lib/screens/onboarding/onboarding_screen.dart:L72 | neighbors=[onboarding_screen.dart] | lang=en
+- "onboarding_onboarding_screen_onboardingpage": "_OnboardingPage" | kind=code-symbol | source=lib/screens/onboarding/onboarding_screen.dart:L10 | neighbors=[onboarding_screen.dart] | lang=en
+- "onboarding_onboarding_screen_onboardingscreen": "OnboardingScreen" | kind=code-symbol | source=lib/screens/onboarding/onboarding_screen.dart:L22 | neighbors=[onboarding_screen.dart] | lang=en
+- "onboarding_onboarding_screen_onboardingscreenstate": "_OnboardingScreenState" | kind=code-symbol | source=lib/screens/onboarding/onboarding_screen.dart:L29 | neighbors=[onboarding_screen.dart] | lang=en
+- "packup_rationale_163": "Checks if a file is likely binary based on its extension or content." | kind=entity | source=packup.py:L163 | neighbors=[is_likely_binary_file()] | lang=en
+- "packup_rationale_189": "Packs all relevant files into a single text file." | kind=entity | source=packup.py:L189 | neighbors=[pack_project()] | lang=pt
+- "packup_rationale_57": "Loads patterns from .gitignore file in the root directory." | kind=entity | source=packup.py:L57 | neighbors=[load_gitignore_patterns()] | lang=en
+- "packup_rationale_81": "Checks if a given path (relative to project root) should be ignored.     Uses .g" | kind=entity | source=packup.py:L81 | neighbors=[should_ignore()] | lang=en
+- "platform_io_stub_add": "add()" | kind=code-symbol | source=lib/platform/io_stub.dart:L182 | neighbors=[io_stub.dart] | lang=en
+- "platform_io_stub_close": "close()" | kind=code-symbol | source=lib/platform/io_stub.dart:L186 | neighbors=[io_stub.dart] | lang=en
+- "platform_io_stub_connect": "connect()" | kind=code-symbol | source=lib/platform/io_stub.dart:L179 | neighbors=[io_stub.dart] | lang=en
+- "platform_io_stub_copy": "copy()" | kind=code-symbol | source=lib/platform/io_stub.dart:L85 | neighbors=[io_stub.dart] | lang=en
 
 ## Instructions
 

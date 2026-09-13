@@ -3,14 +3,14 @@
   "branchName": "main",
   "worktreePath": "/home/ihjas/Documents/GitHub/duofy",
   "upstream": "origin/main",
-  "mergeBase": "63ce97321564a5f037d5128c4e660e46c401910e",
+  "mergeBase": "bc59a6e578a281ca8d75b67ff67c1b483664f959",
   "firstSeenHead": "e0cfdd09f818f63230e09bba4f0808237c90bebe",
-  "lastSeenHead": "63ce97321564a5f037d5128c4e660e46c401910e",
-  "lastAnalyzedHead": "63ce97321564a5f037d5128c4e660e46c401910e",
+  "lastSeenHead": "bc59a6e578a281ca8d75b67ff67c1b483664f959",
+  "lastAnalyzedHead": "bc59a6e578a281ca8d75b67ff67c1b483664f959",
   "stale": false,
   "staleReason": null,
   "staleSince": null,
   "lifecycleEvent": null,
   "createdAt": "2026-08-10T14:58:24.125Z",
-  "updatedAt": "2026-08-10T17:11:48.000Z"
+  "updatedAt": "2026-09-13T10:24:09.145Z"
 }

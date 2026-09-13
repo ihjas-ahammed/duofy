@@ -1,0 +1,772 @@
+/* ══════════════════════════════════════════════════════════════════
+   QM · Modules I–II — content model (stations)
+   Scope = the DELTA past +2. Every section opens with what you carry
+   over from school and what is genuinely new. No storytelling drama.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ---- tiny builders ---- */
+function carry(from,to){
+  return `<div class="carry">
+    <div class="from"><div class="lab">◂ you already own (from +2)</div><ul>${from.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+    <div class="to"><div class="lab">new ground ▸</div><ul>${to.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+  </div>`;
+}
+function lad(title,rungs){
+  const body=rungs.map((r,i)=>`<div class="rung${i? ' hidden':''}">
+    <span class="peek">tap to reveal ▸</span>
+    ${r.why?`<div class="why">${r.why}</div>`:''}
+    <div class="math">${r.m}</div></div>`).join('');
+  return `<div class="ladder"><div class="lh">${title}<span class="li">derivation</span></div>
+    ${body}
+    <div class="lfoot"><button class="btn primary reveal-next">Reveal next step</button>
+      <button class="btn reveal-all">Show all</button>
+      <span class="mini dim">Predict each line before you reveal it — generation beats re-reading.</span></div></div>`;
+}
+function fig(name,cap,leg){
+  return `<figure class="fig"><div class="cvwrap"><canvas data-fig="${name}"></canvas></div>
+    ${leg?`<div class="leg">${leg}</div>`:''}
+    <figcaption>${cap}</figcaption></figure>`;
+}
+let _ck=0;
+function chk(q,a){_ck++;const id='ck'+_ck;
+  return `<div class="check" id="${id}"><div class="ch">◈ retrieval checkpoint</div>
+    <div class="qz">${q}</div>
+    <div class="conf"><button data-c="0">Guessing</button><button data-c="1">Shaky</button>
+      <button data-c="2">Fairly sure</button><button data-c="3">Solid</button></div>
+    <button class="reveal">Rate first, then check ▸</button>
+    <div class="ans">${a}</div></div>`;
+}
+function prob(n,title,parts){
+  return `<details class="prob"><summary><span class="pn">${n}</span><span class="pt">${title}</span><span class="chev">›</span></summary>
+    <div class="pbody">${parts}</div></details>`;
+}
+function pth(html){return `<h4 class="theory">theory you need</h4>${html}`;}
+function psol(html){return `<h4 class="sol">worked solution</h4>${html}`;}
+function prac(html){return `<div class="practice"><div class="pl">your turn · no peeking at an answer</div>${html}</div>`;}
+/* topic marker — becomes a tickable, linkable sub-heading inside a section */
+function tp(title){return `<div class="topic" data-tp><h3>${title}</h3></div>`;}
+
+const STATIONS=[
+
+/* ═══════════════════ 0 · ORIENTATION ═══════════════════ */
+{id:'start',hero:true,title:'Quantum Mechanics I',short:'Start here',est:'~10 min',
+ body:`
+ <p class="hero-eq">$i\\hbar\\,\\partial_t\\Psi=-\\dfrac{\\hbar^2}{2m}\\partial_x^2\\Psi+V\\Psi$</p>
+ <p class="lead">Modules I &amp; II only — <strong>the wave function</strong> and <strong>the time-independent Schrödinger equation with wells &amp; barriers</strong>. This is a guided study journey, not a playground: open a topic, predict each derivation line, answer the checkpoint, then tick it off. Your progress rides along on every device you sync.</p>
+ <div class="statgrid">
+   <div class="s"><b>2</b><span>modules · ~30 of 70 marks</span></div>
+   <div class="s"><b>52</b><span>topics in 18 sections</span></div>
+   <div class="s"><b>4×</b><span>study blocks a day</span></div>
+ </div>
+
+ ${tp('Your day, built on the research <span class="tag">sleep · memory</span>')}
+ <p>You told me: two hours at night, two hours in the morning. That split is a gift — use it the way the memory literature says to, not as four generic hours.</p>
+ <div class="plan">
+   <div class="slot"><span class="when">NIGHT · 2h</span><div class="what"><b>Encode new ground</b>
+     <span>Learn one or two fresh topics. New, effortful material learned <em>before sleep</em> is what slow-wave sleep consolidates — the hippocampus replays it overnight and hands it to cortex. Finish with a 5-minute free recall on paper, lights off soon after. Don't cram past the point of focus.</span></div></div>
+   <div class="slot"><span class="when">SLEEP</span><div class="what"><b>Consolidation happens here</b>
+     <span>You are not idle — deep sleep is doing the filing. Protect it. A short review right before bed and again right after waking brackets the memory with sleep on both sides (the strongest retention pattern known).</span></div></div>
+   <div class="slot"><span class="when">MORNING · 2h</span><div class="what"><b>Retrieve, then interleave</b>
+     <span>Start by recalling last night's topics <em>cold</em> (checkpoints, closed book) — a rested brain retrieves best. Then mix problems from different topics. Interleaving feels harder and is exactly why it works: it trains you to pick the right method, which is what an exam actually tests.</span></div></div>
+   <div class="slot"><span class="when">SPACING</span><div class="what"><b>Return on a widening schedule</b>
+     <span>Touch each topic again after ~1 day, ~3 days, ~1 week. Every retrieval that felt a little hard strengthens the trace more than a fluent re-read ever will.</span></div></div>
+ </div>
+
+ ${tp('How each topic is wired to make it stick')}
+ <p><strong>Retrieval over re-reading</strong> — checkpoints force you to pull the answer <em>before</em> seeing it. <strong>Generation before revelation</strong> — derivation ladders stay blurred until you commit to a prediction. <strong>Calibration</strong> — you rate your confidence first, so you notice where fluent-feeling ≠ actually-knowing (the most common exam trap in physics). <strong>Dual coding</strong> — every abstract result is drawn from its real formula, so the picture and the algebra encode together. <strong>Spacing &amp; interleaving</strong> — the plan above, baked into the order.</p>
+
+ ${tp('The scope rule')}
+ <div class="note key"><div class="nh">the scope rule</div>You have already aced the +2 (Class-12) syllabus. Nothing here re-teaches school physics. Every section names what you carry over, then spends its effort only on what is new. If a line looks like +2 material, it's there as a handhold, not a lesson.</div>
+
+ <p class="dim" style="margin-top:1.4rem">Tap <b>☁</b> up top to pick a sync code (use the same word on phone and laptop). Tap <b>◐</b> to switch light / dark / auto. Use the dropdown to jump anywhere.</p>
+`},
+
+/* ═══════════════════ MODULE I ═══════════════════ */
+{id:'m1-schrodinger',mod:'Module I',modName:'The Wave Function',modClass:'m1',
+ title:'The Schrödinger equation',short:'Schrödinger equation',est:'~15 min',
+ body:`
+ ${carry(
+   ['Newton\'s law $F=m\\ddot x$ fixes a trajectory $x(t)$ from initial $x_0,\\dot x_0$',
+    'Conservative force from a potential: $F=-\\,dV/dx$',
+    'Once $x(t)$ is known, $p=m\\dot x$, $T=\\tfrac12 mv^2$ all follow'],
+   ['The state is a <em>complex</em> field $\\Psi(x,t)$, not a point',
+    'Its evolution law is a PDE — first order in time, second in space',
+    '$\\hbar=h/2\\pi\\approx1.055\\times10^{-34}\\,$J·s sets the quantum scale'])}
+
+ ${tp('From Newton to Schr&ouml;dinger')}
+ <p>In classical mechanics a particle <em>is</em> its position, and $F=m\\ddot x$ marches that position forward deterministically. Quantum mechanics keeps the deterministic evolution but changes <strong>what</strong> evolves: the entire state of a one-dimensional particle is a complex function $\\Psi(x,t)$, and its law of motion is the time-dependent Schrödinger equation.</p>
+
+ $$i\\hbar\\,\\frac{\\partial\\Psi}{\\partial t}=-\\frac{\\hbar^2}{2m}\\frac{\\partial^2\\Psi}{\\partial x^2}+V(x,t)\\,\\Psi$$
+
+ <p>Read it as the exact analogue of Newton\'s law. Give me $\\Psi(x,0)$ everywhere, and this equation hands back $\\Psi(x,t)$ for every later time — uniquely. The right-hand side is (kinetic operator) + (potential) acting on $\\Psi$; the left-hand side is how the state turns in its complex plane.</p>
+
+ ${tp('Why complex, why first-order in time')}
+ <div class="note"><div class="nh">why complex, why first-order in time</div>The $i$ is not cosmetic. A real diffusion-like equation $\\partial_t\\Psi=D\\partial_x^2\\Psi$ would damp every wiggle away; the factor $i$ turns damping into <em>rotation</em>, so $\\Psi$ oscillates and interferes instead of dying. First order in $t$ means one initial slice $\\Psi(x,0)$ is enough — no need for an initial $\\dot\\Psi$, unlike the classical wave equation.</div>
+
+ ${chk(
+   'The Schrödinger equation is first-order in time. What does that tell you about how much initial data you must supply, compared with Newton\'s second law?',
+   '<p>Newton\'s law is <em>second</em> order in time, so it needs <strong>two</strong> initial numbers: $x(0)$ and $\\dot x(0)$. The Schrödinger equation is <em>first</em> order in time, so it needs only <strong>one</strong> piece of initial data — the whole function $\\Psi(x,0)$. From that single slice the future is fixed. (It is second order in <em>space</em>, which is a separate matter — that is what will force boundary/continuity conditions later.)</p>')}
+`},
+
+{id:'m1-born',mod:'Module I',modName:'The Wave Function',modClass:'m1',
+ title:'Born\'s rule &amp; measurement',short:'Statistical interpretation',est:'~18 min',
+ body:`
+ ${carry(
+   ['Wave intensity $\\propto$ amplitude² (from optics / SHM)',
+    'Young\'s double slit gives bright/dark fringes from path difference',
+    'Probability of independent events adds to 1'],
+   ['$|\\Psi|^2$ is a <em>probability density</em>, not an intensity of stuff',
+    'Measurement collapses $\\Psi$ — a second dynamical law',
+    'Single particles interfere with themselves; the pattern is statistical'])}
+
+ ${tp('The Born rule')}
+ <p>Max Born\'s reading of $\\Psi$ is the hinge of the whole theory. The quantity</p>
+ $$|\\Psi(x,t)|^2=\\Psi^{*}(x,t)\\,\\Psi(x,t)$$
+ <p>is the <strong>probability density</strong> for finding the particle at $x$. Because $\\Psi$ is complex, you square it with its conjugate. The probability of a detection between $a$ and $b$ is the area under that density:</p>
+ $$P_{ab}(t)=\\int_a^b|\\Psi(x,t)|^2\\,dx$$
+
+ <p>So $\\Psi$ does <em>not</em> tell you where the particle is. It tells you the odds. Even with perfect knowledge of $\\Psi$, individual outcomes stay irreducibly random.</p>
+
+ ${fig('slit',
+   '<b>Single-particle build-up.</b> Each electron lands as one localised dot (bottom), its position drawn at random from $|\\Psi|^2$. No single dot shows a fringe — yet thousands of independent arrivals reconstruct the continuous interference curve (top). The curve is $|\\Psi|^2$; the dots are measurement.',
+   '<span><i class="fill" style="background:var(--prob)"></i>|Ψ|² intensity</span><span><i class="fill" style="background:var(--prob)"></i>detected electrons</span>')}
+
+ ${tp('What was the particle doing before you looked?')}
+ <p>Three historical answers — you should be able to name and separate them:</p>
+ <ul>
+   <li><strong>Realist / hidden-variable:</strong> it had a definite position all along; $\\Psi$ is just incomplete knowledge.</li>
+   <li><strong>Orthodox / Copenhagen:</strong> it had no definite position; the measurement <em>forced</em> one into being.</li>
+   <li><strong>Agnostic:</strong> asking is meaningless — only measured outcomes are physics.</li>
+ </ul>
+ <p><strong>Bell (1964)</strong> turned this from philosophy into experiment: any local hidden-variable theory must obey an inequality that quantum mechanics violates. Experiments see the violation, so the realist/local option is dead. The orthodox view stands (with non-local alternatives like pilot-wave or many-worlds surviving).</p>
+
+ ${tp('Collapse &mdash; the second law of motion')}
+ <div class="note"><div class="nh">collapse — the second law of motion</div>Measure position and get $x=C$; measure again immediately and you must get $C$ again. So the act of measuring <strong>collapses</strong> $\\Psi$ to a spike at $C$. Quantum evolution therefore has <em>two</em> rules: (1) smooth, deterministic, unitary Schrödinger flow between measurements; (2) abrupt, random collapse at a measurement. They could not be more different.</div>
+
+ ${chk(
+   'In the double-slit experiment run one electron at a time, an interference pattern still forms. What is interfering with what — and why doesn\'t a single electron show a fringe?',
+   '<p>Each electron\'s <em>own</em> wave function passes through both slits and interferes <strong>with itself</strong>; that is what makes $|\\Psi|^2$ a fringed density. But a single electron is <em>detected</em> once, as one localised dot whose position is a random draw from $|\\Psi|^2$. One draw can\'t reveal a distribution — only the accumulated statistics of many independent electrons reconstruct the fringe pattern. Interference is in the amplitude; the pattern is in the ensemble.</p>')}
+`},
+
+{id:'m1-probability',mod:'Module I',modName:'The Wave Function',modClass:'m1',
+ title:'Probability, means &amp; spread',short:'Probability theory',est:'~16 min',
+ body:`
+ ${carry(
+   ['Mean of data $=\\frac{1}{N}\\sum x_i$; simple averages',
+    'Reading area under a graph as a total',
+    'Mode = most frequent, median = middle value'],
+   ['Expectation as a probability-weighted sum / integral',
+    'Variance $\\sigma^2=\\langle x^2\\rangle-\\langle x\\rangle^2$ as the working formula',
+    'Continuous densities $\\rho(x)$ with $dP=\\rho\\,dx$'])}
+
+ ${tp('Discrete distributions &amp; expectation')}
+ <p>Everything statistical about $\\Psi$ reduces to two moves you already half-know. For a discrete variable $j$ with probabilities $P(j)=N(j)/N$:</p>
+ $$\\langle j\\rangle=\\sum_j jP(j),\\qquad \\langle f(j)\\rangle=\\sum_j f(j)P(j)$$
+
+ ${lad('The variance identity — derive it once, use it forever',[
+   {why:'Definition: variance is the mean squared deviation from the mean.',
+    m:'$$\\sigma^2\\equiv\\big\\langle(\\Delta j)^2\\big\\rangle=\\sum_j (j-\\langle j\\rangle)^2P(j)$$'},
+   {why:'Expand the square inside the sum.',
+    m:'$$=\\sum_j\\big(j^2-2j\\langle j\\rangle+\\langle j\\rangle^2\\big)P(j)$$'},
+   {why:'$\\langle j\\rangle$ is a constant — pull it out of each sum; $\\sum P=1$.',
+    m:'$$=\\langle j^2\\rangle-2\\langle j\\rangle\\langle j\\rangle+\\langle j\\rangle^2$$'},
+   {why:'Collect. This is the form you actually compute with.',
+    m:'$$\\boxed{\\;\\sigma^2=\\langle j^2\\rangle-\\langle j\\rangle^2\\;}\\ \\ge 0\\ \\Rightarrow\\ \\langle j^2\\rangle\\ge\\langle j\\rangle^2$$'}
+ ])}
+
+ ${tp('Continuous densities')}
+ <p>For a <strong>continuous</strong> variable the sums become integrals with a density $\\rho(x)$, where $dP=\\rho(x)\\,dx$:</p>
+ $$\\int_{-\\infty}^{\\infty}\\rho\\,dx=1,\\quad \\langle x\\rangle=\\int x\\rho\\,dx,\\quad \\sigma^2=\\langle x^2\\rangle-\\langle x\\rangle^2$$
+
+ ${fig('rock',
+   '<b>A classical density you can check by hand.</b> A rock dropped from height $h$, photographed at random times, is found at depth $x$ with density $\\rho(x)=1/(2\\sqrt{hx})$ — it piles up near the top because it moves slowest there. The mean depth sits at $\\langle x\\rangle=h/3$, well above the midpoint. Same machinery will give $\\langle x\\rangle$ from $|\\Psi|^2$.',
+   '<span><i class="fill" style="background:var(--prob)"></i>ρ(x)</span><span><i style="border-color:var(--pos)"></i>⟨x⟩ = h/3</span>')}
+
+ ${chk(
+   'A distribution has $\\sigma=0$. What does that force about $\\langle x^2\\rangle$ and $\\langle x\\rangle$, and what does it mean physically?',
+   '<p>$\\sigma^2=\\langle x^2\\rangle-\\langle x\\rangle^2=0\\Rightarrow \\langle x^2\\rangle=\\langle x\\rangle^2$. Zero variance means <strong>no spread</strong>: every measurement gives the same value — a perfectly sharp, deterministic distribution (a spike). The inequality $\\langle x^2\\rangle\\ge\\langle x\\rangle^2$ becomes an equality only in this degenerate case. This is the exact template for “a state with definite energy has $\\sigma_H=0$,” which you\'ll meet in Module II.</p>')}
+`},
+
+{id:'m1-normalization',mod:'Module I',modName:'The Wave Function',modClass:'m1',
+ title:'Normalization &amp; its survival',short:'Normalization',est:'~16 min',
+ body:`
+ ${carry(
+   ['Total probability must be 1',
+    'A differential equation can be scaled by any constant and still hold',
+    'Definite integrals as areas'],
+   ['Square-integrability $\\Psi\\in L^2$ as the price of admission',
+    'The global phase $e^{i\\theta}$ is physically invisible',
+    'Normalization, once true, stays true for all time — provable'])}
+
+ ${tp('Normalization &amp; square-integrability')}
+ <p>The particle is <em>somewhere</em>, so the total area under $|\\Psi|^2$ must be one:</p>
+ $$\\int_{-\\infty}^{\\infty}|\\Psi(x,t)|^2\\,dx=1$$
+ <p>The Schrödinger equation is linear and homogeneous, so if $\\Psi$ is a solution so is $A\\Psi$. That freedom is exactly what you spend to enforce normalization: choose $|A|$ so the area is 1. Only states with <strong>finite</strong> area ($\\Psi\\in L^2$) can be normalized — a non-square-integrable function cannot describe a single localized particle. Normalization fixes $|A|$ but leaves an unmeasurable overall phase $e^{i\\theta}$.</p>
+
+ ${tp('Does normalization survive in time?')}
+ <div class="note pitfall"><div class="nh">the worry Born\'s rule creates</div>You fix the area to 1 at $t=0$. But $\\Psi$ then evolves. What stops the area from drifting to $0.9$ or $1.2$ later and wrecking the probability interpretation? Nothing — <em>unless</em> the equation itself conserves it. It does, and here is the proof.</div>
+
+ ${lad('Normalization is conserved in time',[
+   {why:'Differentiate the total probability; the time derivative slips inside the integral.',
+    m:'$$\\frac{d}{dt}\\int_{-\\infty}^{\\infty}|\\Psi|^2dx=\\int_{-\\infty}^{\\infty}\\frac{\\partial}{\\partial t}(\\Psi^{*}\\Psi)\\,dx$$'},
+   {why:'Product rule on $\\Psi^*\\Psi$.',
+    m:'$$\\frac{\\partial}{\\partial t}|\\Psi|^2=\\Psi^{*}\\frac{\\partial\\Psi}{\\partial t}+\\frac{\\partial\\Psi^{*}}{\\partial t}\\Psi$$'},
+   {why:'Substitute $\\partial_t\\Psi$ from Schrödinger and its conjugate (real $V$). The potential terms cancel.',
+    m:'$$\\frac{\\partial}{\\partial t}|\\Psi|^2=\\frac{i\\hbar}{2m}\\Big(\\Psi^{*}\\frac{\\partial^2\\Psi}{\\partial x^2}-\\frac{\\partial^2\\Psi^{*}}{\\partial x^2}\\Psi\\Big)$$'},
+   {why:'The bracket is a perfect $x$-derivative — this is the key trick.',
+    m:'$$=\\frac{\\partial}{\\partial x}\\!\\left[\\frac{i\\hbar}{2m}\\Big(\\Psi^{*}\\frac{\\partial\\Psi}{\\partial x}-\\frac{\\partial\\Psi^{*}}{\\partial x}\\Psi\\Big)\\right]$$'},
+   {why:'Integrate over all space — a total derivative gives boundary values only.',
+    m:'$$\\frac{d}{dt}\\!\\int|\\Psi|^2dx=\\frac{i\\hbar}{2m}\\Big[\\Psi^{*}\\Psi_x-\\Psi^{*}_x\\Psi\\Big]_{-\\infty}^{\\infty}$$'},
+   {why:'A normalizable $\\Psi$ (and its slope) must vanish at $\\pm\\infty$.',
+    m:'$$\\frac{d}{dt}\\int_{-\\infty}^{\\infty}|\\Psi|^2dx=0\\quad\\checkmark$$'}
+ ])}
+
+ ${chk(
+   'Two different wave functions, $\\Psi$ and $\\Psi\\,e^{i\\theta}$ with $\\theta$ a real constant, are handed to you. Are they physically distinguishable? Where in the derivation above did this freedom appear?',
+   '<p><strong>No.</strong> $|\\Psi e^{i\\theta}|^2=\\Psi^*e^{-i\\theta}\\Psi e^{i\\theta}=|\\Psi|^2$, so every probability and every expectation value is identical — a constant global phase is unobservable. It is the same freedom that survived normalization: fixing the area pins down $|A|$ but never the phase of $A$. (Careful: a <em>relative</em> phase between two superposed pieces, e.g. $\\psi_1+e^{i\\theta}\\psi_2$, is very much physical — that is interference. Only the single overall phase is free.)</p>')}
+`},
+
+{id:'m1-momentum',mod:'Module I',modName:'The Wave Function',modClass:'m1',
+ title:'Momentum &amp; operators',short:'Momentum &amp; operators',est:'~18 min',
+ body:`
+ ${carry(
+   ['$p=mv$, and $v=dx/dt$',
+    'de Broglie $\\lambda=h/p$ from +2 modern physics',
+    'Differentiation under an integral, integration by parts'],
+   ['Observables become <em>operators</em> sandwiched in $\\Psi^*(\\ldots)\\Psi$',
+    '$\\hat p=-i\\hbar\\,\\partial_x$ — momentum is a derivative',
+    'A conserved probability <em>current</em> $J$ obeying continuity'])}
+
+ ${tp('Expectation of position')}
+ <p>The average position is the density-weighted mean:</p>
+ $$\\langle x\\rangle=\\int_{-\\infty}^{\\infty}x\\,|\\Psi|^2\\,dx$$
+ <p>This is <em>not</em> “the average of repeated measurements on one particle” (the first measurement collapses the state). It is the average over an ensemble of identically prepared systems. Now watch how momentum falls out when we ask how $\\langle x\\rangle$ moves.</p>
+
+ ${lad('From $d\\langle x\\rangle/dt$ to the momentum operator',[
+   {why:'Differentiate $\\langle x\\rangle$; use the conservation identity $\\partial_t|\\Psi|^2=-\\partial_x J$ from the last section.',
+    m:'$$\\frac{d\\langle x\\rangle}{dt}=\\int x\\,\\frac{\\partial|\\Psi|^2}{\\partial t}\\,dx=\\frac{i\\hbar}{2m}\\int x\\,\\partial_x\\!\\Big(\\Psi^{*}\\Psi_x-\\Psi^{*}_x\\Psi\\Big)dx$$'},
+   {why:'Integrate by parts; boundary terms vanish at infinity.',
+    m:'$$=-\\frac{i\\hbar}{2m}\\int\\Big(\\Psi^{*}\\Psi_x-\\Psi^{*}_x\\Psi\\Big)dx$$'},
+   {why:'A second by-parts on the second term folds it onto the first.',
+    m:'$$\\frac{d\\langle x\\rangle}{dt}=-\\frac{i\\hbar}{m}\\int\\Psi^{*}\\,\\frac{\\partial\\Psi}{\\partial x}\\,dx$$'},
+   {why:'Define $\\langle p\\rangle=m\\,d\\langle x\\rangle/dt$. Read off the operator sitting between $\\Psi^*$ and $\\Psi$.',
+    m:'$$\\langle p\\rangle=\\int\\Psi^{*}\\Big(-i\\hbar\\frac{\\partial}{\\partial x}\\Big)\\Psi\\,dx\\ \\Rightarrow\\ \\boxed{\\hat p=-i\\hbar\\,\\partial_x}$$'}
+ ])}
+
+ ${tp('Operators for any observable')}
+ <p>The pattern generalises. Position is the operator “multiply by $x$”; momentum is “$-i\\hbar\\,\\partial_x$”. Any classical observable $Q(x,p)$ becomes $\\hat Q=Q(x,-i\\hbar\\partial_x)$, and</p>
+ $$\\langle Q\\rangle=\\int\\Psi^{*}\\,\\hat Q\\,\\Psi\\,dx,\\qquad \\hat T=\\frac{\\hat p^2}{2m}=-\\frac{\\hbar^2}{2m}\\partial_x^2$$
+
+ ${tp('The probability current <span class="tag">continuity</span>')}
+ <p>The perfect-derivative bracket from the normalization proof has a name. Define</p>
+ $$J(x,t)=\\frac{i\\hbar}{2m}\\Big(\\Psi\\,\\partial_x\\Psi^{*}-\\Psi^{*}\\,\\partial_x\\Psi\\Big)=\\frac{\\hbar}{m}\\,\\mathrm{Im}\\!\\Big(\\Psi^{*}\\partial_x\\Psi\\Big)$$
+ <p>and probability obeys a <strong>continuity equation</strong>, exactly like charge or fluid:</p>
+ $$\\frac{\\partial\\rho}{\\partial t}+\\frac{\\partial J}{\\partial x}=0,\\qquad \\frac{dP_{ab}}{dt}=J(a,t)-J(b,t)$$
+ <p>Probability isn\'t created or destroyed; it <em>flows</em>. $J(a)-J(b)$ is what leaks in at $a$ minus what leaks out at $b$.</p>
+
+ ${chk(
+   'For a real wave function times a time phase, $\\Psi(x,t)=\\psi(x)e^{-i\\omega t}$ with $\\psi$ real, what is the probability current $J$? Interpret it.',
+   '<p>$\\Psi^*\\partial_x\\Psi=\\psi e^{i\\omega t}\\,\\psi\'e^{-i\\omega t}=\\psi\\psi\'$, which is <strong>real</strong>, so $\\mathrm{Im}(\\Psi^*\\partial_x\\Psi)=0$ and $J=0$ everywhere. A real spatial wave function carries <em>no</em> probability flow — it is a standing state, not a travelling one. This is why bound states (which can be chosen real) have $\\langle p\\rangle=0$: nothing is going anywhere on average. Travelling states like $e^{ikx}$ have a complex $\\psi$ and a nonzero $J=\\tfrac{\\hbar k}{m}|A|^2=v\\rho$.</p>')}
+`},
+
+{id:'m1-uncertainty',mod:'Module I',modName:'The Wave Function',modClass:'m1',
+ title:'The uncertainty principle',short:'Uncertainty principle',est:'~14 min',
+ body:`
+ ${carry(
+   ['de Broglie $\\lambda=h/p$: momentum ↔ wavelength',
+    'A pure sine wave has one wavelength but no location',
+    'Fourier idea: sharp pulses need many frequencies'],
+   ['Position spread × momentum spread has a hard floor',
+    '$\\sigma_x\\sigma_p\\ge\\hbar/2$ — not a measurement clumsiness, a property of $\\Psi$',
+    'Squeezing one spread necessarily inflates the other'])}
+
+ ${tp('The Fourier width theorem')}
+ <p>A wave packet cannot be both spatially sharp and single-wavelength — that is a theorem about Fourier pairs, not about clumsy apparatus. A localized pulse is built from a broad band of wavenumbers $k$; a single-$k$ wave is spread over all space. Through de Broglie $p=\\hbar k$, a spread in $k$ <em>is</em> a spread in momentum. Quantitatively,</p>
+ $$\\boxed{\\;\\sigma_x\\,\\sigma_p\\ge\\frac{\\hbar}{2}\\;}$$
+ <p>with $\\sigma_x=\\sqrt{\\langle x^2\\rangle-\\langle x\\rangle^2}$ and likewise for $p$. This is a floor on the <em>product</em>: make the particle well-localized and its momentum becomes correspondingly uncertain, and vice versa.</p>
+
+ ${fig('unc',
+   '<b>A Fourier pair, live.</b> Left is $|\\Psi(x)|^2$ (position); right is $|\\Phi(p)|^2$ (momentum). Watch them trade: as the position packet narrows, the momentum packet fattens, and the product $\\sigma_x\\sigma_p$ never dips below $\\hbar/2$. A Gaussian is the equality case — the minimum-uncertainty state.',
+   '<span><i class="fill" style="background:var(--pos)"></i>|Ψ(x)|²</span><span><i class="fill" style="background:var(--neg)"></i>|Φ(p)|²</span>')}
+
+ ${tp('Minimum-uncertainty states')}
+ <div class="note key"><div class="nh">exam framing</div>The floor is <em>saturated</em> ($=\\hbar/2$) only by a Gaussian wave packet. Any other shape gives a strictly larger product. You\'ll verify both cases in the problems: the Gaussian $Ae^{-amx^2/\\hbar}$ hits $\\hbar/2$ exactly, while a parabolic bump $A(a^2-x^2)$ gives $\\sqrt{5/14}\\,\\hbar\\approx0.598\\hbar>\\hbar/2$.</div>
+
+ ${chk(
+   'A student says “$\\sigma_x\\sigma_p\\ge\\hbar/2$ just means my detector disturbs the particle when I measure it.” Correct them in one or two sentences.',
+   '<p>It is <strong>not</strong> a statement about measurement disturbance. $\\sigma_x$ and $\\sigma_p$ are properties of the state $\\Psi$ itself — they are computed from $\\Psi$ before anyone measures anything. Even a perfectly gentle, ideal apparatus faces the floor, because a $\\Psi$ that is narrow in $x$ is <em>mathematically forced</em> (by Fourier) to be broad in $p$. The disturbance idea (Heisenberg\'s microscope) is a heuristic; the real content is the Fourier width theorem, made precise for any two observables by the general uncertainty relation.</p>')}
+`},
+
+/* ═══════════════════ MODULE I · PROBLEM SET ═══════════════════ */
+{id:'m1-problems',mod:'Module I',modName:'The Wave Function',modClass:'m1',
+ title:'Worked problems — Module I',short:'Problems I',est:'~40 min',
+ body:`
+ <p class="lead">Every problem is laid out the way you should attack it in the exam: first the <span style="color:var(--neg)">theory you must have ready</span> (things the question won\'t give you), then the <span style="color:var(--pos)">solution</span> expanded to +2 level, then a <span style="color:var(--neg)">practice twin</span> with no answer. Do the twin cold before moving on — interleave them into your morning block.</p>
+
+ ${tp('Statistical interpretation')}
+ ${prob('Ex 1.1','Electron interference &amp; the statistical reading',
+   pth('<p>de Broglie $\\lambda=h/p$ is tiny for electrons, so slit spacing must be atomic. $|\\Psi|^2$ is a probability density; each detection is one localized event.</p>')+
+   psol('<p><strong>Demonstration:</strong> two-slit interference with atomic crystal planes (Davisson–Germer) or an electrostatic biprism supplies slits fine enough for the tiny $\\lambda$.</p><p><strong>Reconciliation:</strong> lower the beam to one electron at a time. Each arrives as a single dot — unpredictable individually, governed only by $|\\Psi|^2$. Each electron\'s wave passes through both slits and interferes with itself. Accumulate thousands of independent arrivals and the fringe pattern set by $|\\Psi|^2$ emerges. Particle on detection, wave in propagation.</p>')+
+   prac('<p>Thermal neutrons ($\\lambda=0.18$ nm) hit a double slit $d=1.0\\,\\mu$m. (1) How does the recorded pattern change as flux drops from $10^6$/s to $1$/min? (2) If a non-destructive which-path detector is placed at one slit, what happens to the accumulated pattern?</p>'))}
+
+ ${tp('Probability &amp; distributions')}
+ ${prob('1.1','Age distribution — mean, variance, the $\\sigma$ identity',
+   pth('<p>$\\langle j\\rangle=\\sum jP(j)$, $\\langle j^2\\rangle=\\sum j^2P(j)$, and the two routes to spread: $\\sigma^2=\\sum(\\Delta j)^2P(j)=\\langle j^2\\rangle-\\langle j\\rangle^2$. Mode = most frequent; median = middle of the ordered list.</p>')+
+   psol('<p>Ages: one 14, one 15, three 16, two 22, two 24, five 25; $N=14$.</p><p>$\\langle j\\rangle=\\frac{14+15+48+44+48+125}{14}=\\frac{294}{14}=21$.</p><p>$\\langle j^2\\rangle=\\frac{196+225+768+968+1152+3125}{14}=\\frac{6434}{14}\\approx459.6$, and $\\langle j\\rangle^2=441$.</p><p>Deviation route: $\\sigma^2=\\frac{1(49)+1(36)+3(25)+2(1)+2(9)+5(16)}{14}=\\frac{260}{14}=\\frac{130}{7}$, so $\\sigma=\\sqrt{130/7}\\approx4.31$.</p><p>Check: $\\sqrt{459.6-441}=\\sqrt{130/7}\\approx4.31\\ \\checkmark$. Mode $=25$, median $=(22+24)/2=23$.</p>')+
+   prac('<p>20 particles have energies: 2 at $E{=}1$, 5 at $2$, 7 at $4$, 4 at $5$, 2 at $8$. Find $P(E)$, the mode/median/mean, $\\langle E^2\\rangle$, and $\\sigma_E$ by both routes.</p>'))}
+
+ ${prob('Ex 1.2','Falling rock — a continuous density from a trajectory',
+   pth('<p>Uniform-in-time sampling: $dP=dt/T$. Convert to $x$ with $x=\\tfrac12gt^2$ so $dt=dx/\\sqrt{2gx}$, $T=\\sqrt{2h/g}$. Then $\\langle x\\rangle=\\int x\\rho\\,dx$.</p>')+
+   psol('<p>$\\rho(x)\\,dx=\\dfrac{dt}{T}=\\dfrac{dx/\\sqrt{2gx}}{\\sqrt{2h/g}}=\\dfrac{dx}{2\\sqrt{hx}}$, so $\\rho(x)=\\dfrac{1}{2\\sqrt{hx}}$ on $[0,h]$.</p><p>Normalize: $\\int_0^h\\frac{dx}{2\\sqrt{hx}}=\\frac{1}{2\\sqrt h}\\,[2\\sqrt x]_0^h=1\\ \\checkmark$.</p><p>$\\langle x\\rangle=\\frac{1}{2\\sqrt h}\\int_0^h\\sqrt x\\,dx=\\frac{1}{2\\sqrt h}\\cdot\\frac{2}{3}h^{3/2}=\\dfrac{h}{3}$ — biased toward the top, where it dawdles.</p>')+
+   prac('<p>A particle launched at $v_0$ decelerates uniformly at $a$, stopping at $L=v_0^2/2a$, sampled uniformly in time. Build $\\rho(x)$ on $[0,L]$, check normalization, and find $\\langle x\\rangle$.</p>'))}
+
+ ${prob('1.3','Gaussian distribution — normalize &amp; find the spread',
+   pth('<p>Gaussian integrals: $\\int_{-\\infty}^{\\infty}e^{-\\lambda u^2}du=\\sqrt{\\pi/\\lambda}$, $\\int u^2e^{-\\lambda u^2}du=\\tfrac{1}{2\\lambda}\\sqrt{\\pi/\\lambda}$, odd integrand $\\to0$. Shift $u=x-a$.</p>')+
+   psol('<p>$\\rho=Ae^{-\\lambda(x-a)^2}$. Normalize: $A\\sqrt{\\pi/\\lambda}=1\\Rightarrow A=\\sqrt{\\lambda/\\pi}$.</p><p>$\\langle x\\rangle=a$ (the odd part integrates to zero, the constant $a$ survives). $\\langle x^2\\rangle=a^2+\\tfrac{1}{2\\lambda}$.</p><p>$\\sigma=\\sqrt{\\langle x^2\\rangle-\\langle x\\rangle^2}=\\dfrac{1}{\\sqrt{2\\lambda}}$ — a bell centered at $a$, inflection at $a\\pm\\sigma$.</p>')+
+   prac('<p>Rayleigh density $\\rho(x)=Cxe^{-\\beta x^2}$ for $x\\ge0$. Find $C$, then $\\langle x\\rangle,\\langle x^2\\rangle,\\sigma$.</p>'))}
+
+ ${tp('Normalization problems')}
+ ${prob('1.4','Triangular wave function — normalize, most-likely $x$, $\\langle x\\rangle$',
+   pth('<p>Piecewise $|\\Psi|^2$ integrated over each leg. Most-likely $x$ = peak of $|\\Psi|^2$. Probability-left $=\\int_0^a|\\Psi|^2dx$. Use $u=b-x$ on the second leg.</p>')+
+   psol('<p>$\\Psi=A\\tfrac{x}{a}$ on $[0,a]$, $A\\tfrac{b-x}{b-a}$ on $[a,b]$. $\\int|\\Psi|^2=A^2(\\tfrac a3+\\tfrac{b-a}{3})=A^2\\tfrac b3=1\\Rightarrow A=\\sqrt{3/b}$.</p><p>Peak of $|\\Psi|^2$ at $x=a$ → most likely there. $P(x&lt;a)=A^2\\tfrac a3=\\dfrac ab$ (checks: $b{=}a\\to1$, $b{=}2a\\to\\tfrac12$).</p><p>$\\langle x\\rangle=\\dfrac{2a+b}{4}$ after integrating each leg.</p>')+
+   prac('<p>$\\Psi=C(a-|x|)$ on $[-a,a]$. Find $C$; find $P(|x|&lt;a/2)$; find $\\langle x\\rangle,\\langle x^2\\rangle$.</p>'))}
+
+ ${prob('1.5','Exponential state $Ae^{-\\lambda|x|}e^{-i\\omega t}$ — moments',
+   pth('<p>$\\int_0^\\infty x^n e^{-2\\lambda x}dx=\\dfrac{n!}{(2\\lambda)^{n+1}}$. Even/odd symmetry kills $\\langle x\\rangle$. Outside-range probability by symmetry $=e^{-2\\lambda\\sigma_x}$.</p>')+
+   psol('<p>$|\\Psi|^2=A^2e^{-2\\lambda|x|}$; $\\int=A^2/\\lambda=1\\Rightarrow A=\\sqrt\\lambda$. $\\langle x\\rangle=0$. $\\langle x^2\\rangle=2\\lambda\\cdot\\dfrac{2}{(2\\lambda)^3}=\\dfrac{1}{2\\lambda^2}$, so $\\sigma_x=\\dfrac{1}{\\sqrt2\\,\\lambda}$.</p><p>$P_{\\text{out}}=2\\int_{\\sigma_x}^\\infty\\lambda e^{-2\\lambda x}dx=e^{-2\\lambda\\sigma_x}=e^{-\\sqrt2}\\approx0.243$.</p>')+
+   prac('<p>$\\Psi(x,0)=Bxe^{-\\alpha x}$ for $x\\ge0$. Normalize ($B$), find $\\langle x\\rangle,\\langle x^2\\rangle,\\sigma_x$, and $P(x>\\langle x\\rangle+\\sigma_x)$.</p>'))}
+
+ ${tp('Momentum, operators &amp; current')}
+ ${prob('1.7','Ehrenfest for momentum — $\\frac{d\\langle p\\rangle}{dt}=\\langle-\\partial_xV\\rangle$',
+   pth('<p>$\\langle p\\rangle=\\int\\Psi^*(-i\\hbar\\partial_x)\\Psi$. Differentiate in $t$, substitute $\\partial_t\\Psi$ from Schrödinger, integrate by parts. Kinetic terms cancel; product rule on $\\partial_x(V\\Psi)$ leaves the force.</p>')+
+   psol('<p>The kinetic block gives two by-parts integrals that cancel identically ($I_T=0$). The potential block: $\\int[V\\Psi^*\\Psi_x-\\Psi^*\\partial_x(V\\Psi)]$; expand $\\partial_x(V\\Psi)=V_x\\Psi+V\\Psi_x$, the $V\\Psi_x$ pieces cancel, leaving $\\int\\Psi^*(-V_x)\\Psi=\\langle-\\partial_xV\\rangle$.</p><p>So $\\dfrac{d\\langle p\\rangle}{dt}=\\Big\\langle-\\dfrac{\\partial V}{\\partial x}\\Big\\rangle$ — Newton\'s second law for the averages.</p>')+
+   prac('<p>Use Ehrenfest to get $\\tfrac{d\\langle p\\rangle}{dt}$ for (1) the SHO $V=\\tfrac12 m\\omega^2x^2$ (in terms of $\\langle x\\rangle$), and (2) a free particle — name the conservation law.</p>'))}
+
+ ${tp('Uncertainty problems')}
+ ${prob('1.9','Gaussian state $Ae^{-a(mx^2/\\hbar+it)}$ — saturating $\\hbar/2$',
+   pth('<p>Find $V$ by plugging into Schrödinger. Moments from Gaussian integrals with $\\beta=2am/\\hbar$. $\\langle p^2\\rangle=-\\hbar^2\\int\\Psi^*\\Psi_{xx}$.</p>')+
+   psol('<p>$A=(2am/\\pi\\hbar)^{1/4}$. Plugging in gives $V(x)=2ma^2x^2=\\tfrac12 m\\omega^2x^2$ with $\\omega=2a$ (an SHO).</p><p>$\\langle x\\rangle=\\langle p\\rangle=0$; $\\langle x^2\\rangle=\\dfrac{\\hbar}{4am}$, $\\langle p^2\\rangle=am\\hbar$.</p><p>$\\sigma_x\\sigma_p=\\sqrt{\\tfrac{\\hbar}{4am}}\\sqrt{am\\hbar}=\\dfrac{\\hbar}{2}$ — the Gaussian saturates the uncertainty floor exactly.</p>')+
+   prac('<p>$\\Psi(x,0)=Be^{-\\beta x^2}e^{ik_0x}$. Find $B$; $\\langle x\\rangle,\\langle x^2\\rangle,\\langle p\\rangle,\\langle p^2\\rangle$; and show $\\sigma_x\\sigma_p$ still saturates $\\hbar/2$ (the $k_0$ boost shifts $\\langle p\\rangle$ but not the spreads).</p>'))}
+
+ ${prob('1.16','Parabolic bump $A(a^2-x^2)$ — a state that beats $\\hbar/2$',
+   pth('<p>$\\langle p^2\\rangle=\\hbar^2\\int|\\Psi_x|^2$ (by parts, since $\\Psi(\\pm a)=0$). Even real $\\Psi\\Rightarrow\\langle x\\rangle=\\langle p\\rangle=0$.</p>')+
+   psol('<p>$A=\\sqrt{15/16a^5}$. $\\langle x^2\\rangle=\\dfrac{a^2}{7}$ so $\\sigma_x=\\dfrac{a}{\\sqrt7}$. $\\langle p^2\\rangle=\\dfrac{5\\hbar^2}{2a^2}$ so $\\sigma_p=\\dfrac{\\hbar}{a}\\sqrt{5/2}$.</p><p>$\\sigma_x\\sigma_p=\\hbar\\sqrt{5/14}\\approx0.598\\hbar>\\dfrac\\hbar2\\ \\checkmark$ — consistent, and strictly above the Gaussian floor because the shape isn\'t Gaussian.</p>')+
+   prac('<p>$\\Psi(x,0)=C\\cos(\\pi x/2L)$ on $[-L,L]$. Find $C$, all four moments, and $\\sigma_x\\sigma_p$.</p>'))}
+
+ ${prob('1.18','de Broglie thermal wavelength — when is matter “quantum”?',
+   pth('<p>Quantum regime when $\\lambda_{\\text{th}}=\\dfrac{h}{\\sqrt{3mk_BT}}>d$ (interparticle spacing) $\\Rightarrow T&lt;\\dfrac{h^2}{3mk_Bd^2}$.</p>')+
+   psol('<p>Conduction electrons, $d\\approx0.3$ nm: $T&lt;\\dfrac{h^2}{3m_ek_Bd^2}\\approx1.3\\times10^5$ K — always quantum. Silicon nuclei are $\\sim5\\times10^4\\times$ heavier: $T<2.5$ K — classical except near absolute zero. For a gas, $d=(k_BT/P)^{1/3}$ gives $T&lt;\\dfrac{1}{k_B}\\big(\\tfrac{h^2}{3m}\\big)^{3/5}P^{2/5}$; helium at 1 atm $\\approx3$ K (near its liquefaction). Interstellar H: $\\lambda\\sim0.5$ nm $\\ll d\\sim1$ cm — classical.</p>')+
+   prac('<p>Neutron star: $\\rho_m\\approx4\\times10^{17}$ kg/m³, $T\\approx10^7$ K. Estimate the neutron spacing $d$, the thermal $\\lambda$, and decide if the neutrons are degenerate.</p>'))}
+`},
+
+/* ═══════════════════ MODULE II ═══════════════════ */
+{id:'m2-tise',mod:'Module II',modName:'Stationary States, Wells &amp; Barriers',modClass:'m2',
+ title:'The time-independent equation',short:'TISE &amp; stationary states',est:'~18 min',
+ body:`
+ ${carry(
+   ['Separation of variables for PDEs (from waves / heat)',
+    'Standing waves have a fixed spatial shape × oscillating phase',
+    'An eigenvalue problem: operator × function = number × function'],
+   ['When $V=V(x)$ only, $\\Psi$ factorises into $\\psi(x)\\,\\phi(t)$',
+    'The time part is universal: $\\phi=e^{-iEt/\\hbar}$',
+    'The spatial part is the eigenvalue problem $\\hat H\\psi=E\\psi$'])}
+
+ ${tp('Separation of variables')}
+ <p>If the potential doesn\'t depend on time, the machinery collapses beautifully. Try a product $\\Psi(x,t)=\\psi(x)\\phi(t)$ in the Schrödinger equation and divide by $\\psi\\phi$:</p>
+
+ ${lad('Separation of variables',[
+   {why:'Insert the product; the $x$- and $t$-derivatives each hit only their own factor.',
+    m:'$$i\\hbar\\,\\psi\\,\\frac{d\\phi}{dt}=-\\frac{\\hbar^2}{2m}\\phi\\,\\frac{d^2\\psi}{dx^2}+V(x)\\psi\\phi$$'},
+   {why:'Divide by $\\psi\\phi$. Left side depends only on $t$, right side only on $x$.',
+    m:'$$i\\hbar\\,\\frac{1}{\\phi}\\frac{d\\phi}{dt}=-\\frac{\\hbar^2}{2m}\\frac{1}{\\psi}\\frac{d^2\\psi}{dx^2}+V(x)$$'},
+   {why:'A function of $t$ equalling a function of $x$ forces both to be the same constant, call it $E$.',
+    m:'$$i\\hbar\\frac{1}{\\phi}\\frac{d\\phi}{dt}=E \\;\\Rightarrow\\; \\phi(t)=e^{-iEt/\\hbar}$$'},
+   {why:'The spatial half is the time-independent Schrödinger equation — an eigenvalue problem.',
+    m:'$$-\\frac{\\hbar^2}{2m}\\frac{d^2\\psi}{dx^2}+V(x)\\psi=E\\psi\\;\\Leftrightarrow\\;\\hat H\\psi=E\\psi$$'}
+ ])}
+
+ ${tp('Why these are called <em>stationary</em> states')}
+ <p>For a separable solution $\\Psi=\\psi(x)e^{-iEt/\\hbar}$, the time phase cancels in every physical quantity:</p>
+ <ul>
+   <li><strong>Density is frozen:</strong> $|\\Psi|^2=\\psi^*e^{+iEt/\\hbar}\\psi e^{-iEt/\\hbar}=|\\psi(x)|^2$ — no time dependence.</li>
+   <li><strong>Every expectation value is constant;</strong> in particular $\\langle x\\rangle$ is fixed so $\\langle p\\rangle=m\\,d\\langle x\\rangle/dt=0$.</li>
+   <li><strong>Energy is sharp:</strong> $\\langle H\\rangle=E$, $\\langle H^2\\rangle=E^2$, so $\\sigma_H^2=E^2-E^2=0$ — a stationary state has a <em>definite</em> energy, measured with certainty.</li>
+ </ul>
+
+ ${tp('The master formula: superposition')}
+ <div class="note key"><div class="nh">the master formula</div>Because the equation is linear, the general solution is a superposition of stationary states, each carrying its own phase clock:
+ $$\\Psi(x,t)=\\sum_n c_n\\,\\psi_n(x)\\,e^{-iE_nt/\\hbar},\\qquad c_n=\\int\\psi_n^*(x)\\,\\Psi(x,0)\\,dx$$
+ with $|c_n|^2=$ probability of measuring energy $E_n$, $\\sum|c_n|^2=1$, and $\\langle H\\rangle=\\sum|c_n|^2E_n$. Solve one potential $\\to$ get $\\{\\psi_n,E_n\\}\\to$ evolve <em>anything</em>.</div>
+
+ ${chk(
+   'A stationary state has $\\sigma_H=0$. Show in one line why, and state what a measurement of energy on it would give.',
+   '<p>$\\sigma_H^2=\\langle H^2\\rangle-\\langle H\\rangle^2$. For $\\hat H\\psi=E\\psi$: $\\langle H\\rangle=\\int\\psi^*\\hat H\\psi=E\\int|\\psi|^2=E$, and $\\langle H^2\\rangle=\\int\\psi^*\\hat H^2\\psi=E^2$. So $\\sigma_H^2=E^2-E^2=0$. Every energy measurement returns the <strong>same</strong> value $E$ with certainty — the defining feature of a state of definite energy. (Superpose two of them and energy is no longer sharp: you\'d get $E_1$ or $E_2$ with probabilities $|c_1|^2,|c_2|^2$.)</p>')}
+`},
+
+{id:'m2-theorems',mod:'Module II',modName:'Stationary States, Wells &amp; Barriers',modClass:'m2',
+ title:'General theorems for 1-D',short:'1-D theorems',est:'~14 min',
+ body:`
+ ${carry(
+   ['Even/odd (parity) of functions from +2 graphs',
+    'A second-order ODE has two independent solutions',
+    'Concavity: sign of $\\psi\'\'$ vs sign of $\\psi$'],
+   ['Six structural facts that hold for <em>any</em> 1-D $V(x)$',
+    'Bound states in 1-D are non-degenerate and can be made real',
+    'The node theorem: the $n$-th state has $n-1$ nodes'])}
+
+ ${tp('The six structural theorems')}
+ <p>Before solving any specific well, these theorems tell you what the answer must look like — worth memorising as a checklist.</p>
+ <ol>
+   <li><strong>$E$ is real</strong> for normalizable states (a complex $E$ would make the norm grow or decay, breaking conservation).</li>
+   <li><strong>$\\psi$ can be chosen real</strong> (non-degenerate bound states): if $\\psi$ solves it, so does $\\psi^*$, and real combinations $\\psi+\\psi^*$, $i(\\psi-\\psi^*)$ do too.</li>
+   <li><strong>Definite parity</strong> if $V(-x)=V(x)$: eigenstates can be taken even or odd, because $\\psi(-x)$ solves the same equation, so $\\psi(x)\\pm\\psi(-x)$ are eigenstates of definite parity.</li>
+   <li><strong>$E>V_{\\min}$</strong> always. If $E&lt;V_{\\min}$ then $\\psi\'\'$ and $\\psi$ share a sign everywhere and $\\psi$ curves away from the axis to $\\pm\\infty$ — non-normalizable.</li>
+   <li><strong>No degeneracy</strong> for 1-D bound states (no infinite barrier splitting the line into disconnected regions).</li>
+   <li><strong>Node theorem:</strong> order states by energy; the ground state has 0 internal nodes, and each higher state adds exactly one. The $n$-th state has $n-1$ zero-crossings.</li>
+ </ol>
+
+ ${tp('The node theorem')}
+ ${fig('nodes',
+   '<b>The node theorem, drawn true.</b> Four bound states stacked by energy. Count the interior zero-crossings (marked): $n{=}1$ has none, $n{=}2$ has one, $n{=}3$ has two, $n{=}4$ has three — always $n-1$. More nodes ⇒ more curvature ⇒ more kinetic energy ⇒ higher $E$. This is why counting nodes lets you order energies without solving anything.',
+   '<span><i style="border-color:var(--pos)"></i>odd n</span><span><i style="border-color:var(--neg)"></i>even n</span><span><i class="fill" style="background:var(--wall)"></i>node</span>')}
+
+ ${chk(
+   'You sketch a candidate bound-state wave function with 3 interior nodes for a symmetric well. Which excited state is it, what is its parity, and roughly where does its energy sit relative to the ground state?',
+   '<p>3 interior nodes $\\Rightarrow n-1=3\\Rightarrow n=4$: the <strong>third excited state</strong>. Counting from a ground state that (for a symmetric well) is even, parity alternates even, odd, even, odd… so $n=4$ is <strong>odd</strong> ($\\psi(-x)=-\\psi(x)$, hence $\\psi(0)=0$, consistent with a central node). Its energy is well above the ground state — more nodes means more curvature means larger $\\langle T\\rangle$, so $E_4>E_3>E_2>E_1$. You can order states purely by node count, no algebra needed.</p>')}
+`},
+
+{id:'m2-isw',mod:'Module II',modName:'Stationary States, Wells &amp; Barriers',modClass:'m2',
+ title:'The infinite square well',short:'Infinite square well',est:'~18 min',
+ body:`
+ ${carry(
+   ['A string clamped at both ends: only certain harmonics fit',
+    'Standing wave $\\sin(n\\pi x/L)$ nodes at the walls',
+    'Boundary conditions select allowed modes'],
+   ['Confinement $\\to$ quantised energy $E_n\\propto n^2$',
+    'Zero-point energy: the ground state cannot have $E=0$',
+    'Any initial shape expands in the $\\sin$ basis'])}
+
+ ${tp('Setting up the well')}
+ <p>The cleanest quantum system: $V=0$ inside $[0,a]$ and $\\infty$ outside. Outside, $\\psi=0$. Inside, $-\\tfrac{\\hbar^2}{2m}\\psi\'\'=E\\psi$, i.e. $\\psi\'\'=-k^2\\psi$ with $k=\\sqrt{2mE}/\\hbar$.</p>
+
+ ${lad('Quantisation from two boundary conditions',[
+   {why:'General solution of $\\psi\'\'=-k^2\\psi$.',
+    m:'$$\\psi(x)=A\\sin kx+B\\cos kx$$'},
+   {why:'Continuity at the left wall, $\\psi(0)=0$, kills the cosine.',
+    m:'$$\\psi(0)=B=0\\;\\Rightarrow\\;\\psi=A\\sin kx$$'},
+   {why:'At the right wall $\\psi(a)=0$ forces $\\sin ka=0$ — this is where quantisation enters.',
+    m:'$$ka=n\\pi\\;\\Rightarrow\\;k_n=\\frac{n\\pi}{a},\\quad n=1,2,3,\\dots$$'},
+   {why:'Feed $k_n$ back into $E=\\hbar^2k^2/2m$.',
+    m:'$$\\boxed{\\,E_n=\\frac{n^2\\pi^2\\hbar^2}{2ma^2}\\,}\\quad(\\propto n^2)$$'},
+   {why:'Normalize $\\int_0^a|A|^2\\sin^2=|A|^2a/2=1$.',
+    m:'$$\\psi_n(x)=\\sqrt{\\frac{2}{a}}\\,\\sin\\!\\Big(\\frac{n\\pi x}{a}\\Big)$$'}
+ ])}
+
+ ${tp('The energy ladder E &prop; n&sup2;')}
+ ${fig('isw',
+   '<b>The ladder is not evenly spaced.</b> Walls in red; each level $E_n=n^2E_1$ drawn to scale with its wave function $\\psi_n$ riding on it. The gaps widen as $n^2$: $E_1,4E_1,9E_1,16E_1$. Note $E_1\\ne0$ — confinement forbids a resting state (that would violate uncertainty).',
+   '<span><i style="border-color:var(--pos)"></i>odd n</span><span><i style="border-color:var(--neg)"></i>even n</span><span><i class="fill" style="background:var(--wall)"></i>infinite wall</span>')}
+
+ ${fig('iswD',
+   '<b>Where the particle actually is.</b> $|\\psi_n|^2$ for the first three states. The ground state bulges at the centre; higher states carve the box into $n$ equal humps. Averaged, all give $\\langle x\\rangle=a/2$ by symmetry — but the <em>shape</em> of “likely to be found” changes completely with $n$.',
+   '<span><i style="border-color:var(--pos)"></i>|ψ₁|²</span><span><i style="border-color:var(--neg)"></i>|ψ₂|²</span><span><i style="border-color:var(--prob)"></i>|ψ₃|²</span>')}
+
+ ${tp('Why E &le; 0 is forbidden')}
+ <div class="note pitfall"><div class="nh">why $E=0$ and $E<0$ are forbidden</div>$E=0$ gives $\\psi=Ax+B$; both walls force $A=B=0$, the trivial zero. $E<0$ gives $\\psi=C\\sinh\\kappa x$ after the left wall, and $\\sinh\\kappa a\\ne0$ forces $C=0$. No normalizable state below $E_1$ — the well has a hard floor at the zero-point energy.</div>
+
+ ${chk(
+   'A general state in the well is $\\Psi(x,0)$. How do you predict the probability that an energy measurement yields $E_3$, and how does $\\Psi$ evolve afterwards if it doesn\'t collapse?',
+   '<p>Project onto the third eigenstate: $c_3=\\sqrt{\\tfrac2a}\\int_0^a\\sin(3\\pi x/a)\\,\\Psi(x,0)\\,dx$, and $P(E_3)=|c_3|^2$. In general $\\Psi(x,0)=\\sum_n c_n\\psi_n$ with $c_n=\\int\\psi_n^*\\Psi(x,0)dx$, and it evolves as $\\Psi(x,t)=\\sum_n c_n\\psi_n(x)e^{-iE_nt/\\hbar}$ — each mode just spins its own phase at rate $E_n/\\hbar$. The $|c_n|^2$ (hence $P(E_n)$ and $\\langle H\\rangle$) are frozen in time because the $c_n$ don\'t change; only the relative phases do, which is what makes $\\langle x\\rangle(t)$ oscillate.</p>')}
+`},
+
+{id:'m2-superposition',mod:'Module II',modName:'Stationary States, Wells &amp; Barriers',modClass:'m2',
+ title:'Superposition &amp; energy measurement',short:'Superposition',est:'~16 min',
+ body:`
+ ${carry(
+   ['Adding two standing waves gives beats',
+    'Orthogonality of $\\sin(n\\pi x/a)$ modes (Fourier series)',
+    'Probability of an outcome from projection'],
+   ['A two-state mix makes $\\langle x\\rangle$ oscillate at $\\omega=(E_2-E_1)/\\hbar$',
+    'Energy is no longer sharp — you get $E_1$ or $E_2$',
+    'Quantum revival: any state returns after $T_{\\text{rev}}$'])}
+
+ ${tp('The two-state mix')}
+ <p>Take the simplest non-stationary state, an equal mix of the two lowest levels: $\\Psi(x,0)=\\tfrac{1}{\\sqrt2}(\\psi_1+\\psi_2)$. Each piece carries its own phase, so</p>
+ $$|\\Psi(x,t)|^2=\\tfrac12\\psi_1^2+\\tfrac12\\psi_2^2+\\psi_1\\psi_2\\cos\\!\\Big(\\frac{E_2-E_1}{\\hbar}t\\Big)$$
+ <p>The cross term is the physics: the density <em>sloshes</em>. $\\langle x\\rangle(t)=\\tfrac a2\\big[1-\\tfrac{32}{9\\pi^2}\\cos(3\\omega t)\\big]$ with $\\omega=\\pi^2\\hbar/2ma^2$, and $\\langle p\\rangle=m\\,d\\langle x\\rangle/dt$ oscillates in quadrature.</p>
+
+ ${fig('super',
+   '<b>A quantum sloshing bob.</b> $|\\Psi(x,t)|^2$ for the $\\tfrac1{\\sqrt2}(\\psi_1+\\psi_2)$ mix. The probability hump swings side to side and the centroid $\\langle x\\rangle$ (gold line) oscillates at $3\\omega=(E_2-E_1)/\\hbar$. Superposing states is what puts <em>motion</em> back into quantum mechanics — a single stationary state never moves.',
+   '<span><i class="fill" style="background:var(--prob)"></i>|Ψ(x,t)|²</span><span><i style="border-color:var(--pos)"></i>⟨x⟩(t)</span>')}
+
+ ${tp('Energy measurement outcomes')}
+ <p>Measuring energy on this state gives $E_1$ or $E_2$, each with probability $\\tfrac12$, and $\\langle H\\rangle=\\tfrac12E_1+\\tfrac12E_2=\\tfrac52E_1$. For a general initial shape you expand in the $\\sin$ basis; e.g. the parabola $\\Psi(x,0)=Ax(a-x)$ has $c_n=\\tfrac{8\\sqrt{15}}{(n\\pi)^3}$ for odd $n$, giving $P(E_1)=960/\\pi^6\\approx0.9986$ — almost pure ground state.</p>
+
+ ${tp('Quantum revival')}
+ <div class="note key"><div class="nh">quantum revival</div>Because every $E_n\\propto n^2$, at $T_{\\text{rev}}=\\dfrac{4ma^2}{\\pi\\hbar}$ each phase $E_nT_{\\text{rev}}/\\hbar=2\\pi n^2$ is a whole number of turns, so $\\Psi(x,T_{\\text{rev}})=\\Psi(x,0)$ exactly — <em>any</em> state perfectly reconstructs itself. This has no classical analogue.</div>
+
+ ${chk(
+   'For $\\Psi=\\tfrac{1}{\\sqrt2}(\\psi_1+\\psi_2)$, at what frequency does the probability density oscillate, and why does $\\langle H\\rangle$ stay constant even though $\\langle x\\rangle$ does not?',
+   '<p>The density oscillates at $\\omega_{21}=(E_2-E_1)/\\hbar$ — only the <em>relative</em> phase between the two modes matters, and it advances at this beat frequency. $\\langle x\\rangle$ moves because that cross term $\\psi_1\\psi_2\\cos\\omega_{21}t$ redistributes the probability. But $\\langle H\\rangle=\\tfrac12E_1+\\tfrac12E_2$ depends only on the $|c_n|^2$, which are fixed — energy is conserved because $\\hat H$ commutes with itself and the weights never change. Motion lives in the phases; energy lives in the amplitudes.</p>')}
+`},
+
+{id:'m2-free',mod:'Module II',modName:'Stationary States, Wells &amp; Barriers',modClass:'m2',
+ title:'The free particle &amp; wave packets',short:'Free particle',est:'~18 min',
+ body:`
+ ${carry(
+   ['Travelling wave $e^{i(kx-\\omega t)}$; $\\lambda=2\\pi/k$',
+    'Phase velocity $v=\\omega/k$',
+    'Fourier: any pulse is a sum of sines'],
+   ['A single $k$ is not normalizable — physical states are packets',
+    'Phase velocity $\\ne$ particle velocity; the <em>group</em> velocity is',
+    'Packets spread over time (dispersion)'])}
+
+ ${tp('Plane waves &amp; wave packets')}
+ <p>With $V=0$, $\\psi\'\'=-k^2\\psi$ gives $\\psi=Ae^{ikx}+Be^{-ikx}$ and $\\Psi_k=Ae^{i(kx-\\hbar k^2t/2m)}$. A single plane wave has $|\\Psi_k|^2=|A|^2$ everywhere — infinite total probability, <strong>not normalizable</strong>. So a real free particle is a continuous superposition, a <em>wave packet</em>:</p>
+ $$\\Psi(x,t)=\\frac{1}{\\sqrt{2\\pi}}\\int_{-\\infty}^{\\infty}\\phi(k)\\,e^{i(kx-\\omega(k)t)}\\,dk,\\quad \\omega(k)=\\frac{\\hbar k^2}{2m}$$
+ <p>with $\\phi(k)$ the Fourier transform of $\\Psi(x,0)$.</p>
+
+ ${tp('The velocity puzzle <span class="tag">must-know</span>')}
+ <p>The plane wave\'s <strong>phase velocity</strong> is $v_{\\text{ph}}=\\omega/k=\\hbar k/2m$, which is <em>half</em> the classical speed $\\sqrt{2E/m}$. That looks wrong — until you realise a single phase carries no information. What moves the particle is the packet\'s envelope, at the <strong>group velocity</strong>:</p>
+ $$v_{\\text{group}}=\\frac{d\\omega}{dk}\\Big|_{k_0}=\\frac{\\hbar k_0}{m}=v_{\\text{classical}}=2\\,v_{\\text{ph}}$$
+
+ ${fig('phasegroup',
+   '<b>Two speeds in one wave.</b> The fast-rippling carrier travels at $v_{\\text{ph}}$; the slow dashed envelope (the beat between nearby $k$ values) travels at $v_g=2v_{\\text{ph}}$. The particle rides the envelope — so $v_g$, not $v_{\\text{ph}}$, is the physical velocity that matches the classical result.',
+   '<span><i style="border-color:var(--pos)"></i>carrier · vₚ</span><span><i class="dash" style="border-color:var(--neg)"></i>envelope · v_g</span>')}
+
+ ${tp('Dispersion: why packets spread')}
+ ${fig('packet',
+   '<b>Dispersion in action.</b> A Gaussian packet (violet) started from the dashed profile at $t{=}0$. As time runs it flattens and widens — $\\sigma_x(t)=\\sigma_0\\sqrt{1+(\\hbar t/2m\\sigma_0^2)^2}$ — while its area stays exactly 1. Higher-$k$ components outrun lower-$k$ ones, so the packet smears. Momentum spread $\\sigma_p$ stays fixed (free particle conserves it).',
+   '<span><i class="fill" style="background:var(--prob)"></i>|Ψ(x,t)|²</span><span><i class="dash" style="border-color:var(--ink)"></i>t = 0</span>')}
+
+ ${chk(
+   'A student computes the phase velocity of a free-particle plane wave and finds it is half the classical particle speed, and panics. Resolve it.',
+   '<p>No contradiction. The phase velocity $v_{\\text{ph}}=\\omega/k=\\hbar k/2m$ is the speed of a point of constant phase on an <em>infinite, unlocalized</em> wave — it carries no particle and no information, so it need not equal the particle speed. A real particle is a <strong>packet</strong>, and its envelope moves at the group velocity $v_g=d\\omega/dk=\\hbar k/m=\\sqrt{2E/m}$, which <em>is</em> the classical speed and equals $2v_{\\text{ph}}$. The factor of two is expected, not a bug.</p>')}
+`},
+
+{id:'m2-formalism',mod:'Module II',modName:'Stationary States, Wells &amp; Barriers',modClass:'m2',
+ title:'Current, Ehrenfest, classical limit',short:'Formalism',est:'~14 min',
+ body:`
+ ${carry(
+   ['Conservation laws in continuity form (charge, mass)',
+    'Averages obey the same laws as the quantities',
+    'Correspondence: quantum → classical for large systems'],
+   ['Hermiticity of $\\hat H$ guarantees a conserved norm',
+    'Ehrenfest: expectation values obey Newton-like laws',
+    'Commutator $\\to$ Poisson bracket as $\\hbar\\to0$'])}
+
+ ${tp('Hermiticity &amp; the continuity equation')}
+ <p>Two structural results tie the formalism together. First, because $\\hat H$ is <strong>Hermitian</strong> ($\\hat H^\\dagger=\\hat H$), the norm is conserved:</p>
+ $$\\frac{d}{dt}\\langle\\Psi|\\Psi\\rangle=\\frac{i}{\\hbar}\\langle\\Psi|\\hat H|\\Psi\\rangle-\\frac{i}{\\hbar}\\langle\\Psi|\\hat H|\\Psi\\rangle=0$$
+ <p>which in local form is the continuity equation $\\partial_t\\rho+\\partial_xJ=0$ with $J=\\tfrac{\\hbar}{2im}(\\psi^*\\psi_x-\\psi\\psi_x^*)$.</p>
+
+ ${tp('Ehrenfest\'s theorem')}
+ <p>For any operator $\\hat A$,</p>
+ $$\\frac{d}{dt}\\langle A\\rangle=\\frac{1}{i\\hbar}\\langle[\\hat A,\\hat H]\\rangle+\\Big\\langle\\frac{\\partial\\hat A}{\\partial t}\\Big\\rangle$$
+ <p>Two corollaries you should quote instantly: if $\\hat A$ has no explicit time-dependence and <strong>commutes with $\\hat H$, then $\\langle A\\rangle$ is conserved</strong> (a constant of motion). Applied to $x$ and $p$ this reproduces Newton:</p>
+ $$\\frac{d\\langle x\\rangle}{dt}=\\frac{\\langle p\\rangle}{m},\\qquad \\frac{d\\langle p\\rangle}{dt}=\\Big\\langle-\\frac{dV}{dx}\\Big\\rangle$$
+
+ ${fig('ehr',
+   '<b>Newton lives in the averages.</b> For a bound particle, $\\langle x\\rangle(t)$ (gold) traces out a smooth classical-looking oscillation obeying $m\\,\\ddot{\\langle x\\rangle}=-\\langle V\'\\rangle$. The centre of the wave packet moves like a classical particle — this is why the macroscopic world looks Newtonian.',
+   '<span><i style="border-color:var(--pos)"></i>⟨x⟩(t)</span><span><i class="dash" style="border-color:var(--ink)"></i>envelope</span>')}
+
+ ${tp('The classical limit')}
+ <div class="note"><div class="nh">the classical limit, precisely</div>As $\\hbar\\to0$ (equivalently $\\lambda\\to0$), quantum mechanics becomes classical mechanics, and the commutator maps onto the classical Poisson bracket: $\\dfrac{1}{i\\hbar}[\\hat A,\\hat B]\\xrightarrow{\\hbar\\to0}\\{A,B\\}$. Ehrenfest\'s theorem is the fingerprint of this correspondence.</div>
+
+ ${chk(
+   'Angular momentum $\\hat L$ commutes with the Hamiltonian of a central-force problem and has no explicit time dependence. What does Ehrenfest immediately tell you?',
+   '<p>Ehrenfest gives $\\dfrac{d\\langle L\\rangle}{dt}=\\dfrac{1}{i\\hbar}\\langle[\\hat L,\\hat H]\\rangle+\\langle\\partial_t\\hat L\\rangle$. Both terms vanish: $[\\hat L,\\hat H]=0$ by assumption and $\\partial_t\\hat L=0$. Therefore $\\langle L\\rangle$ is a <strong>constant of motion</strong> — angular momentum is conserved, exactly as in the classical central-force problem. Any observable that commutes with $\\hat H$ and carries no explicit time-dependence is conserved; this is the quantum statement of Noether-type conservation.</p>')}
+`},
+
+{id:'m2-scattering',mod:'Module II',modName:'Stationary States, Wells &amp; Barriers',modClass:'m2',
+ title:'Steps, barriers &amp; tunnelling',short:'Scattering &amp; tunnelling',est:'~22 min',
+ body:`
+ ${carry(
+   ['Reflection/transmission at a boundary (optics, waves on strings)',
+    'Impedance mismatch causes partial reflection',
+    'Exponential decay $e^{-\\kappa x}$'],
+   ['Match $\\psi$ and $\\psi\'$ across each boundary',
+    'Even with $E>V_0$ there is reflection — purely quantum',
+    'Tunnelling: finite chance to cross a barrier with $E&lt;V_0$'])}
+
+ ${tp('Matching rules at a boundary')}
+ <p>Scattering states are unbound ($E>V(\\pm\\infty)$), so they aren\'t normalizable to 1; we read off <strong>ratios</strong> of currents instead. The rules at every finite step: $\\psi$ continuous, and $\\psi\'$ continuous (unless $V$ is infinite or a delta).</p>
+
+ ${tp('Potential step')}
+ <p>With $k_1=\\sqrt{2mE}/\\hbar$, $k_2=\\sqrt{2m(E-V_0)}/\\hbar$, matching $A+B=C$ and $k_1(A-B)=k_2C$ gives</p>
+ $$R=\\Big(\\frac{k_1-k_2}{k_1+k_2}\\Big)^2,\\qquad T=\\frac{4k_1k_2}{(k_1+k_2)^2},\\qquad R+T=1$$
+
+ <div class="carry"><div class="from"><div class="lab">◂ E &gt; V₀</div>${fig('stepHigh','Longer wavelength beyond the step; still a partial reflection even though the particle has enough energy — a wave-mechanical effect with no classical analogue.')}</div>
+ <div class="to"><div class="lab">E &lt; V₀ ▸</div>${fig('stepLow','Total reflection ($R=1$), but $\\psi$ leaks in as an evanescent tail $e^{-\\kappa x}$ with penetration depth $\\delta=1/\\kappa$ before turning back.')}</div></div>
+
+ ${tp('Rectangular barrier &amp; tunnelling')}
+ <p>For $E&lt;V_0$ across a barrier of width $a$ (with $\\kappa=\\sqrt{2m(V_0-E)}/\\hbar$):</p>
+ $$T=\\Big[1+\\frac{V_0^2}{4E(V_0-E)}\\sinh^2(\\kappa a)\\Big]^{-1}\\ \\xrightarrow{\\kappa a\\gg1}\\ 16\\frac{E}{V_0}\\Big(1-\\frac{E}{V_0}\\Big)e^{-2\\kappa a}$$
+ <p>Non-zero $T$ despite $E&lt;V_0$ is <strong>quantum tunnelling</strong> — the exponential sensitivity $e^{-2\\kappa a}$ to width and height is why $\\alpha$-decay lifetimes span 20 orders of magnitude and why the STM works.</p>
+
+ ${fig('barrier',
+   '<b>Tunnelling, drawn from the matched solution.</b> The incident wave (gold) meets the barrier, decays exponentially inside it (cyan), and emerges on the far side (violet) with reduced amplitude but the same wavelength. Nothing accumulates inside; the transmitted wave is what leaks through.',
+   '<span><i style="border-color:var(--pos)"></i>incident</span><span><i style="border-color:var(--neg)"></i>inside (decaying)</span><span><i style="border-color:var(--prob)"></i>transmitted</span>')}
+
+ ${tp('Transmission resonances')}
+ ${fig('transE',
+   '<b>Transmission vs energy.</b> For $E&lt;V_0$ (shaded) $T$ climbs smoothly out of tunnelling. For $E>V_0$, $T$ oscillates and hits $T=1$ at <em>resonances</em> where $k_2a=n\\pi$ — the barrier becomes perfectly transparent when a whole number of half-wavelengths fits inside. Classically $T$ would jump straight to 1 at $E=V_0$; quantum mechanics makes it ripple.',
+   '<span><i style="border-color:var(--prob)"></i>T(E)</span><span><i class="dash" style="border-color:var(--wall)"></i>E = V₀</span>')}
+
+ ${chk(
+   'Two barriers have the same height but barrier B is twice as wide as barrier A. In the wide-barrier (thick) limit, roughly how do their tunnelling probabilities compare?',
+   '<p>In the thick limit $T\\approx(\\text{prefactor})\\,e^{-2\\kappa a}$. Doubling the width $a\\to2a$ turns the exponential into $e^{-4\\kappa a}=(e^{-2\\kappa a})^2$, so $T_B\\approx T_A^{\\,2}$. If barrier A transmits, say, $10^{-3}$, barrier B transmits $\\sim10^{-6}$ — the probability is <strong>squared</strong>, not halved. This exponential-in-width dependence is exactly why tunnelling rates (α-decay, STM tip height) are so ferociously sensitive to a few tenths of a nanometre.</p>')}
+`},
+
+{id:'m2-delta',mod:'Module II',modName:'Stationary States, Wells &amp; Barriers',modClass:'m2',
+ title:'Delta potentials &amp; the S-matrix',short:'Delta &amp; S-matrix',est:'~14 min',
+ body:`
+ ${carry(
+   ['A very deep, very narrow well idealised to a spike',
+    'Integrating a differential equation across a point',
+    'Matrices relating inputs to outputs'],
+   ['A delta well has exactly one bound state, whatever its strength',
+    'The kink condition: $\\psi\'$ jumps by $-\\tfrac{2m\\alpha}{\\hbar^2}\\psi(0)$',
+    'S- and M-matrices package all scattering into $2\\times2$ arrays'])}
+
+ ${tp('The delta-well bound state')}
+ <p>The attractive delta well $V=-\\alpha\\delta(x)$ is the minimal bound-state problem. Away from the origin $\\psi\'\'=\\kappa^2\\psi$ with $\\kappa=\\sqrt{-2mE}/\\hbar$, so a normalizable state is $\\psi=A e^{-\\kappa|x|}$. Integrating the Schrödinger equation across $x=0$ gives the <strong>derivative jump</strong>.</p>
+
+ ${lad('The single bound state of the delta well',[
+   {why:'Integrate $-\\tfrac{\\hbar^2}{2m}\\psi\'\'-\\alpha\\delta(x)\\psi=E\\psi$ over $[-\\epsilon,\\epsilon]$; the $E$ term vanishes as $\\epsilon\\to0$.',
+    m:'$$\\psi\'(0^+)-\\psi\'(0^-)=-\\frac{2m\\alpha}{\\hbar^2}\\psi(0)$$'},
+   {why:'For $\\psi=Ae^{-\\kappa|x|}$, the slopes are $\\mp\\kappa A$; the jump is $-2\\kappa A$.',
+    m:'$$-2\\kappa A=-\\frac{2m\\alpha}{\\hbar^2}A\\;\\Rightarrow\\;\\kappa=\\frac{m\\alpha}{\\hbar^2}$$'},
+   {why:'Energy from $\\kappa$. A single value — one bound state, always.',
+    m:'$$E=-\\frac{\\hbar^2\\kappa^2}{2m}=-\\frac{m\\alpha^2}{2\\hbar^2}$$'},
+   {why:'Normalize $\\int|A|^2e^{-2\\kappa|x|}=|A|^2/\\kappa=1$.',
+    m:'$$\\psi(x)=\\sqrt{\\kappa}\\,e^{-\\kappa|x|}=\\frac{\\sqrt{m\\alpha}}{\\hbar}e^{-m\\alpha|x|/\\hbar^2}$$'}
+ ])}
+
+ ${fig('delta',
+   '<b>The cusp state.</b> $\\psi=\\sqrt\\kappa\\,e^{-\\kappa|x|}$ has a sharp kink at the origin — that discontinuous slope <em>is</em> the delta function\'s signature, and $|\\psi|^2$ (dashed) piles the particle right on top of the well. However weak $\\alpha$ is, exactly one such state exists.',
+   '<span><i style="border-color:var(--pos)"></i>ψ(x)</span><span><i class="dash" style="border-color:var(--prob)"></i>|ψ|²</span>')}
+
+ ${tp('S-matrix &amp; transfer matrix <span class="tag">bookkeeping</span>')}
+ <p>For any localized potential, write incoming amplitudes $(A,G)$ and outgoing $(B,F)$. The <strong>S-matrix</strong> maps out from in: $\\binom{B}{F}=\\mathbf S\\binom{A}{G}$, so left-incidence ($G=0$) gives $R_l=|S_{11}|^2$, $T_l=|S_{21}|^2$. The <strong>transfer matrix</strong> $\\mathbf M$ relates right amplitudes to left, and its killer feature is that for barriers in series it simply multiplies: $\\mathbf M=\\mathbf M_2\\mathbf M_1$. That turns any stack of scatterers into matrix products.</p>
+
+ ${chk(
+   'For a repulsive delta barrier $V=+\\alpha\\delta(x)$, would you expect any bound states? Give the reason in terms of the derivative-jump condition.',
+   '<p><strong>None.</strong> A bound state needs $E<0$ with $\\psi\\to0$ at both infinities, i.e. $\\psi\\propto e^{-\\kappa|x|}$, which has slopes $\\mp\\kappa A$ and hence a jump $\\psi\'(0^+)-\\psi\'(0^-)=-2\\kappa A<0$. The jump condition for a <em>repulsive</em> delta is $+\\tfrac{2m\\alpha}{\\hbar^2}\\psi(0)>0$, the opposite sign — the two can never match for $\\kappa>0$. Only an <em>attractive</em> delta ($-\\alpha\\delta$) bends the slope the right way, and even then just once. A repulsive delta only scatters (partial reflection/transmission); it traps nothing.</p>')}
+`},
+
+/* ═══════════════════ MODULE II · PROBLEM SET ═══════════════════ */
+{id:'m2-problems',mod:'Module II',modName:'Stationary States, Wells &amp; Barriers',modClass:'m2',
+ title:'Worked problems — Module II',short:'Problems II',est:'~45 min',
+ body:`
+ <p class="lead">Same drill: <span style="color:var(--neg)">theory ready</span> → <span style="color:var(--pos)">solution</span> → <span style="color:var(--neg)">practice twin</span>. These are the highest-yield exam problems for the well/scattering module.</p>
+
+ ${tp('Stationary states &amp; the infinite well')}
+ ${prob('2.1.1','No solution for $E\\le0$ in the infinite well',
+   pth('<p>Boundary conditions $\\psi(0)=\\psi(a)=0$. $E=0\\Rightarrow\\psi\'\'=0$; $E<0\\Rightarrow\\psi\'\'=\\kappa^2\\psi$ with $\\sinh/\\cosh$ solutions.</p>')+
+   psol('<p><strong>$E=0$:</strong> $\\psi=Ax+B$; $\\psi(0)=0\\Rightarrow B=0$; $\\psi(a)=Aa=0\\Rightarrow A=0$. Trivial.</p><p><strong>$E<0$:</strong> $\\psi=C\\sinh\\kappa x+D\\cosh\\kappa x$; $\\psi(0)=D=0$; $\\psi(a)=C\\sinh\\kappa a=0$, but $\\sinh\\kappa a\\ne0$ for $\\kappa,a>0$, so $C=0$. No normalizable state exists below $E_1$.</p>')+
+   prac('<p>Repeat for a well with a constant floor $V_0$ inside: show no normalizable state exists for $E\\le V_0$.</p>'))}
+
+ ${prob('2.1.2','All four moments in the $n$-th well state',
+   pth('<p>$\\langle x\\rangle=a/2$ by symmetry. $\\langle p^2\\rangle=2mE_n$. Use $\\int_0^a x^2\\sin^2(n\\pi x/a)dx$.</p>')+
+   psol('<p>$\\langle x\\rangle=\\tfrac a2$; $\\langle x^2\\rangle=a^2(\\tfrac13-\\tfrac{1}{2n^2\\pi^2})$, so $\\sigma_x=a\\sqrt{\\tfrac1{12}-\\tfrac1{2n^2\\pi^2}}$. $\\langle p\\rangle=0$ (real $\\psi$); $\\langle p^2\\rangle=2mE_n=\\tfrac{n^2\\pi^2\\hbar^2}{a^2}$, so $\\sigma_p=\\tfrac{n\\pi\\hbar}{a}$.</p><p>$\\sigma_x\\sigma_p=\\hbar\\sqrt{\\tfrac{n^2\\pi^2}{12}-\\tfrac12}$; for $n{=}1$ this is $\\approx0.568\\hbar>\\tfrac\\hbar2$, and it grows with $n$ — the ground state is closest to the limit.</p>')+
+   prac('<p>For the centred well ($-a/2\\le x\\le a/2$) compute all four moments and show $\\sigma_x\\sigma_p$ is unchanged.</p>'))}
+
+ ${tp('Superposition &amp; expansion')}
+ ${prob('2.2.1','$\\Psi=A(\\psi_1+\\psi_2)$ — evolution &amp; oscillation',
+   pth('<p>Normalize using orthonormality. Attach $e^{-iE_nt/\\hbar}$. Cross term gives $\\cos(3\\omega t)$; $\\langle p\\rangle=m\\dot{\\langle x\\rangle}$.</p>')+
+   psol('<p>$A=1/\\sqrt2$. $|\\Psi|^2=\\tfrac12\\psi_1^2+\\tfrac12\\psi_2^2+\\psi_1\\psi_2\\cos3\\omega t$ with $\\omega=\\pi^2\\hbar/2ma^2$. Using $\\int_0^a x\\psi_1\\psi_2\\,dx=-16a/9\\pi^2$: $\\langle x\\rangle=\\tfrac a2[1-\\tfrac{32}{9\\pi^2}\\cos3\\omega t]$, oscillating at $3\\omega$ with amplitude $16a/9\\pi^2\\approx0.18a$. $\\langle p\\rangle=\\tfrac{8\\hbar}{3a}\\sin3\\omega t$. Energies $E_1,E_2$ each with $P=\\tfrac12$; $\\langle H\\rangle=\\tfrac52E_1$.</p>')+
+   prac('<p>$\\Psi=A(\\psi_1+2\\psi_3)$: normalize, find $\\langle x\\rangle(t),\\langle p\\rangle(t)$, the allowed energies with probabilities, and $\\langle H\\rangle$.</p>'))}
+
+ ${prob('2.2.2','Parabolic start $Ax(a-x)$ — Fourier weights',
+   pth('<p>$c_n=\\sqrt{2/a}\\int_0^a\\Psi\\sin(n\\pi x/a)dx$. Use $\\sum_{\\text{odd}}n^{-6}=\\pi^6/960$, $\\sum_{\\text{odd}}n^{-4}=\\pi^4/96$.</p>')+
+   psol('<p>$A=\\sqrt{30/a^5}$. $c_n=0$ (even $n$), $\\tfrac{8\\sqrt{15}}{(n\\pi)^3}$ (odd $n$). $P(E_1)=|c_1|^2=960/\\pi^6\\approx0.9986$. Sum checks to 1 via $\\sum_{\\text{odd}}n^{-6}=\\pi^6/960$. $\\langle H\\rangle=\\tfrac{480\\hbar^2}{\\pi^4ma^2}\\cdot\\tfrac{\\pi^4}{96}=\\dfrac{5\\hbar^2}{ma^2}$.</p>')+
+   prac('<p>Triangular start ($Ax$ up to $a/2$, $A(a-x)$ after): find $A$, the $c_n$, $P(E_1)$, and $\\langle H\\rangle$.</p>'))}
+
+ ${prob('2.3.1','Sudden expansion $a\\to4a$ — projection probabilities',
+   pth('<p>Sudden approximation: the wave function doesn\'t change at the instant of expansion; project the old ground state onto the new eigenstates $\\phi_n=\\tfrac{1}{\\sqrt{2a}}\\sin(n\\pi x/4a)$ over $[0,a]$.</p>')+
+   psol('<p>$c_n=\\int_0^a\\phi_n\\psi_{\\text{init}}dx$ (integrand is zero on $(a,4a]$). $c_1=\\tfrac{8\\sqrt2}{15\\pi}\\Rightarrow P(E_1\')=\\tfrac{128}{225\\pi^2}\\approx0.058$. $c_2=\\tfrac{4}{3\\pi}\\Rightarrow P(E_2\')=\\tfrac{16}{9\\pi^2}\\approx0.180$.</p>')+
+   prac('<p>Well suddenly doubled ($a\\to2a$): find the probability of landing in the new $n{=}1$ and $n{=}3$ states.</p>'))}
+
+ ${tp('Steps, barriers &amp; tunnelling')}
+ ${prob('4.1.1','Step $E>V_0$ — derive $R$, $T$, and $R+T=1$',
+   pth('<p>Two regions, match $\\psi$ and $\\psi\'$ at $x=0$. Currents $J=\\hbar k|amp|^2/m$; $T$ carries the $k_2/k_1$ flux factor.</p>')+
+   psol('<p>$\\tfrac BA=\\tfrac{k_1-k_2}{k_1+k_2}$, $\\tfrac CA=\\tfrac{2k_1}{k_1+k_2}$. $R=|B/A|^2=(\\tfrac{k_1-k_2}{k_1+k_2})^2$. $T=\\tfrac{k_2}{k_1}|C/A|^2=\\tfrac{4k_1k_2}{(k_1+k_2)^2}$. Sum: $\\tfrac{(k_1-k_2)^2+4k_1k_2}{(k_1+k_2)^2}=1$. The flux factor $k_2/k_1$ is the step students forget.</p>')+
+   prac('<p>Down-step $V=-V_0$ for $x\\ge0$: find $R,T$ as functions of $E/V_0$.</p>'))}
+
+ ${prob('4.1.2','Rectangular barrier $E&lt;V_0$ — tunnelling &amp; the thick limit',
+   pth('<p>Three regions; inside uses real exponentials $e^{\\pm\\kappa x}$. Solve for $F/A$, take $|F/A|^2$, then $\\sinh\\kappa a\\approx\\tfrac12 e^{\\kappa a}$.</p>')+
+   psol('<p>$T=[1+\\tfrac{V_0^2}{4E(V_0-E)}\\sinh^2\\kappa a]^{-1}$. Thick limit: $T\\approx16\\tfrac{E}{V_0}(1-\\tfrac{E}{V_0})e^{-2\\kappa a}$ — dominated by the exponential in width and $\\sqrt{V_0-E}$.</p>')+
+   prac('<p>For $E>V_0$ show $T=[1+\\tfrac{V_0^2}{4E(E-V_0)}\\sin^2k_2a]^{-1}$ and find the resonance energies $T=1$.</p>'))}
+
+ ${prob('4.2.1','Delta well — bound state and scattering coefficients',
+   pth('<p>Bound: jump condition on $Ae^{-\\kappa|x|}$. Scattering: $\\psi=Ae^{ikx}+Be^{-ikx}$ ($x<0$), $Fe^{ikx}$ ($x>0$); continuity + jump.</p>')+
+   psol('<p>Bound: $\\kappa=m\\alpha/\\hbar^2$, $E=-m\\alpha^2/2\\hbar^2$, $\\psi=\\sqrt\\kappa e^{-\\kappa|x|}$. Scattering: $\\tfrac FA=\\tfrac{1}{1-im\\alpha/\\hbar^2k}$, so $T=\\tfrac{1}{1+(m\\alpha/\\hbar^2k)^2}=\\tfrac{1}{1+m\\alpha^2/2\\hbar^2E}$ and $R=1-T$. Higher $E$ ⇒ higher $T$.</p>')+
+   prac('<p>Repulsive delta $+\\alpha\\delta(x)$: explain why no bound state, then find $R,T$ at energy $E$.</p>'))}
+
+ ${tp('Wave packets &amp; special potentials')}
+ ${prob('3.2.1','Gaussian free packet — spreading',
+   pth('<p>Fourier-transform $Ae^{-ax^2}$ to $\\phi(k)$, evolve each $k$, recombine. $\\sigma_p$ fixed; $\\sigma_x$ grows.</p>')+
+   psol('<p>$A=(2a/\\pi)^{1/4}$. $|\\Psi(x,t)|^2$ stays Gaussian with width $w(t)=\\sqrt{a/(1+(2\\hbar at/m)^2)}$. $\\langle x\\rangle=\\langle p\\rangle=0$; $\\sigma_x(t)=\\tfrac{1}{2\\sqrt a}\\sqrt{1+(2\\hbar at/m)^2}$; $\\sigma_p=\\hbar\\sqrt a$. Product $\\sigma_x\\sigma_p=\\tfrac\\hbar2\\sqrt{1+(2\\hbar at/m)^2}\\ge\\tfrac\\hbar2$, saturated only at $t=0$.</p>')+
+   prac('<p>Boosted packet $Ae^{-ax^2}e^{ik_0x}$: find $\\langle x\\rangle(t),\\langle p\\rangle(t)$ and show the spreading rate is independent of $k_0$.</p>'))}
+
+ ${prob('5.2.1','Bouncing ball — Airy function energies',
+   pth('<p>$V=mgz$ for $z>0$, wall at $z=0$. Reduce to the Airy equation $\\psi\'\'-u\\psi=0$; boundary $\\psi(0)=0$ hits the zeros $R_n$ of Ai.</p>')+
+   psol('<p>$\\psi(z)=C\\,\\mathrm{Ai}[(2m^2g/\\hbar^2)^{1/3}(z-E/mg)]$. $\\psi(0)=0\\Rightarrow E_n=-R_n(mg^2\\hbar^2/2)^{1/3}$. With $R_0=-2.338$, $R_1=-4.088$: $E_0=2.338(mg^2\\hbar^2/2)^{1/3}$, $E_1=4.088(\\ldots)$.</p>')+
+   prac('<p>Use the WKB rule $\\int_0^{z_{\\max}}\\sqrt{2m(E-mgz)}\\,dz=(n-\\tfrac14)\\pi\\hbar$ to estimate $E_n$ and compare the $n{=}1$ prefactor with $2.338$.</p>'))}
+`},
+
+/* ═══════════════════ CLOSE ═══════════════════ */
+{id:'close',title:'The last mile',short:'Exam &amp; review plan',est:'~10 min',
+ body:`
+ <p class="lead">You\'ve walked both modules. What separates a pass from a top mark now is not more reading — it\'s spaced retrieval and clean exam execution. Here\'s the plan the research backs.</p>
+
+ ${tp('Space your returns — tick each pass')}
+ <p>Come back to each module on a widening schedule. Every retrieval that feels slightly effortful is doing real work; fluent re-reading is a comforting illusion of learning.</p>
+ <div class="chips">
+   <span class="chip" data-plan="r-d1">Module I · +1 day</span>
+   <span class="chip" data-plan="r-d3">Module I · +3 days</span>
+   <span class="chip" data-plan="r-d7">Module I · +1 week</span>
+   <span class="chip" data-plan="r2-d1">Module II · +1 day</span>
+   <span class="chip" data-plan="r2-d3">Module II · +3 days</span>
+   <span class="chip" data-plan="r2-d7">Module II · +1 week</span>
+   <span class="chip" data-plan="mock">Full closed-book mock</span>
+   <span class="chip" data-plan="mixed">Interleaved problem session</span>
+ </div>
+
+ ${tp('The derivations they love to ask <span class="tag">write from blank</span>')}
+ <ul>
+   <li>Conservation of normalization (the perfect-derivative trick).</li>
+   <li>$\\hat p=-i\\hbar\\partial_x$ from $d\\langle x\\rangle/dt$.</li>
+   <li>Separation of variables → TISE + stationary-state properties.</li>
+   <li>Infinite well quantisation $E_n=n^2\\pi^2\\hbar^2/2ma^2$ and $\\psi_n$.</li>
+   <li>Step/barrier $R,T$ with $R+T=1$; tunnelling thick-limit $T\\propto e^{-2\\kappa a}$.</li>
+   <li>Delta-well bound state via the derivative jump.</li>
+   <li>Ehrenfest\'s theorem and the two Newton-like corollaries.</li>
+ </ul>
+
+ ${tp('Exam-hall habits that save marks')}
+ <p><strong>State your conventions</strong> ($k=\\sqrt{2mE}/\\hbar$, region labels) before matching — examiners reward a clean setup. <strong>Carry the flux factor</strong> $k_2/k_1$ in $T$. <strong>Sanity-check</strong> every answer: probabilities in $[0,1]$, $R+T=1$, $\\sigma_x\\sigma_p\\ge\\hbar/2$, dimensions consistent. <strong>Sleep before, not cram before</strong> — a rested retrieval beats a tired reread every time.</p>
+
+ <div class="note key"><div class="nh">the night-before ritual</div>Don\'t open new material. Do one slow pass of the checkpoints from memory, get the sleep your consolidation depends on, and in the morning do the checkpoints cold one more time. That bracket — study, sleep, retrieve — is the single most reliable memory pattern in the literature, and you\'ve built your whole day around it.</div>
+
+ <p class="dim" style="margin-top:1.4rem;text-align:center"><span class="spark">ψ</span> &nbsp;Good luck. Mark this done when your review schedule is set.</p>
+`},
+
+];
+window.STATIONS=STATIONS;
+
+/* ── module grouping: Module ▸ Section ▸ Topic ── */
+const MODULES=[
+ {id:'mod-0',name:'Orientation',sub:'How to use this',
+  stations:['start']},
+ {id:'mod-1',name:'Module I',sub:'The Wave Function',
+  stations:['m1-schrodinger','m1-born','m1-probability','m1-normalization',
+            'm1-momentum','m1-uncertainty','m1-problems']},
+ {id:'mod-2',name:'Module II',sub:'Stationary States, Wells &amp; Barriers',
+  stations:['m2-tise','m2-theorems','m2-isw','m2-superposition','m2-free',
+            'm2-formalism','m2-scattering','m2-delta','m2-problems']},
+ {id:'mod-3',name:'Finish',sub:'Exam &amp; review plan',
+  stations:['close']}
+];
+window.MODULES=MODULES;

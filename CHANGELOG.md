@@ -4,6 +4,24 @@ All notable changes to DuoFY are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com); versions follow the app's
 `major.minor.patch` scheme from `pubspec.yaml`.
 
+## [26.9.13] — 2026-09-13
+
+### Added & Improved
+- **Drop-down Tree Reader & Web App Parity**:
+  - Re-architected interactive course reading with the **Drop-down Tree Reader**, parsing rich course materials (Solid State Physics, Optics, Material Science, QM, Python) into an animated accordion hierarchy.
+  - Set all module and section drop-down menus to be closed by default for a clutter-free, focused learning experience.
+  - Eliminated redundant intermediate index screens when Tree Reader mode is active.
+  - **Authentic Web Design Parity**: Matched original HTML styling with a Hero Masthead (`.kicker`, title, lead subtitle), a 3-metric `.statgrid` (`MODULES`, `TOPICS`, `MASTERY`), and polished typography.
+  - **Interactive Checkpoints (`.check`)**: Rendered authentic question cards with collapsible hints, answer reveals, equal-width confidence rating buttons (`No idea`, `Shaky`, `Fair`, `Solid`), and saved mastery state.
+  - **Donebar Completion (`.donebar`)**: Added authentic rounded-square `.cb` checkbox controls with instant topic completion toggling and progress calculation.
+  - **Interactive 3D Crystal Unit Cell**: Integrated 3D crystal lattice viewer with touch drag-to-rotate, crystal system switching, and lattice parameter metrics.
+- **Mobile Screen Full-Text & Equation Readability**:
+  - **Markdown Tables**: Implemented intrinsic column widths with bidirectional horizontal scrolling, eliminating cramped, wrapped columns on mobile viewports.
+  - **Derivation Ladder Math Formulas**: Added horizontal scrolling containers for complex, wide KaTeX formulas, step-by-step peeking/revealing, and a dedicated **Reset Derivation** button to replay derivations.
+  - **AppBar Title Space Recovery**: Restructured top app bar actions to prevent course title truncation on compact mobile devices.
+- **Settings & Integration**:
+  - Added quick course access and Tree Reader toggle inside the Settings screen with live state persistence.
+
 ## [26.9.1] — 2026-09-01
 
 ### Added & Improved

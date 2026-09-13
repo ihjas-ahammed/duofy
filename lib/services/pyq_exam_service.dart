@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import '../platform/io_shim.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
 import '../models/pyq_models.dart';

@@ -1,4 +1,4 @@
-# Node Description Batch 59 of 61
+# Node Description Batch 59 of 68
 
 Graphify is running in assistant/skill mode (no API key). You are the host
 assistant (Claude Code / Codex / Gemini CLI). Read the prompt below and write
@@ -12,51 +12,58 @@ describing what it is or does. Use only the provided context.
 For a code symbol (kind=code-symbol — a function, class, or constant),
 describe what the function/symbol does based on its name, source location
 and neighbors — e.g. "Resolves the configured ontology profile from graphify.yaml.".
+For an entity node (any other kind — e.g. a person, place, event, object),
+describe what the entity is and its role, grounded in its type, its
+relations (neighbors) and the provided citations/evidence — e.g.
+"Lady Carfax, a wealthy heiress who disappears en route to Lausanne.".
+Ground entity descriptions in the citations/evidence when present; do not
+speculate beyond the context, so a node with no supporting context may be
+left out of the reply.
 Write every description in English (en). Do not switch languages.
 No marketing language.
 Respond ONLY with a JSON object mapping each node id (as a string) to its
 one-sentence description — no prose, no markdown fences.
 
-- "widgets_platform_webview_platformwebviewcontroller": "PlatformWebViewController" | kind=code-symbol | source=lib/widgets/platform_webview.dart:L18 | neighbors=[platform_webview.dart]
-- "widgets_platform_webview_platformwebviewstate": "_PlatformWebViewState" | kind=code-symbol | source=lib/widgets/platform_webview.dart:L41 | neighbors=[platform_webview.dart]
-- "widgets_qp_card_qpcard": "QpCard" | kind=code-symbol | source=lib/widgets/qp_card.dart:L6 | neighbors=[qp_card.dart]
-- "widgets_quick_review_sheet_changestatus": "_changeStatus()" | kind=code-symbol | source=lib/widgets/quick_review_sheet.dart:L361 | neighbors=[quick_review_sheet.dart]
-- "widgets_quick_review_sheet_emptyreviewpanel": "_EmptyReviewPanel" | kind=code-symbol | source=lib/widgets/quick_review_sheet.dart:L270 | neighbors=[quick_review_sheet.dart]
-- "widgets_quick_review_sheet_generatereview": "_generateReview()" | kind=code-symbol | source=lib/widgets/quick_review_sheet.dart:L39 | neighbors=[quick_review_sheet.dart]
-- "widgets_quick_review_sheet_initstate": "initState()" | kind=code-symbol | source=lib/widgets/quick_review_sheet.dart:L34 | neighbors=[quick_review_sheet.dart]
-- "widgets_quick_review_sheet_loadexplanation": "_loadExplanation()" | kind=code-symbol | source=lib/widgets/quick_review_sheet.dart:L537 | neighbors=[quick_review_sheet.dart]
-- "widgets_quick_review_sheet_loadingpanel": "_LoadingPanel" | kind=code-symbol | source=lib/widgets/quick_review_sheet.dart:L338 | neighbors=[quick_review_sheet.dart]
-- "widgets_quick_review_sheet_loadingpanelstate": "_LoadingPanelState" | kind=code-symbol | source=lib/widgets/quick_review_sheet.dart:L345 | neighbors=[quick_review_sheet.dart]
-- "widgets_quick_review_sheet_matchinglessonresult": "MatchingLessonResult" | kind=code-symbol | source=lib/widgets/quick_review_sheet.dart:L257 | neighbors=[quick_review_sheet.dart]
-- "widgets_quick_review_sheet_navigatetolesson": "_navigateToLesson()" | kind=code-symbol | source=lib/widgets/quick_review_sheet.dart:L559 | neighbors=[quick_review_sheet.dart]
-- "widgets_quick_review_sheet_quickreviewsheet": "QuickReviewSheet" | kind=code-symbol | source=lib/widgets/quick_review_sheet.dart:L11 | neighbors=[quick_review_sheet.dart]
-- "widgets_quick_review_sheet_quickreviewsheetstate": "_QuickReviewSheetState" | kind=code-symbol | source=lib/widgets/quick_review_sheet.dart:L29 | neighbors=[quick_review_sheet.dart]
-- "widgets_quick_review_sheet_reviewitemcard": "_ReviewItemCard" | kind=code-symbol | source=lib/widgets/quick_review_sheet.dart:L407 | neighbors=[quick_review_sheet.dart]
-- "widgets_quick_review_sheet_showdetaildialog": "_showDetailDialog()" | kind=code-symbol | source=lib/widgets/quick_review_sheet.dart:L137 | neighbors=[quick_review_sheet.dart]
-- "widgets_quick_review_sheet_statementdetailsheet": "_StatementDetailSheet" | kind=code-symbol | source=lib/widgets/quick_review_sheet.dart:L508 | neighbors=[quick_review_sheet.dart]
-- "widgets_quick_review_sheet_statementdetailsheetstate": "_StatementDetailSheetState" | kind=code-symbol | source=lib/widgets/quick_review_sheet.dart:L527 | neighbors=[quick_review_sheet.dart]
-- "widgets_real_progress_bar_didupdatewidget": "didUpdateWidget()" | kind=code-symbol | source=lib/widgets/real_progress_bar.dart:L45 | neighbors=[real_progress_bar.dart]
-- "widgets_real_progress_bar_dispose": "dispose()" | kind=code-symbol | source=lib/widgets/real_progress_bar.dart:L69 | neighbors=[real_progress_bar.dart]
-- "widgets_real_progress_bar_initstate": "initState()" | kind=code-symbol | source=lib/widgets/real_progress_bar.dart:L39 | neighbors=[real_progress_bar.dart]
-- "widgets_real_progress_bar_realprogressbar": "RealProgressBar" | kind=code-symbol | source=lib/widgets/real_progress_bar.dart:L11 | neighbors=[real_progress_bar.dart]
-- "widgets_real_progress_bar_realprogressbarstate": "_RealProgressBarState" | kind=code-symbol | source=lib/widgets/real_progress_bar.dart:L35 | neighbors=[real_progress_bar.dart]
-- "widgets_real_progress_bar_starttimerifneeded": "_startTimerIfNeeded()" | kind=code-symbol | source=lib/widgets/real_progress_bar.dart:L50 | neighbors=[real_progress_bar.dart]
-- "widgets_realtime_progress_bar_realtimeprogressbar": "RealtimeProgressBar" | kind=code-symbol | source=lib/widgets/realtime_progress_bar.dart:L5 | neighbors=[realtime_progress_bar.dart]
-- "widgets_repair_alignment_dialog_showrepairalignmentflow": "showRepairAlignmentFlow()" | kind=code-symbol | source=lib/widgets/repair_alignment_dialog.dart:L17 | neighbors=[repair_alignment_dialog.dart]
-- "widgets_responsive_center_responsivecenter": "ResponsiveCenter" | kind=code-symbol | source=lib/widgets/responsive_center.dart:L33 | neighbors=[responsive_center.dart]
-- "widgets_responsive_center_responsivemaxwidth": "ResponsiveMaxWidth" | kind=code-symbol | source=lib/widgets/responsive_center.dart:L5 | neighbors=[responsive_center.dart]
-- "widgets_safe_pdf_viewer_checkready": "checkReady()" | kind=code-symbol | source=lib/widgets/safe_pdf_viewer.dart:L654 | neighbors=[safe_pdf_viewer.dart]
-- "widgets_safe_pdf_viewer_clear": "clear()" | kind=code-symbol | source=lib/widgets/safe_pdf_viewer.dart:L58 | neighbors=[safe_pdf_viewer.dart]
-- "widgets_safe_pdf_viewer_clearsearch": "clearSearch()" | kind=code-symbol | source=lib/widgets/safe_pdf_viewer.dart:L932 | neighbors=[safe_pdf_viewer.dart]
-- "widgets_safe_pdf_viewer_clearselection": "clearSelection()" | kind=code-symbol | source=lib/widgets/safe_pdf_viewer.dart:L177 | neighbors=[safe_pdf_viewer.dart]
-- "widgets_safe_pdf_viewer_createpageplaceholder": "createPagePlaceholder()" | kind=code-symbol | source=lib/widgets/safe_pdf_viewer.dart:L710 | neighbors=[safe_pdf_viewer.dart]
-- "widgets_safe_pdf_viewer_didupdatewidget": "didUpdateWidget()" | kind=code-symbol | source=lib/widgets/safe_pdf_viewer.dart:L266 | neighbors=[safe_pdf_viewer.dart]
-- "widgets_safe_pdf_viewer_dispose": "dispose()" | kind=code-symbol | source=lib/widgets/safe_pdf_viewer.dart:L280 | neighbors=[safe_pdf_viewer.dart]
-- "widgets_safe_pdf_viewer_firstpage": "firstPage()" | kind=code-symbol | source=lib/widgets/safe_pdf_viewer.dart:L146 | neighbors=[safe_pdf_viewer.dart]
-- "widgets_safe_pdf_viewer_function": "Function()" | kind=code-symbol | source=lib/widgets/safe_pdf_viewer.dart:L15 | neighbors=[safe_pdf_viewer.dart]
-- "widgets_safe_pdf_viewer_handlemessage": "_handleMessage()" | kind=code-symbol | source=lib/widgets/safe_pdf_viewer.dart:L339 | neighbors=[safe_pdf_viewer.dart]
-- "widgets_safe_pdf_viewer_importformdata": "importFormData()" | kind=code-symbol | source=lib/widgets/safe_pdf_viewer.dart:L184 | neighbors=[safe_pdf_viewer.dart]
-- "widgets_safe_pdf_viewer_initcontroller": "_initController()" | kind=code-symbol | source=lib/widgets/safe_pdf_viewer.dart:L250 | neighbors=[safe_pdf_viewer.dart]
+- "test_math_evaluator_test_main": "main()" | kind=code-symbol | source=test/math_evaluator_test.dart:L5 | neighbors=[math_evaluator_test.dart]
+- "test_module_notes_test_main": "main()" | kind=code-symbol | source=test/module_notes_test.dart:L7 | neighbors=[module_notes_test.dart]
+- "test_page_mapping_test_main": "main()" | kind=code-symbol | source=test/page_mapping_test.dart:L4 | neighbors=[page_mapping_test.dart]
+- "test_pdfx_test_main": "main()" | kind=code-symbol | source=test/pdfx_test.dart:L6 | neighbors=[pdfx_test.dart]
+- "test_python_runner_test_invalid_syntax": "invalid_syntax()" | kind=code-symbol | source=test/python_runner_test.dart:L22 | neighbors=[python_runner_test.dart]
+- "test_python_runner_test_main": "main()" | kind=code-symbol | source=test/python_runner_test.dart:L4 | neighbors=[python_runner_test.dart]
+- "test_review_scheduler_test_main": "main()" | kind=code-symbol | source=test/review_scheduler_test.dart:L9 | neighbors=[review_scheduler_test.dart]
+- "test_slide_parsing_test_main": "main()" | kind=code-symbol | source=test/slide_parsing_test.dart:L4 | neighbors=[slide_parsing_test.dart]
+- "test_slide_parsing_test_para": "para()" | kind=code-symbol | source=test/slide_parsing_test.dart:L149 | neighbors=[slide_parsing_test.dart]
+- "test_syncfusion_math_test_cleanlatexforsyncfusion": "cleanLatexForSyncfusion()" | kind=code-symbol | source=test/syncfusion_math_test.dart:L106 | neighbors=[syncfusion_math_test.dart]
+- "test_syncfusion_math_test_main": "main()" | kind=code-symbol | source=test/syncfusion_math_test.dart:L7 | neighbors=[syncfusion_math_test.dart]
+- "test_toc_matcher_test_main": "main()" | kind=code-symbol | source=test/toc_matcher_test.dart:L48 | neighbors=[toc_matcher_test.dart]
+- "test_walkthrough_course_test_main": "main()" | kind=code-symbol | source=test/walkthrough_course_test.dart:L10 | neighbors=[walkthrough_course_test.dart]
+- "test_webview_cef_method_channel_test": "webview_cef_method_channel_test.dart" | kind=code-symbol | source=packages/webview_cef/test/webview_cef_method_channel_test.dart:L1 | neighbors=[main()]
+- "test_webview_cef_method_channel_test_main": "main()" | kind=code-symbol | source=packages/webview_cef/test/webview_cef_method_channel_test.dart:L5 | neighbors=[webview_cef_method_channel_test.dart]
+- "test_webview_cef_test_getplatformversion": "getPlatformVersion()" | kind=code-symbol | source=packages/webview_cef/test/webview_cef_test.dart:L11 | neighbors=[webview_cef_test.dart]
+- "test_webview_cef_test_main": "main()" | kind=code-symbol | source=packages/webview_cef/test/webview_cef_test.dart:L14 | neighbors=[webview_cef_test.dart]
+- "test_webview_cef_test_mockwebviewcefplatform": "MockWebviewCefPlatform" | kind=code-symbol | source=packages/webview_cef/test/webview_cef_test.dart:L7 | neighbors=[webview_cef_test.dart]
+- "test_webview_main_test": "webview_main_test.dart" | kind=code-symbol | source=packages/webview_cef/test/webview_main_test.dart:L1 | neighbors=[main()]
+- "test_webview_main_test_main": "main()" | kind=code-symbol | source=packages/webview_cef/test/webview_main_test.dart:L6 | neighbors=[webview_main_test.dart]
+- "test_widget_test_main": "main()" | kind=code-symbol | source=test/widget_test.dart:L10 | neighbors=[widget_test.dart]
+- "theme_app_theme_appcolors": "AppColors" | kind=code-symbol | source=lib/theme/app_theme.dart:L9 | neighbors=[app_theme.dart]
+- "theme_app_theme_apptheme": "AppTheme" | kind=code-symbol | source=lib/theme/app_theme.dart:L92 | neighbors=[app_theme.dart]
+- "update_rationale_13": "Parses the snapshot content and yields (filename, file_content) tuples." | kind=entity | source=update.py:L13 | neighbors=[parse_snapshot()]
+- "update_rationale_71": "Reads the snapshot file and updates the project files accordingly." | kind=entity | source=update.py:L71 | neighbors=[update_project_from_snapshot()]
+- "utils_latex_utils_autowrapbarelatexinsegment": "_autoWrapBareLatexInSegment()" | kind=code-symbol | source=lib/utils/latex_utils.dart:L122 | neighbors=[latex_utils.dart]
+- "utils_latex_utils_fixuncloseddisplaymath": "_fixUnclosedDisplayMath()" | kind=code-symbol | source=lib/utils/latex_utils.dart:L48 | neighbors=[latex_utils.dart]
+- "utils_latex_utils_fixunclosedinlinemath": "_fixUnclosedInlineMath()" | kind=code-symbol | source=lib/utils/latex_utils.dart:L68 | neighbors=[latex_utils.dart]
+- "utils_latex_utils_fixunclosedlatex": "fixUnclosedLatex()" | kind=code-symbol | source=lib/utils/latex_utils.dart:L22 | neighbors=[latex_utils.dart]
+- "utils_latex_utils_latexutils": "LatexUtils" | kind=code-symbol | source=lib/utils/latex_utils.dart:L5 | neighbors=[latex_utils.dart]
+- "utils_latex_utils_textpart": "_TextPart" | kind=code-symbol | source=lib/utils/latex_utils.dart:L217 | neighbors=[latex_utils.dart]
+- "utils_latex_utils_wrapbarelatexcommands": "_wrapBareLatexCommands()" | kind=code-symbol | source=lib/utils/latex_utils.dart:L107 | neighbors=[latex_utils.dart]
+- "utils_progress_utils_calculatemoduleprogress": "calculateModuleProgress()" | kind=code-symbol | source=lib/utils/progress_utils.dart:L48 | neighbors=[progress_utils.dart]
+- "utils_progress_utils_calculatemoduleprogressdouble": "calculateModuleProgressDouble()" | kind=code-symbol | source=lib/utils/progress_utils.dart:L34 | neighbors=[progress_utils.dart]
+- "utils_progress_utils_calculatesectionprogress": "calculateSectionProgress()" | kind=code-symbol | source=lib/utils/progress_utils.dart:L30 | neighbors=[progress_utils.dart]
+- "utils_progress_utils_calculatesectionprogressdouble": "calculateSectionProgressDouble()" | kind=code-symbol | source=lib/utils/progress_utils.dart:L16 | neighbors=[progress_utils.dart]
+- "utils_progress_utils_calculateunitprogress": "calculateUnitProgress()" | kind=code-symbol | source=lib/utils/progress_utils.dart:L5 | neighbors=[progress_utils.dart]
+- "utils_progress_utils_sectioncolors": "SectionColors" | kind=code-symbol | source=lib/utils/progress_utils.dart:L52 | neighbors=[progress_utils.dart]
+- "utils_toast_utils_showtoast": "showToast()" | kind=code-symbol | source=lib/utils/toast_utils.dart:L5 | neighbors=[toast_utils.dart]
+- "widgets_analytics_view_analyticsview": "AnalyticsView" | kind=code-symbol | source=lib/widgets/analytics_view.dart:L9 | neighbors=[analytics_view.dart]
 
 ## Instructions
 
