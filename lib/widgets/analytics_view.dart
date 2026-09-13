@@ -308,66 +308,75 @@ class _AnalyticsViewState extends State<AnalyticsView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 10),
-                // Header Card
-                AppTheme.applyGlassBlur(
-                  borderRadius: 24,
-                  color: context.colors.glassStrong,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppTheme.duoBlue.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: AppTheme.duoBlue.withValues(alpha: 0.3),
+                // Authentic Masthead Header
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 16, top: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.duoBlue.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AppTheme.duoBlue.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: AppTheme.duoBlue,
+                                shape: BoxShape.circle,
+                              ),
                             ),
-                          ),
-                          child: Icon(
-                            LucideIcons.barChart2,
-                            color: AppTheme.duoBlue,
-                            size: 28,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.courseId == null
-                                    ? 'OVERALL PERFORMANCE'
-                                    : 'COURSE PERFORMANCE',
-                                style: const TextStyle(
-                                  color: AppTheme.duoBlue,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 10,
-                                  letterSpacing: 1.5,
-                                ),
+                            const SizedBox(width: 6),
+                            Text(
+                              widget.courseId == null
+                                  ? 'LEARNING TELEMETRY'
+                                  : 'COURSE TELEMETRY',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.2,
+                                color: AppTheme.duoBlue,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                widget.courseId == null
-                                    ? 'Your Learning Analytics'
-                                    : 'Course Progress Stats',
-                                style: TextStyle(
-                                  color: context.colors.textPrimary,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 20,
-                                  fontFamily: 'Nunito',
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        widget.courseId == null
+                            ? 'Learning Analytics'
+                            : 'Course Performance',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                          color: context.colors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Track cognitive retention, practice velocity, and mastery milestones.',
+                        style: TextStyle(
+                          color: context.colors.textFaint,
+                          fontSize: 13,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                SizedBox(height: 16),
 
                 // Stats Grid (2x2)
                 GridView.count(
@@ -377,7 +386,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                   padding: EdgeInsets.zero,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
-                  childAspectRatio: 1.4,
+                  childAspectRatio: 1.35,
                   children: [
                     _buildStatCard(
                       title: 'STREAK COUNT',
@@ -411,121 +420,148 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                 ),
                 const SizedBox(height: 16),
                 const CalibrationCard(),
+                const SizedBox(height: 16),
 
                 // Last 7 Days XP Graph Card
-                AppTheme.applyGlassBlur(
-                  borderRadius: 24,
-                  color: context.colors.glassStrong,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'XP ACTIVITY (LAST 7 DAYS)',
-                              style: TextStyle(
-                                color: context.colors.textFaint,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                            Icon(
-                              LucideIcons.activity,
-                              color: context.colors.textFaint,
-                              size: 16,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          height: 160,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: graphData.map((d) {
-                              final xp = d['xp'] as int;
-                              final dayStr = d['day'] as String;
-                              final double percentHeight = xp / maxXP;
-                              // Constrain height between 6 (for 0 XP) and 110 pixels
-                              final double barHeight = (percentHeight * 110)
-                                  .clamp(6.0, 110.0);
-
-                              return Column(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  if (xp > 0)
-                                    Padding(
-                                      padding: const EdgeInsets.only(bottom: 6),
-                                      child: Text(
-                                        '$xp',
-                                        style: TextStyle(
-                                          color: Color(0xFFFBBF24),
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 10,
-                                        ),
-                                      ),
-                                    ),
-                                  Container(
-                                    width: 18,
-                                    height: barHeight,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(10),
-                                      gradient: LinearGradient(
-                                        begin: Alignment.bottomCenter,
-                                        end: Alignment.topCenter,
-                                        colors: xp > 0
-                                            ? [
-                                                AppTheme.duoBlue.withValues(
-                                                  alpha: 0.8,
-                                                ),
-                                                AppTheme.duoViolet.withValues(
-                                                  alpha: 0.9,
-                                                ),
-                                              ]
-                                            : [
-                                                context.colors.surfaceAlt,
-                                                context.colors.surfaceAlt,
-                                              ],
-                                      ),
-                                      boxShadow: xp > 0
-                                          ? [
-                                              BoxShadow(
-                                                color: AppTheme.duoBlue
-                                                    .withValues(alpha: 0.3),
-                                                blurRadius: 8,
-                                                offset: Offset(0, 2),
-                                              ),
-                                            ]
-                                          : null,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    dayStr,
-                                    style: TextStyle(
-                                      color: xp > 0
-                                          ? context.colors.textPrimary
-                                          : context.colors.textFaint,
-                                      fontWeight: xp > 0
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
-                                      fontSize: 10,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ],
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: context.colors.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: context.colors.outline,
+                      width: 1.2,
                     ),
                   ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: const BoxDecoration(
+                                  color: AppTheme.duoBlue,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'XP ACTIVITY (LAST 7 DAYS)',
+                                style: TextStyle(
+                                  color: context.colors.textPrimary,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 11.5,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Icon(
+                            LucideIcons.activity,
+                            color: AppTheme.duoBlue,
+                            size: 16,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        height: 160,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: graphData.map((d) {
+                            final xp = d['xp'] as int;
+                            final dayStr = d['day'] as String;
+                            final double percentHeight = xp / maxXP;
+                            final double barHeight = (percentHeight * 110)
+                                .clamp(8.0, 110.0);
+                            final bool isPeak = xp == maxXP && xp > 0;
+
+                            return Column(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                if (xp > 0)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 6),
+                                    child: Text(
+                                      '$xp',
+                                      style: TextStyle(
+                                        color: isPeak
+                                            ? const Color(0xFFFBBF24)
+                                            : AppTheme.duoBlue,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ),
+                                Container(
+                                  width: 20,
+                                  height: barHeight,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    gradient: LinearGradient(
+                                      begin: Alignment.bottomCenter,
+                                      end: Alignment.topCenter,
+                                      colors: xp > 0
+                                          ? (isPeak
+                                              ? [
+                                                  const Color(0xFFF59E0B),
+                                                  const Color(0xFFFBBF24),
+                                                ]
+                                              : [
+                                                  AppTheme.duoBlue.withValues(
+                                                    alpha: 0.85,
+                                                  ),
+                                                  AppTheme.duoViolet.withValues(
+                                                    alpha: 0.95,
+                                                  ),
+                                                ])
+                                          : [
+                                              context.colors.surfaceAlt,
+                                              context.colors.surfaceAlt,
+                                            ],
+                                    ),
+                                    boxShadow: xp > 0
+                                        ? [
+                                            BoxShadow(
+                                              color: (isPeak
+                                                      ? const Color(0xFFFBBF24)
+                                                      : AppTheme.duoBlue)
+                                                  .withValues(alpha: 0.25),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  dayStr,
+                                  style: TextStyle(
+                                    color: xp > 0
+                                        ? context.colors.textPrimary
+                                        : context.colors.textFaint,
+                                    fontWeight: xp > 0
+                                        ? FontWeight.w800
+                                        : FontWeight.w500,
+                                    fontSize: 10.5,
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 20),
 
                 // Section 3: Course Breakdown (overall) OR Activity Logs (course-specific)
                 if (widget.courseId == null) ...[
@@ -586,81 +622,95 @@ class _AnalyticsViewState extends State<AnalyticsView> {
 
                           return Container(
                             margin: const EdgeInsets.only(bottom: 12),
-                            child: AppTheme.applyGlassBlur(
-                              borderRadius: 20,
-                              color: context.colors.glassStrong,
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: EdgeInsets.all(10),
-                                          decoration: BoxDecoration(
-                                            color: context.colors.surfaceAlt,
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                          child: Icon(
-                                            _getBookIcon(book.icon),
-                                            color: context.colors.textPrimary,
-                                            size: 20,
-                                          ),
+                            decoration: BoxDecoration(
+                              color: context.colors.surface,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: context.colors.outline,
+                                width: 1.2,
+                              ),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: context.colors.surfaceAlt,
+                                          borderRadius: BorderRadius.circular(12),
                                         ),
-                                        SizedBox(width: 14),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                book.title,
-                                                style: TextStyle(
-                                                  color: context.colors.textPrimary,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 15,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              SizedBox(height: 2),
-                                              Text(
-                                                'Accuracy: $acc%  •  XP: $xp',
-                                                style: TextStyle(
-                                                  color: context.colors.textFaint,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
+                                        child: Icon(
+                                          _getBookIcon(book.icon),
+                                          color: context.colors.textPrimary,
+                                          size: 20,
                                         ),
-                                        SizedBox(width: 8),
-                                        Text(
+                                      ),
+                                      const SizedBox(width: 14),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              book.title,
+                                              style: TextStyle(
+                                                color: context.colors.textPrimary,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 15,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              'Accuracy: $acc%  •  XP: $xp',
+                                              style: TextStyle(
+                                                color: context.colors.textFaint,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.duoBlue.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
                                           '${(progress * 100).round()}%',
                                           style: const TextStyle(
                                             color: AppTheme.duoBlue,
-                                            fontWeight: FontWeight.w900,
-                                            fontSize: 14,
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 12,
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(4),
-                                      child: LinearProgressIndicator(
-                                        value: progress,
-                                        minHeight: 6,
-                                        backgroundColor: context.colors.outline,
-                                        valueColor:
-                                            const AlwaysStoppedAnimation<Color>(
-                                              AppTheme.duoBlue,
-                                            ),
                                       ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: LinearProgressIndicator(
+                                      value: progress,
+                                      minHeight: 6,
+                                      backgroundColor: context.colors.outline,
+                                      valueColor:
+                                          const AlwaysStoppedAnimation<Color>(
+                                            AppTheme.duoBlue,
+                                          ),
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           );
@@ -701,68 +751,72 @@ class _AnalyticsViewState extends State<AnalyticsView> {
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 8),
-                        child: AppTheme.applyGlassBlur(
-                          borderRadius: 16,
-                          color: context.colors.glassStrong,
-                          child: ListTile(
-                            dense: true,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
+                        decoration: BoxDecoration(
+                          color: context.colors.surface,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: context.colors.outline,
+                            width: 1,
+                          ),
+                        ),
+                        child: ListTile(
+                          dense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 4,
+                          ),
+                          leading: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: actType == 'practice'
+                                  ? AppTheme.duoViolet.withValues(alpha: 0.15)
+                                  : AppTheme.duoGreen.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              actType == 'practice'
+                                  ? LucideIcons.dumbbell
+                                  : LucideIcons.bookOpen,
+                              color: actType == 'practice'
+                                  ? AppTheme.duoViolet
+                                  : AppTheme.duoGreen,
+                              size: 18,
+                            ),
+                          ),
+                          title: Text(
+                            actType == 'practice'
+                                ? 'Practice Arena'
+                                : 'Lesson Completed',
+                            style: TextStyle(
+                              color: context.colors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '$dateStr  •  Acc: $acc%  •  Time: ${_formatTimeSpent(timeSec)}',
+                            style: TextStyle(
+                              color: context.colors.textFaint,
+                              fontSize: 11,
+                            ),
+                          ),
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
                               vertical: 4,
                             ),
-                            leading: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: actType == 'practice'
-                                    ? AppTheme.duoViolet.withValues(alpha: 0.15)
-                                    : AppTheme.duoGreen.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Icon(
-                                actType == 'practice'
-                                    ? LucideIcons.dumbbell
-                                    : LucideIcons.bookOpen,
-                                color: actType == 'practice'
-                                    ? AppTheme.duoViolet
-                                    : AppTheme.duoGreen,
-                                size: 18,
-                              ),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFFFBBF24,
+                              ).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            title: Text(
-                              actType == 'practice'
-                                  ? 'Practice Arena'
-                                  : 'Lesson Completed',
-                              style: TextStyle(
-                                color: context.colors.textPrimary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                            subtitle: Text(
-                              '$dateStr  •  Acc: $acc%  •  Time: ${_formatTimeSpent(timeSec)}',
-                              style: TextStyle(
-                                color: context.colors.textFaint,
+                            child: Text(
+                              '+$xpEarned XP',
+                              style: const TextStyle(
+                                color: Color(0xFFFBBF24),
+                                fontWeight: FontWeight.w900,
                                 fontSize: 11,
-                              ),
-                            ),
-                            trailing: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(
-                                  0xFFFBBF24,
-                                ).withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                '+$xpEarned XP',
-                                style: const TextStyle(
-                                  color: Color(0xFFFBBF24),
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 11,
-                                ),
                               ),
                             ),
                           ),
@@ -786,11 +840,17 @@ class _AnalyticsViewState extends State<AnalyticsView> {
     required Color iconColor,
     required Color glowColor,
   }) {
-    return AppTheme.applyGlassBlur(
-      borderRadius: 20,
-      color: context.colors.glassStrong,
+    return Container(
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: context.colors.outline,
+          width: 1.2,
+        ),
+      ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -802,8 +862,8 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                   title,
                   style: TextStyle(
                     color: context.colors.textFaint,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 9.5,
                     letterSpacing: 0.8,
                   ),
                 ),
@@ -825,16 +885,17 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                   style: TextStyle(
                     color: context.colors.textPrimary,
                     fontWeight: FontWeight.w900,
-                    fontSize: 16,
+                    fontSize: 17,
+                    letterSpacing: -0.3,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Container(
                   width: 24,
-                  height: 2,
+                  height: 2.5,
                   decoration: BoxDecoration(
                     color: iconColor,
-                    borderRadius: BorderRadius.circular(1),
+                    borderRadius: BorderRadius.circular(1.5),
                   ),
                 ),
               ],

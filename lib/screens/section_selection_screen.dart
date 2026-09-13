@@ -9,6 +9,7 @@ import 'dart:ui';
 import 'dart:async';
 import '../services/global_state.dart';
 import '../services/generation_manager.dart';
+import '../models/ai_task.dart';
 import 'main_layout_screen.dart';
 import 'pyq_panel_screen.dart';
 import '../services/deadline_service.dart';
@@ -541,23 +542,66 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'MODULE ${widget.moduleIdx + 1}',
-                            style: TextStyle(
-                              color: AppTheme.duoBlue,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.5,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _currentModule.title,
-                            style: TextStyle(
-                              color: context.colors.textPrimary,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900,
-                            ),
+                          Builder(
+                            builder: (context) {
+                              final fullTitle = _currentModule.title;
+                              final regExp = RegExp(r'^(Module\s+[0-9IVXLCDM]+)[\s:.\-]+(.*)$', caseSensitive: false);
+                              final match = regExp.firstMatch(fullTitle.trim());
+                              final tag = match != null ? match.group(1)!.trim().toUpperCase() : 'MODULE ${widget.moduleIdx + 1}';
+                              final cleanTitle = match != null && match.group(2)!.trim().isNotEmpty
+                                  ? match.group(2)!.trim()
+                                  : fullTitle;
+
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.duoBlue.withValues(alpha: 0.14),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: AppTheme.duoBlue.withValues(alpha: 0.35),
+                                        width: 1.0,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          width: 6,
+                                          height: 6,
+                                          decoration: const BoxDecoration(
+                                            color: AppTheme.duoBlue,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          tag,
+                                          style: const TextStyle(
+                                            color: AppTheme.duoBlue,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 1.2,
+                                            fontFamily: 'Nunito',
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    cleanTitle,
+                                    style: TextStyle(
+                                      color: context.colors.textPrimary,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                           SizedBox(height: 6),
                           Text(
@@ -1001,6 +1045,109 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                                                 ),
                                               ),
                                             ],
+                                          ),
+                                          const SizedBox(height: 14),
+                                          // Per-Section Generation Action Bar
+                                          AnimatedBuilder(
+                                            animation: GenerationManager.instance,
+                                            builder: (context, _) {
+                                              final queue = GenerationManager.instance.queue;
+                                              final sectionTask = queue.cast<AiTask?>().firstWhere(
+                                                (t) => t?.sectionId == section.id && (t?.status == 'queued' || t?.status == 'running'),
+                                                orElse: () => null,
+                                              );
+                                              final hasRunningUnit = queue.any(
+                                                (t) => t.sectionId == section.id && t.type == 'unit' && (t.status == 'queued' || t.status == 'running'),
+                                              );
+                                              final isGenerating = sectionTask != null || hasRunningUnit;
+
+                                              if (isGenerating) {
+                                                final statusMsg = sectionTask?.statusMessage ?? 'Generating lessons...';
+                                                final prog = sectionTask?.progress ?? 0.0;
+                                                return Container(
+                                                  width: double.infinity,
+                                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                                  decoration: BoxDecoration(
+                                                    color: AppTheme.duoBlue.withValues(alpha: 0.12),
+                                                    borderRadius: BorderRadius.circular(12),
+                                                    border: Border.all(color: AppTheme.duoBlue.withValues(alpha: 0.35)),
+                                                  ),
+                                                  child: Row(
+                                                    children: [
+                                                      const SizedBox(
+                                                        width: 14,
+                                                        height: 14,
+                                                        child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.duoBlue),
+                                                      ),
+                                                      const SizedBox(width: 10),
+                                                      Expanded(
+                                                        child: Text(
+                                                          '$statusMsg ${(prog * 100).toInt()}%',
+                                                          style: const TextStyle(
+                                                            fontSize: 12,
+                                                            fontWeight: FontWeight.bold,
+                                                            color: AppTheme.duoBlue,
+                                                            fontFamily: 'Nunito',
+                                                          ),
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              }
+
+                                              final bool isAllGenerated = section.units.isNotEmpty && section.units.every((u) => u.isGenerated);
+                                              return Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: OutlinedButton.icon(
+                                                      style: OutlinedButton.styleFrom(
+                                                        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 12),
+                                                        side: BorderSide(
+                                                          color: isAllGenerated
+                                                              ? AppTheme.duoGreen.withValues(alpha: 0.4)
+                                                              : AppTheme.duoBlue,
+                                                          width: 1.4,
+                                                        ),
+                                                        backgroundColor: isAllGenerated
+                                                            ? AppTheme.duoGreen.withValues(alpha: 0.06)
+                                                            : AppTheme.duoBlue.withValues(alpha: 0.08),
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius: BorderRadius.circular(12),
+                                                        ),
+                                                      ),
+                                                      icon: Icon(
+                                                        isAllGenerated ? LucideIcons.refreshCw : LucideIcons.sparkles,
+                                                        size: 14,
+                                                        color: isAllGenerated ? AppTheme.duoGreen : AppTheme.duoBlue,
+                                                      ),
+                                                      label: Text(
+                                                        isAllGenerated
+                                                            ? 'Regenerate Section'
+                                                            : (section.units.isEmpty
+                                                                ? 'Generate Section Contents'
+                                                                : 'Generate Missing Units'),
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight: FontWeight.w900,
+                                                          fontFamily: 'Nunito',
+                                                          color: isAllGenerated ? AppTheme.duoGreen : AppTheme.duoBlue,
+                                                        ),
+                                                      ),
+                                                      onPressed: () {
+                                                        _promptGenerateOrScheduleSection(
+                                                          widget.moduleIdx,
+                                                          index,
+                                                          isScheduled: false,
+                                                        );
+                                                      },
+                                                    ),
+                                                  ),
+                                                ],
+                                              );
+                                            },
                                           ),
                                         ],
                                       ),

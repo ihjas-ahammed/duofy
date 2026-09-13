@@ -435,6 +435,7 @@ class GenerationManager extends ChangeNotifier {
         remainingQueued,
         isWithinHours,
         availableSlots,
+        runningTasks,
       );
 
       if (keys.isEmpty) {
@@ -478,17 +479,64 @@ class GenerationManager extends ChangeNotifier {
     List<AiTask> queuedTasks,
     bool isWithinHours,
     int availableSlots,
+    List<AiTask> runningTasks,
   ) {
     final List<AiTask> toRun = [];
+    final activeBookPlanning = <String>{};
+    for (final t in runningTasks) {
+      if (t.type == 'section' ||
+          t.type == 'manifest' ||
+          t.type == 'module' ||
+          t.type == 'book_content' ||
+          t.type == 'book_skeleton') {
+        activeBookPlanning.add(t.bookId);
+      }
+    }
+
+    bool canRun(AiTask t) {
+      final isPlanning = t.type == 'section' ||
+          t.type == 'manifest' ||
+          t.type == 'module' ||
+          t.type == 'book_content' ||
+          t.type == 'book_skeleton';
+      if (isPlanning && activeBookPlanning.contains(t.bookId)) {
+        return false;
+      }
+      return true;
+    }
 
     // First, high-priority non-scheduled tasks
     final nonScheduled = queuedTasks.where((t) => !t.isScheduled).toList();
-    toRun.addAll(nonScheduled.take(availableSlots));
+    for (final t in nonScheduled) {
+      if (toRun.length >= availableSlots) break;
+      if (canRun(t)) {
+        toRun.add(t);
+        if (t.type == 'section' ||
+            t.type == 'manifest' ||
+            t.type == 'module' ||
+            t.type == 'book_content' ||
+            t.type == 'book_skeleton') {
+          activeBookPlanning.add(t.bookId);
+        }
+      }
+    }
 
     // Then, scheduled tasks if within schedule hours
     if (isWithinHours && toRun.length < availableSlots) {
       final scheduled = queuedTasks.where((t) => t.isScheduled).toList();
-      toRun.addAll(scheduled.take(availableSlots - toRun.length));
+      for (final t in scheduled) {
+        if (toRun.length >= availableSlots) break;
+        if (canRun(t)) {
+          toRun.add(t);
+          if (t.type == 'section' ||
+              t.type == 'manifest' ||
+              t.type == 'module' ||
+              t.type == 'book_content' ||
+              t.type == 'book_skeleton') {
+            activeBookPlanning.add(t.bookId);
+          }
+        }
+      }
     }
 
     return toRun;

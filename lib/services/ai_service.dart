@@ -1598,22 +1598,48 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     final textModelsToTry = await _getPrimaryTextModels();
     final liteModelsToTry = await _getLiteModels();
 
-    // New-flow units share the section\'s PDF chunk; old-flow units have
-    // their own pdfPath. Knowledge-only units have neither: lessons are then
-    // authored from the syllabus (when saved) and the model's own knowledge.
+    // Integrate BOTH reference book PDF chunk AND course syllabus document.
     final String? chunkPath = unit.pdfPath ?? sectionPdfPath;
-    final bool noSource = chunkPath == null;
-    List<Part> contextParts = const [];
-    if (!noSource) {
+    final List<Part> contextParts = [];
+    bool hasReferenceChunk = false;
+    if (chunkPath != null) {
       final chunkFile = File(chunkPath);
-      if (!chunkFile.existsSync()) {
-        throw Exception(
-          "Local file missing. Tap 'Restore' on the warning banner to re-link source files.",
-        );
+      if (chunkFile.existsSync()) {
+        final chunkParts = await _buildFileParts([chunkFile]);
+        contextParts.addAll(chunkParts);
+        hasReferenceChunk = true;
       }
-      contextParts = await _buildFileParts([chunkFile]);
+    }
+
+    // Always integrate syllabus if available
+    bool hasSyllabus = false;
+    if (bookContext.syllabusPath != null && bookContext.syllabusPath!.isNotEmpty) {
+      final syllabusFile = File(bookContext.syllabusPath!);
+      if (syllabusFile.existsSync()) {
+        final syllabusParts = await _buildFileParts([syllabusFile], extractText: true);
+        contextParts.addAll(syllabusParts);
+        hasSyllabus = true;
+      }
+    } else if (!hasReferenceChunk) {
+      contextParts.addAll(await _knowledgeContextParts(bookContext));
+    }
+
+    final bool noSource = !hasReferenceChunk && !hasSyllabus;
+    final String sourceContextNote;
+    if (hasReferenceChunk && hasSyllabus) {
+      sourceContextNote = '''
+[INTEGRATED SOURCES: SYLLABUS & REFERENCE TEXTBOOK]
+You are provided with BOTH:
+1. The extracted REFERENCE TEXTBOOK chunk for this section.
+2. The official COURSE SYLLABUS document.
+CRITICAL MANDATE:
+- Ensure every lesson strictly satisfies the SYLLABUS scope, key terms, and learning objectives.
+- Draw technical rigor, formulas, proofs, diagrams, and domain depth directly from the REFERENCE TEXTBOOK chunk.
+''';
+    } else if (noSource) {
+      sourceContextNote = '${PromptService.noSourceContentNote}\n';
     } else {
-      contextParts = await _knowledgeContextParts(bookContext);
+      sourceContextNote = '';
     }
 
     Section? unitSection;
@@ -1656,7 +1682,7 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
       previousGeneratedUnits,
     );
     final String instructionsBlock =
-        (noSource ? '${PromptService.noSourceContentNote}\n' : '') +
+        sourceContextNote +
         PromptService.instructionsBlock(bookContext.customInstructions);
 
     int modIdx = -1;
@@ -2816,20 +2842,46 @@ Do not include any explanation or other text.
     String? customInstructions,
     String? forcedApiKey,
   }) async {
-    // Knowledge-only sections have no PDF chunk: the manifest is generated
-    // from the book's syllabus (when saved) and the model's own knowledge.
-    final bool noSource = section.pdfPath == null;
-    List<Part> contextParts = const [];
-    if (!noSource) {
+    // Integrate BOTH reference book PDF chunk AND course syllabus document.
+    final List<Part> contextParts = [];
+    bool hasReferenceChunk = false;
+    if (section.pdfPath != null) {
       final chunkFile = File(section.pdfPath!);
-      if (!chunkFile.existsSync()) {
-        throw Exception(
-          "Local file missing. Tap 'Restore' on the warning banner to re-link source files.",
-        );
+      if (chunkFile.existsSync()) {
+        final chunkParts = await _buildFileParts([chunkFile]);
+        contextParts.addAll(chunkParts);
+        hasReferenceChunk = true;
       }
-      contextParts = await _buildFileParts([chunkFile]);
+    }
+
+    bool hasSyllabus = false;
+    if (bookContext.syllabusPath != null && bookContext.syllabusPath!.isNotEmpty) {
+      final syllabusFile = File(bookContext.syllabusPath!);
+      if (syllabusFile.existsSync()) {
+        final syllabusParts = await _buildFileParts([syllabusFile], extractText: true);
+        contextParts.addAll(syllabusParts);
+        hasSyllabus = true;
+      }
+    } else if (!hasReferenceChunk) {
+      contextParts.addAll(await _knowledgeContextParts(bookContext));
+    }
+
+    final bool noSource = !hasReferenceChunk && !hasSyllabus;
+    final String sourceContextNote;
+    if (hasReferenceChunk && hasSyllabus) {
+      sourceContextNote = '''
+[INTEGRATED SOURCES: SYLLABUS & REFERENCE TEXTBOOK]
+You are provided with BOTH:
+1. The extracted REFERENCE TEXTBOOK chunk for this section.
+2. The official COURSE SYLLABUS document.
+CRITICAL MANDATE:
+- Map units and topics directly to the syllabus curriculum and sequence.
+- Ensure unit scopes cover the reference textbook concepts and terminology thoroughly.
+''';
+    } else if (noSource) {
+      sourceContextNote = '${PromptService.noSourceContentNote}\n';
     } else {
-      contextParts = await _knowledgeContextParts(bookContext);
+      sourceContextNote = '';
     }
 
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
@@ -2843,8 +2895,7 @@ Do not include any explanation or other text.
         .join('\n');
 
     final hydratedPrompt =
-        ((noSource ? '${PromptService.noSourceContentNote}\n' : '') +
-                PromptService.unitManifest)
+        (sourceContextNote + PromptService.unitManifest)
             .replaceAll('%section_title%', section.title)
             .replaceAll('%section_description%', section.description)
             .replaceAll('%format_catalog%', formatCatalog)

@@ -72,36 +72,53 @@ class CalibrationCard extends StatelessWidget {
         if (stats == null || stats.ratedTotal < 5) {
           return const SizedBox.shrink();
         }
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: AppTheme.applyGlassBlur(
-            borderRadius: 24,
-            color: context.colors.glassStrong,
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: context.colors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: context.colors.outline,
+              width: 1.2,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'CALIBRATION — ACCURACY WHEN YOU FELT…',
-                        style: TextStyle(
-                          color: context.colors.textFaint,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                      Icon(
-                        LucideIcons.brainCircuit,
-                        color: context.colors.textFaint,
-                        size: 16,
-                      ),
-                    ],
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFBBF24),
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'CALIBRATION — CONFIDENCE VS ACCURACY',
+                      style: TextStyle(
+                        color: context.colors.textPrimary,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 11,
+                        letterSpacing: 0.6,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    LucideIcons.brainCircuit,
+                    color: context.colors.textFaint,
+                    size: 16,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
                   _bar(
                     context,
                     'SURE',
@@ -146,10 +163,8 @@ class CalibrationCard extends StatelessWidget {
                   ],
                 ],
               ),
-            ),
-          ),
+            );
+          },
         );
-      },
-    );
-  }
+      }
 }

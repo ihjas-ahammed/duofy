@@ -573,35 +573,91 @@ class _TreeReaderScreenState extends State<TreeReaderScreen> {
                     onTap: () => _service.toggleModuleDone(module),
                   ),
                   const SizedBox(width: 12),
-                  // Title & Subtitle
+                  // Title & Subtitle with Special Styled Module Tag
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          module.title,
-                          style: TextStyle(
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.2,
-                            color: modProgress.isAll
-                                ? (isDark ? const Color(0xFF8B949E) : const Color(0xFF94A3B8))
-                                : (isDark ? const Color(0xFFE6EDF3) : const Color(0xFF18202A)),
-                            decoration: modProgress.isAll ? TextDecoration.lineThrough : null,
-                          ),
-                        ),
-                        if (module.subtitle.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              module.subtitle,
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                color: isDark ? const Color(0xFF8B949E) : const Color(0xFF64748B),
+                    child: Builder(
+                      builder: (context) {
+                        final modIdx = widget.course.modules.indexOf(module);
+                        final fallbackTag = 'MODULE ${modIdx >= 0 ? modIdx + 1 : 1}';
+                        final regExp = RegExp(r'^(Module\s+[0-9IVXLCDM]+)[\s:.\-]+(.*)$', caseSensitive: false);
+                        final match = regExp.firstMatch(module.title.trim());
+                        final String tag;
+                        final String cleanTitle;
+                        if (match != null) {
+                          tag = match.group(1)!.trim().toUpperCase();
+                          final rest = match.group(2)!.trim();
+                          cleanTitle = rest.isNotEmpty ? rest : module.title;
+                        } else {
+                          tag = fallbackTag;
+                          cleanTitle = module.title;
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Special styled module tag badge
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                              margin: const EdgeInsets.only(bottom: 4),
+                              decoration: BoxDecoration(
+                                color: accent.withValues(alpha: isDark ? 0.16 : 0.10),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: accent.withValues(alpha: isDark ? 0.38 : 0.28),
+                                  width: 1.0,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 5,
+                                    height: 5,
+                                    decoration: BoxDecoration(
+                                      color: accent,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    tag,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.9,
+                                      fontFamily: 'Nunito',
+                                      color: accent,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                      ],
+                            Text(
+                              cleanTitle,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.2,
+                                color: modProgress.isAll
+                                    ? (isDark ? const Color(0xFF8B949E) : const Color(0xFF94A3B8))
+                                    : (isDark ? const Color(0xFFE6EDF3) : const Color(0xFF18202A)),
+                                decoration: modProgress.isAll ? TextDecoration.lineThrough : null,
+                              ),
+                            ),
+                            if (module.subtitle.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  module.subtitle,
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    color: isDark ? const Color(0xFF8B949E) : const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(width: 8),

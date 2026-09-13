@@ -276,8 +276,8 @@
     "hash": "f1c52c392be79432864e2cdebb4e1abe"
   },
   "lib/screens/practice_screen.dart": {
-    "mtime": 1785176876041.4116,
-    "hash": "31e25782f48cb2092ad70a34e38461ac"
+    "mtime": 1789298317925.5168,
+    "hash": "2a65d9d5756241a0c417f14beab5f6c7"
   },
   "lib/screens/practice_session_screen.dart": {
     "mtime": 1788180528691.9124,
@@ -316,8 +316,8 @@
     "hash": "42ea22a7bb1460a02a3281a02718c239"
   },
   "lib/screens/section_selection_screen.dart": {
-    "mtime": 1788272646633.9578,
-    "hash": "271c4cb14676e44461d9e4bc170b88a4"
+    "mtime": 1789298524699.6409,
+    "hash": "3f9acf367bfdaab05345f8aa71ead3b8"
   },
   "lib/screens/settings_screen.dart": {
     "mtime": 1789282194519.7285,
@@ -336,8 +336,8 @@
     "hash": "74fb7f29d69bdb0a301f4271283faaa4"
   },
   "lib/services/ai_service.dart": {
-    "mtime": 1787991256865.6042,
-    "hash": "4daa715cb02434527a8e43a83bf514c3"
+    "mtime": 1789298185261.0117,
+    "hash": "e19f0fc4c79d67feed2bf4eed0aacc75"
   },
   "lib/services/auto_index_pipeline.dart": {
     "mtime": 1784921713210.6274,
@@ -396,8 +396,8 @@
     "hash": "5b3930ae9ad1e7ac8dffa96e5a13be25"
   },
   "lib/services/generation_manager.dart": {
-    "mtime": 1787991256866.6042,
-    "hash": "fd0f21e4d7b74cbc6dc3f84befcd6416"
+    "mtime": 1789298072203.9927,
+    "hash": "32b3fd20f462f01311eb2f391efe7715"
   },
   "lib/services/global_state.dart": {
     "mtime": 1789291430818.3213,
@@ -508,8 +508,8 @@
     "hash": "9da6b7f70c29175c68b11e9b827deb18"
   },
   "lib/widgets/analytics_view.dart": {
-    "mtime": 1786377972205.1023,
-    "hash": "7d554685543079b06a4dbe9d20791f5e"
+    "mtime": 1789298362831.3923,
+    "hash": "afc442ac9b82b8d1b240049b5cd64b8b"
   },
   "lib/widgets/book_card.dart": {
     "mtime": 1784921713239.2834,
@@ -520,8 +520,8 @@
     "hash": "0670995a76a1ee7d4099198e89ee705d"
   },
   "lib/widgets/calibration_card.dart": {
-    "mtime": 1784921713249.8481,
-    "hash": "b51ee3a71d4c80ee2a591746c9c77b58"
+    "mtime": 1789299036106.5203,
+    "hash": "26a2a30c1df1f7bf6b8e8985faab6aa0"
   },
   "lib/widgets/canvas_art_view.dart": {
     "mtime": 1785589690515.9463,
@@ -1752,8 +1752,8 @@
     "hash": "48d5e6240684e4f4071b5203a82d98e3"
   },
   ".graphify/GRAPH_REPORT.md": {
-    "mtime": 1789294655641.0862,
-    "hash": "a11f164f67ce6a809154062f4fb2b838"
+    "mtime": 1789298509522.3308,
+    "hash": "c65497dc5ab04eb963c8865ed4b2fcad"
   },
   ".graphify/description-instructions/batch-000.md": {
     "mtime": 1789278686238.9316,
@@ -10474,5 +10474,529 @@
   "latest.md": {
     "mtime": 1789294882180.6338,
     "hash": "edf5a8a6d588dddfb497c6cf03ce24b8"
+  },
+  "docs/apps/tools/latex1/build.py": {
+    "mtime": 1789273800604.8743,
+    "hash": "10387bd21a40b433a27d750fceacb514"
+  },
+  "docs/apps/tools/latex1/src/data.head.js": {
+    "mtime": 1789273800604.9666,
+    "hash": "fdd82dec41c55cfdfbe46e6d823175f1"
+  },
+  "docs/apps/tools/latex1/src/data.m1.js": {
+    "mtime": 1789273800605.0266,
+    "hash": "ebf7daf4865e54ba2f4e2a3d610771e4"
+  },
+  "docs/apps/tools/latex1/src/data.m2.js": {
+    "mtime": 1789273800605.0854,
+    "hash": "98dbbcdb5065e6530f82c7a1f2a5b09a"
+  },
+  "docs/apps/tools/latex1/src/data.omr.js": {
+    "mtime": 1789273800605.1365,
+    "hash": "a51b77a753755be621ba5adf4e8a5d1a"
+  },
+  "docs/apps/tools/latex1/src/data.start.js": {
+    "mtime": 1789273800605.214,
+    "hash": "52e0dad070badee95b034601dc05100b"
+  },
+  "docs/apps/tools/latex1/src/data.tail.js": {
+    "mtime": 1789273800605.2576,
+    "hash": "50f6efeac4034a977e76962c32f89c45"
+  },
+  "docs/apps/tools/latex1/src/data.tests.js": {
+    "mtime": 1789273800605.2937,
+    "hash": "07c80caa2a6afe1284f83511079c0c1a"
+  },
+  "docs/apps/tools/latex1/src/tex.js": {
+    "mtime": 1789273800605.416,
+    "hash": "aaac876535fcacced3408efaa68c51c8"
+  },
+  "docs/apps/tools/latex1/src/ui.js": {
+    "mtime": 1789273800605.478,
+    "hash": "7b3c7d575ca0f8ca6012a0dbeeaf0254"
+  },
+  "docs/apps/tools/latex1/vendor/latex.js": {
+    "mtime": 1789273800605.6055,
+    "hash": "f2b67d854fc625127c016c9adb87530e"
+  },
+  "docs/apps/tools/latex1/vendor/latexjs-base.js": {
+    "mtime": 1789273800605.9834,
+    "hash": "ec0060275730e7724645f2c4ddc819e8"
+  },
+  "docs/apps/tools/latex1/vendor/lxshiki.js": {
+    "mtime": 1789273800606.7773,
+    "hash": "29d34d37bdd89ae8e937c7e4bd7c3b0c"
+  },
+  "docs/apps/tools/latex1/vendor/lxshiki.src.mjs": {
+    "mtime": 1789273800606.9075,
+    "hash": "d9eae3fc28a5df2d23682e5cabd87085"
+  },
+  "docs/apps/tools/make_diagrams.py": {
+    "mtime": 1789273800607.2095,
+    "hash": "12b23279736e0825eb49d19976150efa"
+  },
+  "docs/apps/tools/ms1/build.js": {
+    "mtime": 1789273800607.287,
+    "hash": "eb110ca4f8a0256ca44399a7387f3651"
+  },
+  "docs/apps/tools/ms1/build.py": {
+    "mtime": 1789273800607.3262,
+    "hash": "fc8c0c20d18d35c8f63e20b593ea7bab"
+  },
+  "docs/apps/tools/ms1/make_shell.py": {
+    "mtime": 1789273800607.546,
+    "hash": "be66278588933431ebbdbe2727cdfca3"
+  },
+  "docs/apps/tools/ms1/src/data.bank.m1.js": {
+    "mtime": 1789273800607.6226,
+    "hash": "19cf35ebede56d9b1d3555b365455a61"
+  },
+  "docs/apps/tools/ms1/src/data.bank.m2.js": {
+    "mtime": 1789273800607.7,
+    "hash": "d92dcdf101f8a8a43d5fcaa0882d240c"
+  },
+  "docs/apps/tools/ms1/src/data.head.js": {
+    "mtime": 1789273800607.769,
+    "hash": "75e2be92d7f9fe0850efd68bd0eae8bd"
+  },
+  "docs/apps/tools/ms1/src/data.m1.js": {
+    "mtime": 1789273800607.8025,
+    "hash": "0495700bca87333f82ce43ae3fab17d6"
+  },
+  "docs/apps/tools/ms1/src/data.m2.js": {
+    "mtime": 1789273800607.8484,
+    "hash": "e02e312c9220049a5c66bc70ae335503"
+  },
+  "docs/apps/tools/ms1/src/data.rev.js": {
+    "mtime": 1789273800607.9,
+    "hash": "5fac6742cccd339a921c84cf93eeaabf"
+  },
+  "docs/apps/tools/ms1/src/data.start.js": {
+    "mtime": 1789273800607.9417,
+    "hash": "57ce151cdc1d45b3676495b88d76a5be"
+  },
+  "docs/apps/tools/ms1/src/data.tail.js": {
+    "mtime": 1789273800607.9883,
+    "hash": "bf9aa21235cacc8e0f484ce9599f45b8"
+  },
+  "docs/apps/tools/ms1/src/eng.app.js": {
+    "mtime": 1789273800608.0276,
+    "hash": "df3b26ea09825d10e51572d83efa594d"
+  },
+  "docs/apps/tools/ms1/src/eng.core.js": {
+    "mtime": 1789273800608.068,
+    "hash": "52b47ca5c70d40de13e644396aa5a2a7"
+  },
+  "docs/apps/tools/ms1/src/eng.fig.js": {
+    "mtime": 1789273800608.106,
+    "hash": "6c368c60ec7511a334fcfd51d98cacb7"
+  },
+  "docs/apps/tools/ms1/src/eng.figs.m1.js": {
+    "mtime": 1789273800608.144,
+    "hash": "e3499e2c8317bd342074c549b20de755"
+  },
+  "docs/apps/tools/ms1/src/eng.figs.m2.js": {
+    "mtime": 1789273800608.1897,
+    "hash": "072ec2000003f97957bc6331cbc6835c"
+  },
+  "docs/apps/tools/ms1/src/eng.figs.rev.js": {
+    "mtime": 1789273800608.2341,
+    "hash": "1433edf75dc5ffd4883e42eab2eb76c1"
+  },
+  "docs/apps/tools/ms1/src/eng.widgets.js": {
+    "mtime": 1789273800608.2725,
+    "hash": "cf934b3e9464164d8d68f2c27c3ee5d5"
+  },
+  "docs/apps/tools/ms1/vendor/tex-svg.js": {
+    "mtime": 1789273800608.3997,
+    "hash": "e767e9be86ed9a6bbe91b3908df7faf1"
+  },
+  "docs/apps/tools/python1/build.py": {
+    "mtime": 1789273800609.4316,
+    "hash": "d3942a8d8e1e59539e0f436832bf63e7"
+  },
+  "docs/apps/tools/python1/src/data.head.js": {
+    "mtime": 1789273800609.5085,
+    "hash": "7f2b1eaeac44ae570aa03e23b91f159c"
+  },
+  "docs/apps/tools/python1/src/data.m1.js": {
+    "mtime": 1789273800609.58,
+    "hash": "b6940939bdef8a5f000cb85b507aed2e"
+  },
+  "docs/apps/tools/python1/src/data.m2.js": {
+    "mtime": 1789273800609.626,
+    "hash": "99a06c25f42f7e822356cea75b229720"
+  },
+  "docs/apps/tools/python1/src/data.omr.js": {
+    "mtime": 1789273800609.6729,
+    "hash": "2b4d96020581a293d5d4ef8cf1c483df"
+  },
+  "docs/apps/tools/python1/src/data.start.js": {
+    "mtime": 1789273800609.7053,
+    "hash": "68a8da1de70f6f048481bf606d1f0a42"
+  },
+  "docs/apps/tools/python1/src/data.tail.js": {
+    "mtime": 1789273800609.7375,
+    "hash": "3e410fb4a59ccf78d9b6bed21836adb7"
+  },
+  "docs/apps/tools/python1/src/data.tests.js": {
+    "mtime": 1789273800609.767,
+    "hash": "d353478f0d5bb4218417dbfbca56e22f"
+  },
+  "docs/apps/tools/python1/src/pyhl.js": {
+    "mtime": 1789273800609.8105,
+    "hash": "7a4188673c478d1b3319739c60fc2927"
+  },
+  "docs/apps/tools/python1/src/ui.js": {
+    "mtime": 1789273800609.8906,
+    "hash": "b0f3737401f6a35d0a9c5530883b40de"
+  },
+  "docs/apps/tools/qm1/QM_1.data.js": {
+    "mtime": 1789273800610.2576,
+    "hash": "d8f5f059a930fa6f3bb44725e8f1f1e6"
+  },
+  "docs/apps/tools/qm1/QM_1.engine.js": {
+    "mtime": 1789273800610.3835,
+    "hash": "b47aeff02ca2175ff3d3c8c672fcfa6b"
+  },
+  "docs/apps/tools/ss1/SS_1.data.js": {
+    "mtime": 1789273800610.5645,
+    "hash": "7644b1b186dc39d0edba5f4bf6c1637e"
+  },
+  "docs/apps/tools/ss1/SS_1.engine.js": {
+    "mtime": 1789273800610.7375,
+    "hash": "612cb89cf48c928472b5d0376d4b989d"
+  },
+  "lib/models/tree_reader_models.dart": {
+    "mtime": 1789291577529.7024,
+    "hash": "94b400f61ff00c96778aa6d087c966ae"
+  },
+  "lib/screens/tree_reader/html_app_viewer_screen.dart": {
+    "mtime": 1789280868949.4722,
+    "hash": "2df198956569870b31d26b79868d9b49"
+  },
+  "lib/screens/tree_reader/tree_reader_screen.dart": {
+    "mtime": 1789298034021.3396,
+    "hash": "2468eed52a81a43f5c67238f5531a568"
+  },
+  "lib/services/tree_reader_service.dart": {
+    "mtime": 1789298021794.134,
+    "hash": "0a485b9beae1be89cbfefd78ab695543"
+  },
+  "lib/widgets/interactive_3d_unit_cell.dart": {
+    "mtime": 1789282866741.3142,
+    "hash": "a122b2d249f31423ee2ac0e011662eed"
+  },
+  ".graphify/description-instructions/batch-061.md": {
+    "mtime": 1789278686255.932,
+    "hash": "df712d585943e057e42f778e4b1bc1cc"
+  },
+  ".graphify/description-instructions/batch-062.md": {
+    "mtime": 1789278686255.932,
+    "hash": "2d54f092448ec8a09c7e6858b32b3c36"
+  },
+  ".graphify/description-instructions/batch-063.md": {
+    "mtime": 1789278686256.932,
+    "hash": "8b9b050a72385afbda8cdd2a4e66c3b4"
+  },
+  ".graphify/description-instructions/batch-064.md": {
+    "mtime": 1789278686256.932,
+    "hash": "cd5cd0b504fd22fc633f35e1075e660c"
+  },
+  ".graphify/description-instructions/batch-065.md": {
+    "mtime": 1789278686256.932,
+    "hash": "2f9f011da1724b5e6feff80d87da4392"
+  },
+  ".graphify/description-instructions/batch-066.md": {
+    "mtime": 1789278686256.932,
+    "hash": "31e8723672a1e6602c2f744c7e471111"
+  },
+  ".graphify/description-instructions/batch-067.md": {
+    "mtime": 1789278686256.932,
+    "hash": "6b3ce7702517c4d3890b2ee4674f9fec"
+  },
+  "builds/whatsnew/26.9.13.md": {
+    "mtime": 1789294886492.4045,
+    "hash": "edf5a8a6d588dddfb497c6cf03ce24b8"
+  },
+  "docs/apps/LATEX_1.html": {
+    "mtime": 1789273800568.3997,
+    "hash": "498866ca29849820dc92b131b7c78cec"
+  },
+  "docs/apps/LATEX_12_OFFLINE.html": {
+    "mtime": 1789273800571.3757,
+    "hash": "7e04a80d89ad179f4e7ff27c8fe494f1"
+  },
+  "docs/apps/MATERIAL_SCIENCE_12.html": {
+    "mtime": 1789273800572.946,
+    "hash": "8595e5277dfefcce88d6511361defcea"
+  },
+  "docs/apps/MATERIAL_SCIENCE_12_OFFLINE.html": {
+    "mtime": 1789273800575.376,
+    "hash": "7aab8c2908b24709c0edb2087f86e3bc"
+  },
+  "docs/apps/OPTICS.html": {
+    "mtime": 1789273800576.8337,
+    "hash": "8543cc36645910b7a9a7961ef8ca3010"
+  },
+  "docs/apps/OPTICS_1.html": {
+    "mtime": 1789273800580.3762,
+    "hash": "e1aea7738f61606f6ea58f954e4afb77"
+  },
+  "docs/apps/OPTICS_2.html": {
+    "mtime": 1789273800581.688,
+    "hash": "e41d7884c93b354ebfad94548c2323e5"
+  },
+  "docs/apps/PYTHON_12.html": {
+    "mtime": 1789273800581.9487,
+    "hash": "f2fc5849dd7fdb28411dcc21de2bf78f"
+  },
+  "docs/apps/PYTHON_12_OFFLINE.html": {
+    "mtime": 1789273800582.3762,
+    "hash": "156e48dc309b8399d61b378fd95de446"
+  },
+  "docs/apps/QM.html": {
+    "mtime": 1789273800583.2832,
+    "hash": "f704712ea66b51f2b67d25f05c67a610"
+  },
+  "docs/apps/QM_1.html": {
+    "mtime": 1789273800583.5532,
+    "hash": "509cf5bfaf3aee5870ce19543e8d341b"
+  },
+  "docs/apps/SOLID_STATE.html": {
+    "mtime": 1789273800583.779,
+    "hash": "e7c721afc2ee882e6f9ba74199359329"
+  },
+  "docs/apps/SOLID_STATE_1.html": {
+    "mtime": 1789273800584.133,
+    "hash": "e17ff4a481a11e900070204a789da6a2"
+  },
+  "docs/apps/last-claude.md": {
+    "mtime": 1789273800604.3638,
+    "hash": "04280af8515567f742d7d27865b2b187"
+  },
+  "docs/apps/lastclaude.md": {
+    "mtime": 1789273800604.4036,
+    "hash": "9c014b4b43dc452c3165831a0793f341"
+  },
+  "docs/apps/tools/latex1/README.md": {
+    "mtime": 1789273800604.827,
+    "hash": "7b7db889a24906117e15f5006309f728"
+  },
+  "docs/apps/tools/latex1/src/shell.html": {
+    "mtime": 1789273800605.3525,
+    "hash": "c75ddd74ee5669b06ca17c24994bba54"
+  },
+  "docs/apps/tools/ms1/extract/M1.md": {
+    "mtime": 1789273800607.3857,
+    "hash": "34e49fb95ff6e75e1ba2806bfe07d9ab"
+  },
+  "docs/apps/tools/ms1/extract/M2.md": {
+    "mtime": 1789273800607.4702,
+    "hash": "3422643f9b9a1bcda990ce1b59e7e688"
+  },
+  "docs/apps/tools/ms1/src/shell.html": {
+    "mtime": 1789273800608.3103,
+    "hash": "9eff553c04dcc40d885ff64cd8115d60"
+  },
+  "docs/apps/tools/python1/src/shell.html": {
+    "mtime": 1789273800609.8406,
+    "hash": "a1fd8fa690189a7c84c0608ce3615ce6"
+  },
+  "docs/apps/tools/qm1/QM_1.shell.html": {
+    "mtime": 1789273800610.4292,
+    "hash": "0b5f030d1019f761f778f16ef650455c"
+  },
+  "docs/apps/tools/qm1/README.md": {
+    "mtime": 1789273800610.4683,
+    "hash": "9f405ff8bd9ebb108f92ed39d2fabd43"
+  },
+  "docs/apps/tools/ss1/SS_1.shell.html": {
+    "mtime": 1789273800610.8208,
+    "hash": "739d6ea2a3ea72c6a24f214f8a70f2fc"
+  },
+  "docs/apps/assets/diag-m1-aplanatic.png": {
+    "mtime": 1789273800584.7915,
+    "hash": "b18ccc973aa55bf21603ced0930ba64a"
+  },
+  "docs/apps/assets/diag-m1-aplanatic.webp": {
+    "mtime": 1789273800586.0894,
+    "hash": "2f9da715b669c4bcbd8e55aeae3992f0"
+  },
+  "docs/apps/assets/diag-m1-lens-maker.png": {
+    "mtime": 1789273800586.3762,
+    "hash": "5306c6f0f3d511a84a868780e3fde1c0"
+  },
+  "docs/apps/assets/diag-m1-lens-maker.webp": {
+    "mtime": 1789273800587.4646,
+    "hash": "7d14a1cb3a7fd9bd5b5fffc97170998d"
+  },
+  "docs/apps/assets/diag-m1-lens-media.png": {
+    "mtime": 1789273800587.671,
+    "hash": "ea89ed298216b7a4b67069e79697f159"
+  },
+  "docs/apps/assets/diag-m1-lens-media.webp": {
+    "mtime": 1789273800588.7493,
+    "hash": "73f791d8da2df3f35c1bffc16edc4645"
+  },
+  "docs/apps/assets/diag-m1-mirror.png": {
+    "mtime": 1789273800588.9856,
+    "hash": "3a4a7c25de5558c2f72b472585986187"
+  },
+  "docs/apps/assets/diag-m1-mirror.webp": {
+    "mtime": 1789273800590.0183,
+    "hash": "e875088722a13e9b8904a1e95c65997d"
+  },
+  "docs/apps/assets/diag-m1-newton.png": {
+    "mtime": 1789273800590.3765,
+    "hash": "221a4275891df4f369a4db6b50acbbf3"
+  },
+  "docs/apps/assets/diag-m1-newton.webp": {
+    "mtime": 1789273800591.344,
+    "hash": "3ba03bc2f6500a1d919c0fbb6ff6fef9"
+  },
+  "docs/apps/assets/diag-m1-reflection.png": {
+    "mtime": 1789273800591.476,
+    "hash": "f6152b092fa9f1ee1da62577301c7f91"
+  },
+  "docs/apps/assets/diag-m1-reflection.webp": {
+    "mtime": 1789273800591.9792,
+    "hash": "d41fd095bd879c7fca19f63b287abe58"
+  },
+  "docs/apps/assets/diag-m1-snell.png": {
+    "mtime": 1789273800592.0881,
+    "hash": "fcba4341d81372f3ca375efec7eef66b"
+  },
+  "docs/apps/assets/diag-m1-snell.webp": {
+    "mtime": 1789273800592.6821,
+    "hash": "e59102133c574c8c004b66c7ec44d07b"
+  },
+  "docs/apps/assets/diag-m1-spherical-fermat.png": {
+    "mtime": 1789273800592.7888,
+    "hash": "50fdba4e7fdd6d82a5cf31ea5b631a6c"
+  },
+  "docs/apps/assets/diag-m1-spherical-fermat.webp": {
+    "mtime": 1789273800593.5427,
+    "hash": "dd987e12514a7b14d4cc8a07c6f1fc69"
+  },
+  "docs/apps/assets/diag-m1-spherical-geometric.png": {
+    "mtime": 1789273800593.6694,
+    "hash": "50fdba4e7fdd6d82a5cf31ea5b631a6c"
+  },
+  "docs/apps/assets/diag-m1-spherical-geometric.webp": {
+    "mtime": 1789273800594.4314,
+    "hash": "dd987e12514a7b14d4cc8a07c6f1fc69"
+  },
+  "docs/apps/assets/diag-m2-ar-coating.png": {
+    "mtime": 1789273800594.5576,
+    "hash": "3fa59a7f904d05949db2c048956b8571"
+  },
+  "docs/apps/assets/diag-m2-ar-coating.webp": {
+    "mtime": 1789273800595.5466,
+    "hash": "9523bc78905e460d034768411c981ca2"
+  },
+  "docs/apps/assets/diag-m2-biprism.png": {
+    "mtime": 1789273800595.735,
+    "hash": "eb802ba2a15ce923d3afb8b3f43ff7c8"
+  },
+  "docs/apps/assets/diag-m2-biprism.webp": {
+    "mtime": 1789273800596.5823,
+    "hash": "da6e2354261c4d961e4b42d243e73163"
+  },
+  "docs/apps/assets/diag-m2-division.png": {
+    "mtime": 1789273800596.725,
+    "hash": "055a4277d37c35d95b42483ae5853594"
+  },
+  "docs/apps/assets/diag-m2-division.webp": {
+    "mtime": 1789273800596.9226,
+    "hash": "ab69dba9f5a09242d9bac5a14d674188"
+  },
+  "docs/apps/assets/diag-m2-fringe-shift.png": {
+    "mtime": 1789273800597.0684,
+    "hash": "e5431ddf975619b91995ed2b9cafacfa"
+  },
+  "docs/apps/assets/diag-m2-fringe-shift.webp": {
+    "mtime": 1789273800597.6191,
+    "hash": "727cb491a0e6ad4952d76865e6683105"
+  },
+  "docs/apps/assets/diag-m2-hyperbola.png": {
+    "mtime": 1789273800597.733,
+    "hash": "15735d5df0896c225069c89729728d6f"
+  },
+  "docs/apps/assets/diag-m2-hyperbola.webp": {
+    "mtime": 1789273800598.412,
+    "hash": "1257f79db8ee6ac2666973919e7f155b"
+  },
+  "docs/apps/assets/diag-m2-lloyd.png": {
+    "mtime": 1789273800598.542,
+    "hash": "de8114d0b7a8d5ff9c42a3973f7cdf8c"
+  },
+  "docs/apps/assets/diag-m2-lloyd.webp": {
+    "mtime": 1789273800599.1523,
+    "hash": "aa601f89dd9030bc19c963d5fa9e2a68"
+  },
+  "docs/apps/assets/diag-m2-michelson.png": {
+    "mtime": 1789273800599.2725,
+    "hash": "16e122c709e08906b0e17581b538bf9f"
+  },
+  "docs/apps/assets/diag-m2-michelson.webp": {
+    "mtime": 1789273800599.5012,
+    "hash": "fe36bf004e8ea1c70b3d81d09d3c2ae6"
+  },
+  "docs/apps/assets/diag-m2-newtons-rings.png": {
+    "mtime": 1789273800599.6343,
+    "hash": "5edf68e1d934c2601f90b8f0c7e8ecdc"
+  },
+  "docs/apps/assets/diag-m2-newtons-rings.webp": {
+    "mtime": 1789273800600.3813,
+    "hash": "4ca1cb45bbdd4ed5c1ac1d510f8c0543"
+  },
+  "docs/apps/assets/diag-m2-phasor.png": {
+    "mtime": 1789273800600.5293,
+    "hash": "fc2d8b14a49c14a95d0bddc1b407e17c"
+  },
+  "docs/apps/assets/diag-m2-phasor.webp": {
+    "mtime": 1789273800601.0925,
+    "hash": "fab31f3e33eb17040cc0c45bdf03a3ad"
+  },
+  "docs/apps/assets/diag-m2-stokes.png": {
+    "mtime": 1789273800601.2158,
+    "hash": "4739df23064d5eca820f6848324134cb"
+  },
+  "docs/apps/assets/diag-m2-stokes.webp": {
+    "mtime": 1789273800601.8276,
+    "hash": "6466be3828de758ddd81233954389531"
+  },
+  "docs/apps/assets/diag-m2-thin-film.png": {
+    "mtime": 1789273800601.942,
+    "hash": "2df1d01182c58c36c516991b1ec6f92f"
+  },
+  "docs/apps/assets/diag-m2-thin-film.webp": {
+    "mtime": 1789273800602.4912,
+    "hash": "f324639fbb6a4d8226c1fa04982b7fe6"
+  },
+  "docs/apps/assets/diag-m2-two-mirrors.png": {
+    "mtime": 1789273800602.5996,
+    "hash": "65558d5be8db2286f8ffb7278993d061"
+  },
+  "docs/apps/assets/diag-m2-two-mirrors.webp": {
+    "mtime": 1789273800603.1404,
+    "hash": "b3233a653d9aa692dc1e835c43be3698"
+  },
+  "docs/apps/assets/diag-m2-wedge.png": {
+    "mtime": 1789273800603.2434,
+    "hash": "ca712753ba397495dd7098eee84ac9de"
+  },
+  "docs/apps/assets/diag-m2-wedge.webp": {
+    "mtime": 1789273800603.7546,
+    "hash": "4993dd3e72b7d79ca2c4c136c7cda68e"
+  },
+  "docs/apps/assets/diag-m2-young.png": {
+    "mtime": 1789273800603.8633,
+    "hash": "17e10026cd2043ca1c59c47fece391b8"
+  },
+  "docs/apps/assets/diag-m2-young.webp": {
+    "mtime": 1789273800604.2803,
+    "hash": "4a1c45938a676c7627b0dc793685c48a"
   }
 }

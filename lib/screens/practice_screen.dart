@@ -493,51 +493,187 @@ class _PracticeScreenState extends State<PracticeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final totalQuestions = _slidesInRange.length;
+    final pyqCount = _pyqQuestionsInRange.length;
+    final unitsCount = _selectedUnits.length;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Practice Arena',
-          style: TextStyle(fontWeight: FontWeight.w900),
-        ),
-        automaticallyImplyLeading: false,
-      ),
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         bottom: false,
         child: ListView(
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
           children: [
+            // Hero Masthead
             Padding(
-              padding: const EdgeInsets.only(
-                left: 4.0,
-                bottom: 20.0,
-                right: 4.0,
-              ),
-              child: Text(
-                'Target specific skills to master the concepts. Mistakes are repeated until perfected!',
-                style: TextStyle(
-                  color: context.colors.textFaint,
-                  fontSize: 14,
-                  height: 1.4,
-                ),
+              padding: const EdgeInsets.fromLTRB(4, 8, 4, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.duoBlue.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppTheme.duoBlue.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: AppTheme.duoBlue,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'DRILL LAB',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.2,
+                            color: AppTheme.duoBlue,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Practice Arena',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                      color: context.colors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Target specific cognitive skills with interactive drills. Mistakes are repeated until perfected.',
+                    style: TextStyle(
+                      color: context.colors.textFaint,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Mini Statgrid Overview Strip
+                  Row(
+                    children: [
+                      _buildMiniStatChip(
+                        label: 'SCOPE',
+                        value: '$unitsCount Unit${unitsCount == 1 ? '' : 's'}',
+                        icon: LucideIcons.layers,
+                        color: AppTheme.duoBlue,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildMiniStatChip(
+                        label: 'POOL',
+                        value: '$totalQuestions Qs',
+                        icon: LucideIcons.helpCircle,
+                        color: AppTheme.duoViolet,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildMiniStatChip(
+                        label: 'PYQ',
+                        value: '$pyqCount Available',
+                        icon: LucideIcons.fileSearch,
+                        color: const Color(0xFFFBBF24),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            SmartReviewCard(margin: EdgeInsets.only(bottom: 16)),
+            const SmartReviewCard(margin: EdgeInsets.only(bottom: 16)),
             _buildScopeSelector(),
             const SizedBox(height: 8),
             Padding(
-              padding: const EdgeInsets.only(left: 4.0, top: 8, bottom: 12.0),
-              child: Text(
-                'CHOOSE A MODE',
-                style: TextStyle(
-                  color: context.colors.textFaint,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.5,
-                ),
+              padding: const EdgeInsets.only(left: 4.0, top: 12, bottom: 10.0),
+              child: Row(
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: context.colors.textFaint,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'CHOOSE A MODE',
+                    style: TextStyle(
+                      color: context.colors.textFaint,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
               ),
             ),
             _buildModeGrid(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMiniStatChip({
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: context.colors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: context.colors.outline,
+            width: 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 12, color: color),
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                    color: context.colors.textFaint,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: context.colors.textPrimary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
       ),
@@ -576,13 +712,13 @@ class _PracticeScreenState extends State<PracticeScreen> {
     final unitsInScope = _unitsInScope;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(16, 14, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       decoration: BoxDecoration(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppTheme.duoBlue.withValues(alpha: 0.25),
-          width: 1.5,
+          color: context.colors.outline,
+          width: 1.2,
         ),
       ),
       child: Column(
@@ -590,37 +726,47 @@ class _PracticeScreenState extends State<PracticeScreen> {
         children: [
           Row(
             children: [
-              Icon(
-                LucideIcons.slidersHorizontal,
-                color: AppTheme.duoBlue,
-                size: 18,
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppTheme.duoBlue.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  LucideIcons.slidersHorizontal,
+                  color: AppTheme.duoBlue,
+                  size: 14,
+                ),
               ),
               const SizedBox(width: 8),
               Text(
                 'PRACTICE SCOPE',
                 style: TextStyle(
                   color: context.colors.textPrimary,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
                   letterSpacing: 1,
                 ),
               ),
-              Spacer(),
+              const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: AppTheme.duoBlue.withValues(alpha: 0.15),
+                  color: AppTheme.duoBlue.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: AppTheme.duoBlue.withValues(alpha: 0.25),
+                  ),
                 ),
                 child: Text(
                   '${_selectedUnits.length} unit${_selectedUnits.length == 1 ? '' : 's'}',
                   style: const TextStyle(
                     color: AppTheme.duoBlue,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 11,
                   ),
                 ),
               ),
@@ -634,14 +780,14 @@ class _PracticeScreenState extends State<PracticeScreen> {
               'MODULE',
               style: TextStyle(
                 color: context.colors.textFaint,
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
                 letterSpacing: 1,
               ),
             ),
-            SizedBox(height: 6),
+            const SizedBox(height: 6),
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
                 color: context.colors.surfaceAlt,
                 borderRadius: BorderRadius.circular(12),
@@ -652,10 +798,11 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   isExpanded: true,
                   value: _moduleIdx,
                   dropdownColor: context.colors.surface,
+                  icon: Icon(LucideIcons.chevronDown, size: 16, color: context.colors.textFaint),
                   style: TextStyle(
                     color: context.colors.textPrimary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13.5,
                   ),
                   items: [
                     for (int i = 0; i < _modules.length; i++)
@@ -730,26 +877,26 @@ class _PracticeScreenState extends State<PracticeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(height: 14),
+        const SizedBox(height: 14),
         Row(
           children: [
             Text(
               label,
               style: TextStyle(
                 color: context.colors.textFaint,
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
                 letterSpacing: 1,
               ),
             ),
-            Spacer(),
+            const Spacer(),
             Text(
               selectedCount == total
                   ? 'All $total'
                   : '$selectedCount of $total',
               style: const TextStyle(
                 color: AppTheme.duoBlue,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w800,
                 fontSize: 11,
               ),
             ),
@@ -760,7 +907,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
           selectedCount == 1 ? titles[s] : '${titles[s]}  →  ${titles[e]}',
           style: TextStyle(
             color: context.colors.textSecondary,
-            fontSize: 13,
+            fontSize: 12.5,
             fontWeight: FontWeight.w600,
             height: 1.3,
           ),
@@ -773,11 +920,11 @@ class _PracticeScreenState extends State<PracticeScreen> {
               activeTrackColor: AppTheme.duoBlue,
               inactiveTrackColor: context.colors.outline,
               thumbColor: AppTheme.duoBlue,
-              overlayColor: AppTheme.duoBlue.withValues(alpha: 0.2),
+              overlayColor: AppTheme.duoBlue.withValues(alpha: 0.15),
               rangeThumbShape: const RoundRangeSliderThumbShape(
-                enabledThumbRadius: 9,
+                enabledThumbRadius: 8,
               ),
-              trackHeight: 5,
+              trackHeight: 4,
             ),
             child: RangeSlider(
               min: 0,
@@ -795,14 +942,14 @@ class _PracticeScreenState extends State<PracticeScreen> {
               onPressed: onSelectAll,
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-                minimumSize: const Size(0, 28),
+                minimumSize: const Size(0, 26),
               ),
               child: const Text(
                 'Select all',
                 style: TextStyle(
                   color: AppTheme.duoBlue,
                   fontWeight: FontWeight.w800,
-                  fontSize: 12,
+                  fontSize: 11.5,
                 ),
               ),
             ),
@@ -821,15 +968,8 @@ class _PracticeScreenState extends State<PracticeScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // PYQ Card spanning full width
-            _ModeCard(
-              mode: const _PracticeMode(
-                'pyq',
-                'PYQ Practice',
-                'Solve Previous Year Questions',
-                LucideIcons.fileSearch,
-                AppTheme.duoBlue,
-              ),
+            // Dedicated PYQ Card
+            _PyqModeCard(
               count: pyqCount,
               onTap: pyqCount == 0 ? null : _configureAndStartPyq,
             ),
@@ -856,6 +996,139 @@ class _PracticeScreenState extends State<PracticeScreen> {
   }
 }
 
+class _PyqModeCard extends StatelessWidget {
+  final int count;
+  final VoidCallback? onTap;
+
+  const _PyqModeCard({required this.count, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final disabled = onTap == null;
+    const accentColor = Color(0xFFFBBF24);
+
+    return Opacity(
+      opacity: disabled ? 0.45 : 1.0,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: context.colors.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: disabled
+                    ? context.colors.outline
+                    : accentColor.withValues(alpha: 0.4),
+                width: 1.5,
+              ),
+              boxShadow: disabled
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: accentColor.withValues(alpha: 0.08),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: accentColor.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Icon(
+                    LucideIcons.fileSearch,
+                    color: disabled ? context.colors.textFaint : accentColor,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: accentColor.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'EXAM PREP',
+                              style: TextStyle(
+                                color: accentColor,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            disabled ? '0 Q' : '$count Questions',
+                            style: TextStyle(
+                              color: context.colors.textFaint,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'PYQ Practice',
+                        style: TextStyle(
+                          color: context.colors.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Target questions extracted from actual university papers',
+                        style: TextStyle(
+                          color: context.colors.textFaint,
+                          fontSize: 12,
+                          height: 1.3,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  LucideIcons.chevronRight,
+                  color: disabled ? context.colors.outline : accentColor,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ModeCard extends StatelessWidget {
   final _PracticeMode mode;
   final int count;
@@ -868,29 +1141,31 @@ class _ModeCard extends StatelessWidget {
     final disabled = onTap == null;
     final color = disabled ? context.colors.textFaint : mode.color;
     return Opacity(
-      opacity: disabled ? 0.45 : 1,
+      opacity: disabled ? 0.45 : 1.0,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
           child: Container(
-            height: 150,
-            padding: EdgeInsets.all(16),
+            height: 144,
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: context.colors.surface,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: color.withValues(alpha: disabled ? 0.2 : 0.4),
-                width: 2,
+                color: disabled
+                    ? context.colors.outline
+                    : color.withValues(alpha: 0.35),
+                width: 1.5,
               ),
               boxShadow: disabled
                   ? null
                   : [
                       BoxShadow(
-                        color: color.withValues(alpha: 0.12),
-                        offset: Offset(0, 4),
-                        blurRadius: 12,
+                        color: color.withValues(alpha: 0.08),
+                        offset: const Offset(0, 4),
+                        blurRadius: 10,
                       ),
                     ],
             ),
@@ -901,51 +1176,61 @@ class _ModeCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.18),
-                        shape: BoxShape.circle,
+                        color: color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(mode.icon, size: 22, color: color),
+                      child: Icon(mode.icon, size: 18, color: color),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
+                        horizontal: 7,
+                        vertical: 2.5,
                       ),
                       decoration: BoxDecoration(
-                        color: context.colors.surfaceAlt,
-                        borderRadius: BorderRadius.circular(20),
+                        color: disabled
+                            ? context.colors.surfaceAlt
+                            : color.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: disabled
+                              ? context.colors.outline
+                              : color.withValues(alpha: 0.25),
+                          width: 1,
+                        ),
                       ),
                       child: Text(
-                        disabled ? 'None' : '$count Q',
+                        disabled ? '0 Q' : '$count Q',
                         style: TextStyle(
-                          color: context.colors.textFaint,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 11,
+                          color: disabled
+                              ? context.colors.textFaint
+                              : color,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 10.5,
                         ),
                       ),
                     ),
                   ],
                 ),
-                Spacer(),
+                const Spacer(),
                 Text(
                   mode.title,
                   style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14.5,
                     color: context.colors.textPrimary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
                   mode.subtitle,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 11.5,
                     color: context.colors.textFaint,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

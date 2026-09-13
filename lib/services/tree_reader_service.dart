@@ -93,7 +93,7 @@ class TreeReaderService extends ChangeNotifier {
 
   bool isTopicDone(String topicId) => _doneTopicIds.contains(topicId);
 
-  void toggleTopicDone(String topicId) {
+  void toggleTopicDone(String topicId, {bool autoAdvance = true}) {
     final wasDone = _doneTopicIds.contains(topicId);
     if (wasDone) {
       _doneTopicIds.remove(topicId);
@@ -102,9 +102,38 @@ class TreeReaderService extends ChangeNotifier {
       // Award XP and bump global progress
       GlobalState.addXp(15, course.id);
       GlobalState.bumpProgress();
+
+      // Automatically close current topic tab and open the next one
+      if (autoAdvance) {
+        _closeAndOpenNextTopic(topicId);
+      }
     }
     _saveState();
     notifyListeners();
+  }
+
+  void _closeAndOpenNextTopic(String currentTopicId) {
+    // 1. Close current topic tab
+    _openNodeIds.remove(currentTopicId);
+
+    // 2. Flatten all topics in the course in hierarchical sequence
+    final flattened = <({TreeModule module, TreeSection section, TreeTopic topic})>[];
+    for (final m in course.modules) {
+      for (final s in m.sections) {
+        for (final t in s.topics) {
+          flattened.add((module: m, section: s, topic: t));
+        }
+      }
+    }
+
+    final currentIdx = flattened.indexWhere((e) => e.topic.id == currentTopicId);
+    if (currentIdx != -1 && currentIdx + 1 < flattened.length) {
+      final next = flattened[currentIdx + 1];
+      // Open the next topic and ensure its parent module & section are open
+      _openNodeIds.add(next.module.id);
+      _openNodeIds.add(next.section.id);
+      _openNodeIds.add(next.topic.id);
+    }
   }
 
   bool isTopicBookmarked(String topicId) => _bookmarkedTopicIds.contains(topicId);
