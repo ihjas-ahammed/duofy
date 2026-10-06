@@ -1,15 +1,18 @@
-# What's New in v26.9.13 (Build 2127091302)
+# What's New in v26.10.6 (Build 2126100601)
 
-- **Tree Reader Auto-Advance & Accordion Sequence**:
-  - Marking any topic completed automatically collapses the current topic and expands the next topic in sequence, smoothly scrolling it into focus.
-- **Dedicated Styled Module Tags & Clean Headers**:
-  - Replaced repetitive `"Module X: <Name>"` titles with a dedicated pill badge `[ • MODULE X ]` and separated clean module typography across Tree Reader, Module Selection, and Section Selection screens.
-- **Per-Section Generate Button & Singular Generation**:
-  - Added a prominent, real-time reactive `[ ✦ Generate Section Contents ]` button directly on every section card in Section Selection.
-  - Resolved task scheduling race conditions in `GenerationManager` to enforce singular sequential section planning per course.
-- **Dual Integration: Syllabus + Reference Textbook Ingestion**:
-  - Enhanced both `generateUnitContent` and `generateUnitManifest` in `AIService` to simultaneously ingest syllabus curriculum requirements and reference textbook PDF excerpts under `[INTEGRATED SOURCES: SYLLABUS & REFERENCE TEXTBOOK]`.
-- **Drill Arena & Analytics Redesign**:
-  - **Drill Screen**: Hero masthead with `[ • DRILL LAB ]` pill kicker, mini statgrid (`SCOPE`, `POOL`, `PYQ`), scope selector with unit count pills, dedicated `[ EXAM PREP ]` `PYQ Practice` card, and 2-column mode cards.
-  - **Analytics Screen**: Hero masthead with `[ • COURSE TELEMETRY ]` pill kicker, 4-metric `.statgrid` (`STREAK COUNT`, `TIME SPENT`, `AVG ACCURACY`, `TOTAL XP`) with color underline accents, and `CALIBRATION — CONFIDENCE VS ACCURACY` card with accuracy bars and telemetry graphs.
-
+- **LaTeX Studio Image & Figure Uploading**:
+  - Direct image file uploads (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`) into multi-file LaTeX workspaces via File Explorer drawer, AppBar, and dedicated tab bar action.
+  - Image preview dialog showing thumbnail, file size, custom project path/filename, and instant insertion controls.
+- **Inline \includegraphics & Figure Environment Generation**:
+  - One-tap insertion of publication-grade `\begin{figure}[htbp]...\includegraphics...\caption...\label...\end{figure}` environments or inline macros.
+  - Automatic `\usepackage{graphicx}` package injection into root LaTeX documents upon image insertion.
+  - Dedicated "Insert Image into LaTeX" dialog to browse and embed existing project assets into active `.tex` documents with customizable widths (`0.5\textwidth`, `0.7\textwidth`, `0.85\textwidth`, `\textwidth`).
+- **Interactive Image Viewer Workspace Tabs**:
+  - Opening image files in the editor presents an interactive zoomable/pannable inspection canvas, image metadata, and quick action buttons for copying `\includegraphics` code, copying full figure blocks, replacing assets, and deleting files.
+- **Quick LaTeX Accessory Toolbar**:
+  - Horizontal scrollable quick-insert bar directly above the editor status bar for instant insertion of `[🖼️ Image]`, `[📤 Upload]`, `[\begin{figure}]`, `[\cite{...}]`, `[Equation]`, `[Align]`, `[\section]`, `[\subsection]`, `[\textbf{}]`, `[\textit{}]`, and `[Table]`.
+- **Full Online & Offline Compiler Support**:
+  - Base64 payload integration with the remote TeX Live compiler (`latex.ytotech.com`) for compiling documents with graphic assets.
+  - Built-in offline PDF rendering fallback support for `\includegraphics` and `\caption` blocks using local memory images.
+- **New Multi-File Template**:
+  - Added "Research Paper (with Figures)" featuring embedded benchmark graphic assets and demonstration of `\usepackage{graphicx}` and `\includegraphics`.

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -50,6 +51,39 @@ class _LatexIdeScreenState extends State<LatexIdeScreen> {
   }
 
   Map<String, Map<String, String>> get _multiFileTemplates => {
+    'Research Paper with Figures': {
+      'main.tex': r'''\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{cite}
+
+\title{\textbf{Deep Neural Representations \& Empirical Performance}}
+\author{\textbf{''' + _authorName + r'''} \\ Department of Computer Science}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+Modern multimodal architectures integrate visual and linguistic representations. This template demonstrates embedding figures and images directly within the document.
+
+\section{Experimental Evaluation}
+Figure~\ref{fig:performance_chart} shows the benchmark evaluation across training iterations:
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\textwidth]{chart.png}
+  \caption{Empirical training accuracy and convergence across test evaluations.}
+  \label{fig:performance_chart}
+\end{figure}
+
+\section{Conclusion}
+Uploaded images and figures are compiled directly into publication-ready PDF documents.
+
+\end{document}''',
+      'chart.png': 'iVBORw0KGgoAAAANSUhEUgAAAKAAAABQCAIAAAARP+ljAAABUUlEQVR4nO3dMUrDYBiAYSs6uHsQF0/h4gW8ggieQxCv4AVcPIWLB3HoUhwE6yC4mQpJLXn7POvPDz+8+UoTAlksV+sDug53fQC2S+A4geMEjhM4TuA4geMEjhM47mh4+eLu/X/OwRjPtye/LZnguA0T/G3gAmG3Nv7EmuA4geMEjhM4TuA4geMEjvvTfXDYzdPHmO33l8dTnWRLTHCcwHECxwkcJ3CcwHECxwkcJ3DcPJ5kjXw1bJ/fSDHBcQLHCRwncNw8/mTN0ePr55jtV2fTzJ4JjhM4TuA4geMEjhM4TuA4geMEjpvySdb59duY7S8Pp1OdhB8mOE7gOIHjBI4TOE7gOIHjBI4TOE7gOIHjBI4TOE7gOIHjBI4TOE7gOIHjBI4TOE7gOIHjFsvVemDZp+1mwaft9teGCWbuTHCcwHECxwkcJ3CcwHECxwkc9wW34x5WEfqgBwAAAABJRU5ErkJggg==',
+    },
     'Academic Paper (BibTeX)': {
       'main.tex': r'''\documentclass[11pt,a4paper]{article}
 \usepackage[utf8]{inputenc}
@@ -384,7 +418,18 @@ Flow University \hfill GPA: 3.92/4.0
   year    = {2026}
 }''';
 
+  bool _isImageFile(String filename) {
+    final lower = filename.toLowerCase();
+    return lower.endsWith('.png') ||
+        lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg') ||
+        lower.endsWith('.gif') ||
+        lower.endsWith('.webp') ||
+        lower.endsWith('.bmp');
+  }
+
   String _getLanguageForFile(String filename) {
+    if (_isImageFile(filename)) return 'plain';
     if (filename.endsWith('.bib')) return 'bibtex';
     if (filename.endsWith('.tex') || filename.endsWith('.sty') || filename.endsWith('.cls')) {
       return 'latex';
@@ -393,6 +438,7 @@ Flow University \hfill GPA: 3.92/4.0
   }
 
   IconData _getIconForFile(String filename) {
+    if (_isImageFile(filename)) return LucideIcons.image;
     if (filename.endsWith('.bib')) return LucideIcons.bookMarked;
     if (filename.endsWith('.sty') || filename.endsWith('.cls')) return LucideIcons.palette;
     if (filename.endsWith('.tex')) return LucideIcons.fileText;
@@ -400,6 +446,7 @@ Flow University \hfill GPA: 3.92/4.0
   }
 
   Color _getColorForFile(String filename) {
+    if (_isImageFile(filename)) return const Color(0xFFF43F5E);
     if (filename.endsWith('.bib')) return AppTheme.duoViolet;
     if (filename.endsWith('.sty') || filename.endsWith('.cls')) return AppTheme.duoOrange;
     if (filename.endsWith('.tex')) return AppTheme.duoBlue;
@@ -417,7 +464,9 @@ Flow University \hfill GPA: 3.92/4.0
   }
 
   void _onTextChanged() {
-    _files[_activeFileName] = _texController.text;
+    if (!_isImageFile(_activeFileName)) {
+      _files[_activeFileName] = _texController.text;
+    }
     _autosaveTimer?.cancel();
     _autosaveTimer = Timer(const Duration(milliseconds: 1500), () {
       if (mounted) {
@@ -429,8 +478,10 @@ Flow University \hfill GPA: 3.92/4.0
   void _switchToFile(String fileName) {
     if (_activeFileName == fileName) return;
 
-    // Save current active text
-    _files[_activeFileName] = _texController.text;
+    // Save current active text if it wasn't an image
+    if (!_isImageFile(_activeFileName)) {
+      _files[_activeFileName] = _texController.text;
+    }
 
     if (!_openTabs.contains(fileName)) {
       _openTabs.add(fileName);
@@ -438,8 +489,10 @@ Flow University \hfill GPA: 3.92/4.0
 
     setState(() {
       _activeFileName = fileName;
-      _texController.text = _files[fileName] ?? '';
-      _texController.language = _getLanguageForFile(fileName);
+      if (!_isImageFile(fileName)) {
+        _texController.text = _files[fileName] ?? '';
+        _texController.language = _getLanguageForFile(fileName);
+      }
     });
   }
 
@@ -452,8 +505,10 @@ Flow University \hfill GPA: 3.92/4.0
       if (_activeFileName == fileName) {
         final newIndex = index.clamp(0, _openTabs.length - 1);
         _activeFileName = _openTabs[newIndex];
-        _texController.text = _files[_activeFileName] ?? '';
-        _texController.language = _getLanguageForFile(_activeFileName);
+        if (!_isImageFile(_activeFileName)) {
+          _texController.text = _files[_activeFileName] ?? '';
+          _texController.language = _getLanguageForFile(_activeFileName);
+        }
       }
     });
   }
@@ -747,8 +802,10 @@ Flow University \hfill GPA: 3.92/4.0
         ? 'LaTeX Studio'
         : _titleController.text.trim();
 
-    // Sync active editor buffer to files
-    _files[_activeFileName] = _texController.text;
+    // Sync active editor buffer to files if not an image
+    if (!_isImageFile(_activeFileName)) {
+      _files[_activeFileName] = _texController.text;
+    }
 
     FocusScope.of(context).unfocus();
     _saveProject(silent: true);
@@ -798,15 +855,24 @@ Flow University \hfill GPA: 3.92/4.0
     String? onlineErrorMessage;
 
     try {
-      // Build resources array with ALL project files
+      // Build resources array with ALL project files (text + binary images in base64)
       final resources = _files.entries.map((entry) {
         final isMain = (entry.key == _mainFileName);
-        final content = (entry.key == _activeFileName) ? _texController.text : entry.value;
-        return {
-          'main': isMain,
-          'path': entry.key,
-          'content': content,
-        };
+        if (_isImageFile(entry.key)) {
+          var b64 = entry.value;
+          if (b64.contains(',')) b64 = b64.split(',').last;
+          return {
+            'path': entry.key,
+            'file': b64,
+          };
+        } else {
+          final content = (entry.key == _activeFileName) ? _texController.text : entry.value;
+          return {
+            'main': isMain,
+            'path': entry.key,
+            'content': content,
+          };
+        }
       }).toList();
 
       final response = await http.post(
@@ -920,8 +986,10 @@ Flow University \hfill GPA: 3.92/4.0
       });
     }
 
-    // Sync active editor buffer
-    _files[_activeFileName] = _texController.text;
+    // Sync active editor buffer if not an image
+    if (!_isImageFile(_activeFileName)) {
+      _files[_activeFileName] = _texController.text;
+    }
 
     final project = IdeProject(
       id: _projectId,
@@ -952,6 +1020,790 @@ Flow University \hfill GPA: 3.92/4.0
         );
       }
     }
+  }
+
+  void _insertSnippetAtCursor(String snippet, {String? targetFileName}) {
+    final target = targetFileName ?? (_activeFileName.endsWith('.tex') ? _activeFileName : _mainFileName);
+    if (target != _activeFileName) {
+      _switchToFile(target);
+    }
+    final text = _texController.text;
+    final selection = _texController.selection;
+    final start = (selection.start >= 0 && selection.start <= text.length)
+        ? selection.start
+        : text.length;
+    final end = (selection.end >= 0 && selection.end <= text.length)
+        ? selection.end
+        : text.length;
+    final newText = text.replaceRange(start, end, snippet);
+    _texController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: start + snippet.length),
+    );
+    _files[_activeFileName] = newText;
+  }
+
+  void _ensureGraphicxPackage() {
+    final mainKey = _files.containsKey('main.tex') ? 'main.tex' : _mainFileName;
+    final mainContent = _files[mainKey] ?? _texController.text;
+    if (!mainContent.contains(r'\usepackage{graphicx}') &&
+        !mainContent.contains(r'\usepackage[') &&
+        !mainContent.contains('graphicx')) {
+      final docClassRegex = RegExp(r'(\\documentclass(?:\[[^\]]*\])?\{[^}]+\})');
+      String updated;
+      if (docClassRegex.hasMatch(mainContent)) {
+        updated = mainContent.replaceFirstMapped(
+          docClassRegex,
+          (m) => '${m.group(1)}\n\\usepackage{graphicx}',
+        );
+      } else {
+        updated = '\\usepackage{graphicx}\n$mainContent';
+      }
+      _files[mainKey] = updated;
+      if (_activeFileName == mainKey) {
+        _texController.text = updated;
+      }
+    }
+  }
+
+  Future<void> _uploadImage({String? targetTexFile}) async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'],
+        withData: true,
+      );
+
+      if (result == null || result.files.isEmpty) return;
+      final picked = result.files.first;
+
+      Uint8List? bytes = picked.bytes;
+      if (bytes == null && picked.path != null) {
+        final f = File(picked.path!);
+        if (await f.exists()) {
+          bytes = await f.readAsBytes();
+        }
+      }
+
+      if (bytes == null || bytes.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to read image bytes')),
+          );
+        }
+        return;
+      }
+
+      if (!mounted) return;
+
+      var rawName = picked.name.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_');
+      if (!rawName.contains('.')) {
+        rawName = '$rawName.png';
+      }
+
+      if (_files.containsKey(rawName)) {
+        final dotIdx = rawName.lastIndexOf('.');
+        final base = dotIdx != -1 ? rawName.substring(0, dotIdx) : rawName;
+        final ext = dotIdx != -1 ? rawName.substring(dotIdx) : '.png';
+        int counter = 1;
+        while (_files.containsKey('${base}_$counter$ext')) {
+          counter++;
+        }
+        rawName = '${base}_$counter$ext';
+      }
+
+      final fileNameCtrl = TextEditingController(text: rawName);
+      final captionCtrl = TextEditingController(text: 'Figure illustration');
+      bool insertIntoLatex = _activeFileName.endsWith('.tex');
+      String selectedWidth = r'0.7\textwidth';
+      bool asFigureEnv = true;
+
+      final shouldAdd = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => StatefulBuilder(
+          builder: (context, setDlgState) => AlertDialog(
+            backgroundColor: context.colors.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF43F5E).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(LucideIcons.imagePlus, color: Color(0xFFF43F5E), size: 20),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Upload Image to Project',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.colors.textPrimary),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      height: 120,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.black12,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: context.colors.outline.withValues(alpha: 0.2)),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Image.memory(
+                        bytes!,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: context.colors.outline.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Size: ${(bytes.length / 1024).toStringAsFixed(1)} KB',
+                            style: TextStyle(fontSize: 11, color: context.colors.textFaint)),
+                        Text(picked.extension?.toUpperCase() ?? 'IMAGE',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: context.colors.textSecondary)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text('Project File Path / Name:',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.colors.textPrimary)),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: fileNameCtrl,
+                    style: TextStyle(fontFamily: 'monospace', fontSize: 13, color: context.colors.textPrimary),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      hintText: 'e.g. chart.png or figure1.jpg',
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    title: Text(
+                      'Insert into LaTeX document now',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textPrimary),
+                    ),
+                    subtitle: Text(
+                      r'Adds \usepackage{graphicx} and figure code',
+                      style: TextStyle(fontSize: 11, color: context.colors.textFaint),
+                    ),
+                    value: insertIntoLatex,
+                    activeThumbColor: AppTheme.duoGreen,
+                    onChanged: (v) => setDlgState(() => insertIntoLatex = v),
+                  ),
+                  if (insertIntoLatex) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ChoiceChip(
+                            label: const Text('Figure Block', style: TextStyle(fontSize: 11)),
+                            selected: asFigureEnv,
+                            selectedColor: AppTheme.duoBlue.withValues(alpha: 0.2),
+                            onSelected: (s) => setDlgState(() => asFigureEnv = true),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ChoiceChip(
+                            label: const Text('Inline Macro', style: TextStyle(fontSize: 11)),
+                            selected: !asFigureEnv,
+                            selectedColor: AppTheme.duoBlue.withValues(alpha: 0.2),
+                            onSelected: (s) => setDlgState(() => asFigureEnv = false),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    if (asFigureEnv) ...[
+                      Text('Figure Caption:',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.colors.textPrimary)),
+                      const SizedBox(height: 4),
+                      TextField(
+                        controller: captionCtrl,
+                        style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          hintText: 'Descriptive caption...',
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    Text('Image Width:',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.colors.textPrimary)),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      children: [
+                        r'0.5\textwidth',
+                        r'0.7\textwidth',
+                        r'0.85\textwidth',
+                        r'\textwidth',
+                      ].map((w) {
+                        final sel = (selectedWidth == w);
+                        return ChoiceChip(
+                          label: Text(w, style: TextStyle(fontSize: 10, fontFamily: 'monospace', fontWeight: sel ? FontWeight.bold : FontWeight.normal)),
+                          selected: sel,
+                          selectedColor: AppTheme.duoGreen.withValues(alpha: 0.2),
+                          onSelected: (s) => setDlgState(() => selectedWidth = w),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF43F5E),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: const Icon(LucideIcons.check, size: 16),
+                label: const Text('Add to Project'),
+                onPressed: () {
+                  final finalName = fileNameCtrl.text.trim();
+                  if (finalName.isEmpty) return;
+                  Navigator.pop(ctx, true);
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (shouldAdd != true) return;
+
+      var finalFileName = fileNameCtrl.text.trim();
+      if (!_isImageFile(finalFileName)) {
+        final ext = picked.extension ?? 'png';
+        finalFileName = '$finalFileName.$ext';
+      }
+
+      final b64Str = base64Encode(bytes);
+
+      setState(() {
+        _files[finalFileName] = b64Str;
+        if (!_openTabs.contains(finalFileName)) {
+          _openTabs.add(finalFileName);
+        }
+      });
+
+      if (insertIntoLatex) {
+        _ensureGraphicxPackage();
+        final labelName = finalFileName
+            .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
+            .replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+        final snippet = asFigureEnv
+            ? '\n\\begin{figure}[htbp]\n  \\centering\n  \\includegraphics[width=$selectedWidth]{$finalFileName}\n  \\caption{${captionCtrl.text.trim()}}\n  \\label{fig:$labelName}\n\\end{figure}\n'
+            : '\\includegraphics[width=$selectedWidth]{$finalFileName}';
+
+        _insertSnippetAtCursor(snippet, targetFileName: targetTexFile);
+      } else {
+        _switchToFile(finalFileName);
+      }
+
+      _saveProject(silent: true);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Image "$finalFileName" added to project!'),
+            backgroundColor: AppTheme.duoGreen,
+            action: SnackBarAction(
+              label: 'View',
+              textColor: Colors.white,
+              onPressed: () => _switchToFile(finalFileName),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error uploading image: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showInsertImageDialog() {
+    final imageFiles = _files.keys.where(_isImageFile).toList();
+
+    if (imageFiles.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: context.colors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(LucideIcons.image, color: Color(0xFFF43F5E), size: 22),
+              const SizedBox(width: 10),
+              Text('No Images Found', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Text(
+            r'There are no image files in this project yet. Upload a PNG, JPG, or WebP image to use it with \includegraphics.',
+            style: TextStyle(color: context.colors.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF43F5E),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              icon: const Icon(LucideIcons.uploadCloud, size: 16),
+              label: const Text('Upload Image'),
+              onPressed: () {
+                Navigator.pop(ctx);
+                _uploadImage();
+              },
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    String selectedImage = imageFiles.first;
+    String width = r'0.7\textwidth';
+    bool asFigure = true;
+    final captionCtrl = TextEditingController(text: 'Figure illustration');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDlgState) {
+          final b64 = _files[selectedImage] ?? '';
+          Uint8List? previewBytes;
+          try {
+            previewBytes = base64Decode(b64.contains(',') ? b64.split(',').last : b64);
+          } catch (_) {}
+
+          return AlertDialog(
+            backgroundColor: context.colors.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                const Icon(LucideIcons.image, color: Color(0xFFF43F5E), size: 20),
+                const SizedBox(width: 8),
+                Text('Insert Image into LaTeX',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.colors.textPrimary)),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Select Project Image:',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.colors.textPrimary)),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedImage,
+                    dropdownColor: context.colors.surface,
+                    decoration: InputDecoration(
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    items: imageFiles.map((img) {
+                      return DropdownMenuItem(
+                        value: img,
+                        child: Row(
+                          children: [
+                            const Icon(LucideIcons.image, size: 14, color: Color(0xFFF43F5E)),
+                            const SizedBox(width: 8),
+                            Text(img, style: const TextStyle(fontFamily: 'monospace', fontSize: 13)),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setDlgState(() => selectedImage = val);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  if (previewBytes != null)
+                    Center(
+                      child: Container(
+                        height: 110,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.black12,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: context.colors.outline.withValues(alpha: 0.2)),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Image.memory(previewBytes, fit: BoxFit.contain),
+                      ),
+                    ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ChoiceChip(
+                          label: const Text('Figure Block', style: TextStyle(fontSize: 11)),
+                          selected: asFigure,
+                          selectedColor: AppTheme.duoBlue.withValues(alpha: 0.2),
+                          onSelected: (s) => setDlgState(() => asFigure = true),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ChoiceChip(
+                          label: const Text('Inline Macro', style: TextStyle(fontSize: 11)),
+                          selected: !asFigure,
+                          selectedColor: AppTheme.duoBlue.withValues(alpha: 0.2),
+                          onSelected: (s) => setDlgState(() => asFigure = false),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  if (asFigure) ...[
+                    Text('Caption:',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.colors.textPrimary)),
+                    const SizedBox(height: 4),
+                    TextField(
+                      controller: captionCtrl,
+                      style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  Text('Width:',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.colors.textPrimary)),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    children: [r'0.5\textwidth', r'0.7\textwidth', r'0.85\textwidth', r'\textwidth'].map((w) {
+                      final sel = (width == w);
+                      return ChoiceChip(
+                        label: Text(w, style: TextStyle(fontSize: 10, fontFamily: 'monospace', fontWeight: sel ? FontWeight.bold : FontWeight.normal)),
+                        selected: sel,
+                        selectedColor: AppTheme.duoGreen.withValues(alpha: 0.2),
+                        onSelected: (s) => setDlgState(() => width = w),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.duoGreen,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: const Icon(LucideIcons.plus, size: 16),
+                label: const Text('Insert Code'),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _ensureGraphicxPackage();
+                  final labelName = selectedImage
+                      .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
+                      .replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+                  final snippet = asFigure
+                      ? '\n\\begin{figure}[htbp]\n  \\centering\n  \\includegraphics[width=$width]{$selectedImage}\n  \\caption{${captionCtrl.text.trim()}}\n  \\label{fig:$labelName}\n\\end{figure}\n'
+                      : '\\includegraphics[width=$width]{$selectedImage}';
+                  _insertSnippetAtCursor(snippet);
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildImageViewer(bool isDark) {
+    final rawB64 = _files[_activeFileName] ?? '';
+    final cleanB64 = rawB64.contains(',') ? rawB64.split(',').last : rawB64;
+    Uint8List? imgBytes;
+    try {
+      imgBytes = base64Decode(cleanB64);
+    } catch (_) {}
+
+    final ext = _activeFileName.split('.').last.toUpperCase();
+    final sizeKb = ((imgBytes?.length ?? 0) / 1024).toStringAsFixed(1);
+
+    return Container(
+      color: isDark ? const Color(0xFF0D1117) : const Color(0xFFF8FAFC),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF161B22) : Colors.white,
+              border: Border(bottom: BorderSide(color: context.colors.outline.withValues(alpha: 0.2))),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF43F5E).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(LucideIcons.image, size: 16, color: Color(0xFFF43F5E)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _activeFileName,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'monospace',
+                          color: context.colors.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        '$ext format • $sizeKb KB • Project Asset',
+                        style: TextStyle(fontSize: 11, color: context.colors.textFaint),
+                      ),
+                    ],
+                  ),
+                ),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.duoGreen,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  icon: const Icon(LucideIcons.plusCircle, size: 14),
+                  label: const Text('Insert in LaTeX', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  onPressed: () {
+                    final targetTex = _files.keys.firstWhere(
+                      (k) => k.endsWith('.tex'),
+                      orElse: () => _mainFileName,
+                    );
+                    _switchToFile(targetTex);
+                    _showInsertImageDialog();
+                  },
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: imgBytes == null || imgBytes.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(LucideIcons.imageOff, size: 48, color: Colors.grey),
+                        const SizedBox(height: 12),
+                        Text('Unable to display image data',
+                            style: TextStyle(color: context.colors.textSecondary, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  )
+                : InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Image.memory(
+                            imgBytes,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF161B22) : Colors.white,
+              border: Border(top: BorderSide(color: context.colors.outline.withValues(alpha: 0.2))),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  ),
+                  icon: const Icon(LucideIcons.copy, size: 14),
+                  label: const Text(r'Copy \includegraphics', style: TextStyle(fontSize: 11)),
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: '\\includegraphics[width=0.8\\textwidth]{$_activeFileName}'));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Copied \\includegraphics[width=0.8\\textwidth]{$_activeFileName} to clipboard'),
+                        backgroundColor: AppTheme.duoGreen,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                ),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  ),
+                  icon: const Icon(LucideIcons.fileCode, size: 14),
+                  label: const Text('Copy Figure Block', style: TextStyle(fontSize: 11)),
+                  onPressed: () {
+                    final labelName = _activeFileName
+                        .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
+                        .replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+                    final code = '\\begin{figure}[htbp]\n  \\centering\n  \\includegraphics[width=0.7\\textwidth]{$_activeFileName}\n  \\caption{Figure caption}\n  \\label{fig:$labelName}\n\\end{figure}';
+                    Clipboard.setData(ClipboardData(text: code));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Copied full LaTeX figure block to clipboard'),
+                        backgroundColor: AppTheme.duoGreen,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                ),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  ),
+                  icon: const Icon(LucideIcons.refreshCw, size: 14),
+                  label: const Text('Replace', style: TextStyle(fontSize: 11)),
+                  onPressed: () => _uploadImage(),
+                ),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.redAccent,
+                    side: const BorderSide(color: Colors.redAccent),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  ),
+                  icon: const Icon(LucideIcons.trash2, size: 14),
+                  label: const Text('Delete', style: TextStyle(fontSize: 11)),
+                  onPressed: () => _promptDeleteFile(_activeFileName),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickSnippetBar(bool isDark) {
+    if (!_activeFileName.endsWith('.tex')) return const SizedBox.shrink();
+
+    final chips = [
+      {'label': '🖼️ Image', 'action': () => _showInsertImageDialog(), 'color': const Color(0xFFF43F5E)},
+      {'label': '📤 Upload', 'action': () => _uploadImage(), 'color': const Color(0xFFF43F5E)},
+      {'label': r'\begin{figure}', 'action': () => _showInsertImageDialog(), 'color': AppTheme.duoBlue},
+      {'label': r'\cite{...}', 'action': () => _insertSnippetAtCursor(r'\cite{key}'), 'color': AppTheme.duoViolet},
+      {'label': 'Equation', 'action': () => _insertSnippetAtCursor('\n\\begin{equation}\n  \n\\end{equation}\n'), 'color': AppTheme.duoGreen},
+      {'label': 'Align', 'action': () => _insertSnippetAtCursor('\n\\begin{align}\n  \n\\end{align}\n'), 'color': AppTheme.duoGreen},
+      {'label': r'\section', 'action': () => _insertSnippetAtCursor('\n\\section{Section Title}\n'), 'color': AppTheme.duoBlue},
+      {'label': r'\subsection', 'action': () => _insertSnippetAtCursor('\n\\subsection{Subsection Title}\n'), 'color': AppTheme.duoBlue},
+      {'label': r'\textbf{}', 'action': () => _insertSnippetAtCursor(r'\textbf{bold text}'), 'color': context.colors.textPrimary},
+      {'label': r'\textit{}', 'action': () => _insertSnippetAtCursor(r'\textit{italic text}'), 'color': context.colors.textPrimary},
+      {'label': 'Table', 'action': () => _insertSnippetAtCursor('\n\\begin{table}[htbp]\n  \\centering\n  \\begin{tabular}{|c|c|}\n    \\hline\n    A & B \\\\\n    \\hline\n    1 & 2 \\\\\n    \\hline\n  \\end{tabular}\n  \\caption{Table caption}\n\\end{table}\n'), 'color': AppTheme.duoOrange},
+    ];
+
+    return Container(
+      height: 38,
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF161B22) : const Color(0xFFF1F5F9),
+        border: Border(top: BorderSide(color: context.colors.outline.withValues(alpha: 0.15))),
+      ),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        itemCount: chips.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 6),
+        itemBuilder: (context, i) {
+          final item = chips[i];
+          final color = (item['color'] as Color?) ?? AppTheme.duoBlue;
+          return ActionChip(
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            backgroundColor: color.withValues(alpha: 0.1),
+            side: BorderSide(color: color.withValues(alpha: 0.3)),
+            label: Text(
+              item['label'] as String,
+              style: TextStyle(
+                fontSize: 11,
+                fontFamily: 'monospace',
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            onPressed: item['action'] as VoidCallback,
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -1018,6 +1870,16 @@ Flow University \hfill GPA: 3.92/4.0
                 ),
               ),
               actions: [
+                // Upload Image Button
+                IconButton(
+                  icon: const Icon(
+                    LucideIcons.imagePlus,
+                    size: 20,
+                    color: Color(0xFFF43F5E),
+                  ),
+                  tooltip: 'Upload Image',
+                  onPressed: _uploadImage,
+                ),
                 // Open File Explorer Drawer
                 IconButton(
                   icon: const Icon(
@@ -1041,6 +1903,10 @@ Flow University \hfill GPA: 3.92/4.0
                   onSelected: (val) {
                     if (val.startsWith('template:')) {
                       _loadTemplate(val.replaceFirst('template:', ''));
+                    } else if (val == 'upload_image') {
+                      _uploadImage();
+                    } else if (val == 'insert_image') {
+                      _showInsertImageDialog();
                     } else if (val == 'new_file') {
                       _promptCreateNewFile();
                     } else if (val == 'settings') {
@@ -1063,6 +1929,26 @@ Flow University \hfill GPA: 3.92/4.0
                       ),
                     ),
                     const PopupMenuItem(
+                      value: 'upload_image',
+                      child: Row(
+                        children: [
+                          Icon(LucideIcons.imagePlus, size: 16, color: Color(0xFFF43F5E)),
+                          SizedBox(width: 10),
+                          Text('Upload Image'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'insert_image',
+                      child: Row(
+                        children: [
+                          Icon(LucideIcons.image, size: 16, color: AppTheme.duoBlue),
+                          SizedBox(width: 10),
+                          Text('Insert Image into LaTeX'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
                       value: 'new_file',
                       child: Row(
                         children: [
@@ -1076,6 +1962,16 @@ Flow University \hfill GPA: 3.92/4.0
                     const PopupMenuItem(
                       enabled: false,
                       child: Text('MULTI-FILE TEMPLATES', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
+                    ),
+                    const PopupMenuItem(
+                      value: 'template:Research Paper with Figures',
+                      child: Row(
+                        children: [
+                          Icon(LucideIcons.image, size: 16, color: Color(0xFFF43F5E)),
+                          SizedBox(width: 8),
+                          Text('Research Paper (with Figures)'),
+                        ],
+                      ),
                     ),
                     const PopupMenuItem(
                       value: 'template:Academic Paper (BibTeX)',
@@ -1243,15 +2139,15 @@ Flow University \hfill GPA: 3.92/4.0
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
-                          icon: const Icon(LucideIcons.plus, size: 15),
-                          label: const Text('New File', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          icon: const Icon(LucideIcons.plus, size: 14),
+                          label: const Text('New File', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                           onPressed: () {
                             Navigator.pop(context);
                             _promptCreateNewFile();
                           },
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Expanded(
                         child: OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
@@ -1259,8 +2155,8 @@ Flow University \hfill GPA: 3.92/4.0
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
-                          icon: const Icon(LucideIcons.bookMarked, size: 15, color: AppTheme.duoViolet),
-                          label: const Text('Add BibTeX', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.duoViolet)),
+                          icon: const Icon(LucideIcons.bookMarked, size: 14, color: AppTheme.duoViolet),
+                          label: const Text('BibTeX', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.duoViolet)),
                           onPressed: () {
                             Navigator.pop(context);
                             if (_files.containsKey('references.bib')) {
@@ -1275,6 +2171,24 @@ Flow University \hfill GPA: 3.92/4.0
                               });
                               _saveProject(silent: true);
                             }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFF43F5E),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(LucideIcons.imagePlus, size: 14),
+                          label: const Text('Image', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _uploadImage();
                           },
                         ),
                       ),
@@ -1321,6 +2235,10 @@ Flow University \hfill GPA: 3.92/4.0
                       dense: true,
                       contentPadding: const EdgeInsets.only(left: 12, right: 6),
                       leading: Icon(icon, size: 18, color: iconColor),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _switchToFile(fileName);
+                      },
                       title: Row(
                         children: [
                           Expanded(
@@ -1353,12 +2271,30 @@ Flow University \hfill GPA: 3.92/4.0
                             ),
                         ],
                       ),
+                      subtitle: _isImageFile(fileName)
+                          ? Text(
+                              '${((_files[fileName]?.length ?? 0) * 3 / 4 / 1024).toStringAsFixed(1)} KB image asset',
+                              style: TextStyle(fontSize: 10, color: context.colors.textFaint),
+                            )
+                          : null,
                       trailing: PopupMenuButton<String>(
                         icon: Icon(LucideIcons.moreVertical, size: 16, color: context.colors.textFaint),
                         padding: EdgeInsets.zero,
                         onSelected: (val) {
                           if (val == 'set_main') {
                             _setAsMainFile(fileName);
+                          } else if (val == 'insert_latex') {
+                            _switchToFile(fileName);
+                            _showInsertImageDialog();
+                          } else if (val == 'copy_snippet') {
+                            Clipboard.setData(ClipboardData(text: '\\includegraphics[width=0.8\\textwidth]{$fileName}'));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Copied \\includegraphics snippet for "$fileName"'),
+                                backgroundColor: AppTheme.duoGreen,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
                           } else if (val == 'rename') {
                             _promptRenameFile(fileName);
                           } else if (val == 'delete') {
@@ -1366,6 +2302,28 @@ Flow University \hfill GPA: 3.92/4.0
                           }
                         },
                         itemBuilder: (ctx) => [
+                          if (_isImageFile(fileName)) ...[
+                            const PopupMenuItem(
+                              value: 'insert_latex',
+                              child: Row(
+                                children: [
+                                  Icon(LucideIcons.plusCircle, size: 15, color: AppTheme.duoGreen),
+                                  SizedBox(width: 8),
+                                  Text('Insert into LaTeX', style: TextStyle(fontSize: 12)),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'copy_snippet',
+                              child: Row(
+                                children: [
+                                  Icon(LucideIcons.copy, size: 15, color: AppTheme.duoBlue),
+                                  SizedBox(width: 8),
+                                  Text(r'Copy \includegraphics', style: TextStyle(fontSize: 12)),
+                                ],
+                              ),
+                            ),
+                          ],
                           if (fileName.endsWith('.tex') && !isMain)
                             const PopupMenuItem(
                               value: 'set_main',
@@ -1400,10 +2358,6 @@ Flow University \hfill GPA: 3.92/4.0
                             ),
                         ],
                       ),
-                      onTap: () {
-                        _switchToFile(fileName);
-                        Navigator.pop(context);
-                      },
                     ),
                   );
                 }).toList(),
@@ -1562,6 +2516,12 @@ Flow University \hfill GPA: 3.92/4.0
               ),
             ),
           ),
+          // Upload image button in tab bar
+          IconButton(
+            icon: const Icon(LucideIcons.imagePlus, size: 16, color: Color(0xFFF43F5E)),
+            tooltip: 'Upload Image',
+            onPressed: _uploadImage,
+          ),
           // New file icon button in tab bar
           IconButton(
             icon: const Icon(LucideIcons.plus, size: 16),
@@ -1574,6 +2534,10 @@ Flow University \hfill GPA: 3.92/4.0
   }
 
   Widget _buildCodeInput(bool isDark, IdeSettings settings) {
+    if (_isImageFile(_activeFileName)) {
+      return _buildImageViewer(isDark);
+    }
+
     final editorBg = isDark ? const Color(0xFF0D1117) : const Color(0xFFF8FAFC);
     final editorText = isDark ? const Color(0xFFE6EDF3) : const Color(0xFF0F172A);
 
@@ -1615,6 +2579,7 @@ Flow University \hfill GPA: 3.92/4.0
               ),
             ),
           ),
+          _buildQuickSnippetBar(isDark),
           // Bottom status bar (Line, Column & Active File tracking)
           ListenableBuilder(
             listenable: _texController,
@@ -1906,6 +2871,10 @@ Flow University \hfill GPA: 3.92/4.0
           line.startsWith(r'\usepackage') ||
           line.startsWith(r'\begin{document}') ||
           line.startsWith(r'\end{document}') ||
+          line.startsWith(r'\begin{figure}') ||
+          line.startsWith(r'\end{figure}') ||
+          line.startsWith(r'\centering') ||
+          line.startsWith(r'\label{') ||
           line.startsWith(r'\title') ||
           line.startsWith(r'\author') ||
           line.startsWith(r'\date') ||
@@ -2027,6 +2996,55 @@ Flow University \hfill GPA: 3.92/4.0
             );
           });
         }
+        continue;
+      }
+
+      if (line.contains(r'\includegraphics')) {
+        final match = RegExp(r'\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}').firstMatch(line);
+        if (match != null) {
+          final rawPath = match.group(1)?.trim() ?? '';
+          final matchedKey = _files.keys.firstWhere(
+            (k) =>
+                k == rawPath ||
+                k.endsWith('/$rawPath') ||
+                k == '$rawPath.png' ||
+                k == '$rawPath.jpg' ||
+                k == '$rawPath.jpeg' ||
+                k == '$rawPath.webp',
+            orElse: () => '',
+          );
+          if (matchedKey.isNotEmpty && _files[matchedKey] != null) {
+            try {
+              var b64 = _files[matchedKey]!;
+              if (b64.contains(',')) b64 = b64.split(',').last;
+              final bytes = base64Decode(b64);
+              final pwImage = pw.MemoryImage(bytes);
+              contentWidgets.add(
+                pw.Container(
+                  margin: const pw.EdgeInsets.symmetric(vertical: 8),
+                  alignment: pw.Alignment.center,
+                  child: pw.Image(pwImage, width: 260, fit: pw.BoxFit.contain),
+                ),
+              );
+            } catch (_) {}
+          }
+        }
+        continue;
+      }
+
+      if (line.startsWith(r'\caption{')) {
+        final cap = line.replaceAll(RegExp(r'\\caption\*?\{([^}]+)\}'), r'$1');
+        contentWidgets.add(
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(top: 2, bottom: 8),
+            child: pw.Center(
+              child: pw.Text(
+                'Figure: $cap',
+                style: pw.TextStyle(fontSize: 9, fontStyle: pw.FontStyle.italic, color: PdfColors.grey700),
+              ),
+            ),
+          ),
+        );
         continue;
       }
 
